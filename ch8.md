@@ -257,7 +257,7 @@ io_in_progress锁用于等待缓冲区上的I / O完成。当PostgreSQL进程从
   2. 将其引用计数和usage_count的值增加1。
   3. 松开自旋锁。
 
-- ```
+- ```c
   LockBufHdr(bufferdesc);    /* Acquire a spinlock */
   bufferdesc->refcont++;
   bufferdesc->usage_count++;
@@ -272,7 +272,7 @@ io_in_progress锁用于等待缓冲区上的I / O完成。当PostgreSQL进程从
   2. 使用按位操作将脏位设置为“1”。
   3. 松开自旋锁。
 
-- ```
+- ```c
   #define BM_DIRTY             (1 << 0)    /* data needs writing */
   #define BM_VALID             (1 << 1)    /* data is valid */
   #define BM_TAG_VALID         (1 << 2)    /* tag is assigned */
@@ -410,10 +410,10 @@ io_in_progress锁用于等待缓冲区上的I / O完成。当PostgreSQL进程从
 > - （1）获取*nextVictimBuffer*指向的候选缓冲区描述符。
 > - （2）如果*取消固定*候选缓冲区描述符，则进入步骤（3）; 否则，进入步骤（4）。
 > - （3）如果候选描述符的*usage_count*为*0*，则选择该描述符的对应时隙作为受害者，并进入步骤（5）; 否则，将此描述符的*usage_count减* 1并继续执行步骤（4）。
-> - （4）将nextVictimBuffer推进到下一个描述符（如果最后，回绕）并返回步骤（1）。重复直到找到受害者。
+> - （4）将`nextVictimBuffer`推进到下一个描述符（如果最后，回绕）并返回步骤（1）。重复直到找到受害者。
 > - （5）返回受害者的buffer_id。
 
-具体的例子如图8.12所示。缓冲区描述符显示为蓝色或青色框，框中的数字显示每个描述符的usage_count。
+具体的例子如图8.12所示。缓冲区描述符显示为蓝色或青色框，框中的数字显示每个描述符的`usage_count`。
 
 **图8.12 时钟扫描**
 
@@ -453,18 +453,18 @@ io_in_progress锁用于等待缓冲区上的I / O完成。当PostgreSQL进程从
 
 分配的环形缓冲区在使用后立即释放。
 
-环形缓冲区的好处是显而易见的。如果后端进程在不使用环形缓冲区的情况下读取大表，则删除缓冲池中的所有存储页会被移除（踢出），因而会导致缓存命中率降低。环形缓冲区可以避免此问题。
+​	环形缓冲区的好处是显而易见的。如果后端进程在不使用环形缓冲区的情况下读取大表，则删除缓冲池中的所有存储页会被移除（踢出），因而会导致缓存命中率降低。环形缓冲区可以避免此问题。
 
 > #### 为什么批量读取和真空处理的默认环形缓冲区大小为256 KB？
 >
-> 为什么256 KB？答案在缓冲区管理器源目录下的[README中](https://github.com/postgres/postgres/blob/master/src/backend/storage/buffer/README)解释。
+> 为什么是256 KB？源代码中缓冲管理器目录下的[README](https://github.com/postgres/postgres/blob/master/src/backend/storage/buffer/README)中解释了这个问题。
 >
-> > 对于顺序扫描，使用256 KB环。这个小到足以适应L2缓存，这使得从OS缓存到共享缓冲区缓存的页面传输效率很高。更少的通常就足够了，但是环必须足够大以容纳扫描中同时固定的所有页面。（剪断）
+> > 顺序扫描使用256KB的环缓冲。它足够小，能够放入L2缓存中，从而使得操作系统缓存到共享缓冲区的页面传输变得高效。通常更小的也足够了，但换缓冲区必需足够大，能够容纳扫描中同时被固定的所有页面。（剪断）
 
-## 8.6 刷新脏页面
+## 8.6 刷新脏页
 
-除了替换受害者页面之外，checkpointer和后台写入器进程将脏页面刷新到存储。两个进程都具有相同的功能（刷新脏页）；但是，他们有不同的角色和行为。
+​	除了替换受害者页面之外，存档器和后台写入器进程还会将脏页刷写至存储中。尽管两个进程都具有相同的功能（刷写脏页），但它们有着不同的角色和行为。
 
-checkpointer进程将检查点记录写入WAL段文件，并在检查点开始时刷新脏页。[第9.7节](http://www.interdb.jp/pg/pgsql09.html#_9.7.)描述了检查点以及何时开始。
+​	存档器进程将存档记录写入WAL段文件，并在存档开始时进行脏页刷写。[9.7节](http://www.interdb.jp/pg/pgsql09.html#_9.7.)描述了存档，以及何时开始。
 
-​	后台写入器的作用是减少存档带来的密集写入影响。后台写入器继续一点一点地刷新脏页面，对数据库活动的影响最小。默认情况下，后台[编写器](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-DELAY)每200毫秒唤醒（由[bgwriter_delay](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-DELAY)定义）并[最多](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-LRU-MAXPAGES)刷新[bgwriter_lru_maxpages](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-LRU-MAXPAGES)（默认值为100页）。
+​	后台写入器的作用是减少存档带来的密集写入影响。后台写入器不断地一点点刷写脏页，将对数据库活动的造成影响降至最小。默认情况下，后台写入器每200毫秒苏醒一次（由参数[`bgwriter_delay`](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-DELAY)定义），并最多刷写[`bgwriter_lru_maxpages`](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-LRU-MAXPAGES)个页面（默认为100个页面）。
