@@ -605,7 +605,7 @@ exec_simple_query() @postgres.c
 
 ## 9.7 PostgreSQL中的存档过程
 
-在PostgreSQL中，存档者进程（后台）会执行存档；当下列情形之一发生时，它会开启进程：
+在PostgreSQL中，存档者进程（后台）会执行存档；当下列情形之一发生时，它会启动处理：
 
 1. 距离上次存档已经过去了由参数`checkpoint_timeout`配置的时间间隔（默认间隔为300秒（5分钟））。
 2. 在9.4及以前的版本中，自上一次存档以来消耗的WAL段文件超出了参数`checkpoint_segments`的数量（默认值为3）。
@@ -786,6 +786,8 @@ $((2 + \verb|checkpoint_completion_target|) × \verb|checkpoint_segments| + 1 )$
 > ​	在版本9.4或更早版本中，调整参数`checkpoint_segments`是一个痛苦的问题。 如果设置为较小的值，则存档会频繁发生，这会导致性能下降；而如果设置为较大的数值，则WAL文件总是需要巨大的磁盘空间，其中一些并不是必需的。
 >
 > ​	在9.5版本中，WAL文件的管理策略得到了改善，而`checkpoint_segments`参数被弃用，因此上述的权衡问题已经得到解决。
+
+
 
 ## 9.10 归档日志与持续归档
 

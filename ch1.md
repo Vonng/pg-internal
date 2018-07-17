@@ -85,7 +85,7 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 | pg_subtrans/                      | 包含子事务状态数据的子目录                                   |
 | pg_tblspc/                        | 包含指向表空间的符号链接的子目录                             |
 | pg_twophase/                      | 包含准备好的事务的状态文件                                   |
-| pg_wal/ (10以后) | （版本10或更高版本）包含WAL（写入前向记录）段文件的子目录。<br />它在版本10中从pg_xlog重命名。 |
+| pg_wal/ (10以后) | （版本10或更高版本）包含WAL（写入前向记录）段文件的子目录。<br />它在版本10中从pg_xlog重命名而来。 |
 | pg_xact/ (10以后) | 版本10或更高版本）包含事务提交状态数据的子目录。它在版本10中从pg_clog重命名。CLOG将在5.4节中描述。 |
 | pg_xlog/ (9.6前) | 版本9.6或更早版本）包含WAL（预写日志记录）段文件的子目录。<br />它在版本10中重命名为pg_wal。 |
 

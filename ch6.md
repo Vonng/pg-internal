@@ -124,15 +124,15 @@
 
 ​	VACUUM处理的开销巨大，因此在8.4版中引入了VM，用于降低清理的代价开销。
 
-​	VM的基本概念很简单。 每个表都有一个单独的可见性映射，用于保存表文件中每个页面的可见性。 页面的可见性决定了每个页面是否都有死元组。 VACUUM处理可以跳过没有死元组的页面。
+​	VM的基本概念很简单。 每个表都有各自的可见性映射，用于保存表文件中每个页面的可见性。 页面的可见性确定了每个页面是否包含死元组。 清理过程可以跳过没有死元组的页面。
 
-​	图6.2显示了如何使用VM。 假设该表包含三个页面，第0页和第2页包含死元组，第1页不包含死元组。 此表的VM包含有关哪些页面包含死元组的信息。 在这种情况下，VACUUM处理通过参考VM的信息跳过第一页。
+​	图6.2展示了VM的使用方式。 假设该表包含三个页面，第0页和第2页包含死元组，而第1页不包含死元组。 表的VM中保存着哪些页面包含死元组的信息。 在这种情况下，清理过程通过参考VM的信息而跳过第一个页面。
 
-**图6.2 如何使用VM**
+**图6.2 VM的使用方式**
 
 ![](img/fig-6-02.png)
 
-​	每个VM由一个或多个8 KB页面组成，此文件以`vm`后缀存储。 作为示例，一个表文件的`relfilenode`是18751，其中FSM（18751_fsm）和VM（18751_vm）文件如下所示。
+​	每个VM由一个或多个8 KB页面组成，此文件以`vm`后缀存储。 作为示例，一个表文件的`relfilenode`是18751，其中FSM（`18751_fsm`）和VM（`18751_vm`）文件如下所示。
 
 ```bash
 $ cd $PGDATA
@@ -142,29 +142,24 @@ $ ls -la base/16384/18751*
 -rw------- 1 postgres postgres  8192 Apr 21 10:18 base/16384/18751_vm
 ```
 
+### 6.2.1 VM增强
 
-
-### 6.2.1 增强VM
-
-​	VM在9.6版中得到了增强，以提高冻结处理的效率。新VM显示页面可见性以及每个页面中是否冻结元组的信息（第6.3.3节）。
+​	VM在9.6版中得到了增强，以提高冻结处理的效率。新的VM除了显示页面可见性之外，还包含了页面中元组是否全部冻结的信息。（第6.3.3节）。
 
 
 
-## 6.3 冻结处理
+## 6.3 冻结过程
 
-​	冻结处理有两种模式，根据特定条件在任一模式下执行。为方便起见，这些模式称为惰性模式和急切模式。
+​	冻结过程有两种模式，依特定条件而择其一执行。为方便起见，将这些模式称为**惰性模式（lazy mode）**和**迫切模式（eager mode）**。
+
+>
+> **并发清理（Concurrent VACUUM）**通常在内部被称为“惰性清理”。但是，本文中定义的惰性模式是**冻结过程**执行的模式。
+>
 
 
-​	并发VACUUM通常在内部称为“惰性清理”。但是，本文档中定义的延迟模式是冻结处理执行的模式。
+​	冻结处理通常以惰性模式运行；但当满足特定条件时，也会以迫切模式运行。在惰性模式下，冻结处理仅使用目标表对应的VM扫描包含死元组的页面。迫切模式相则反，它会扫描所有页面，无论其是否包含死元组，它还会更新与冻结处理相关的系统视图，并在可能的情况下删除不必要的clog。
 
-
-​	冻结处理通常以惰性模式运行；但是，当满足特定条件时，运行迫切模式。
-
-​	在惰性模式下，冻结处理仅使用目标表的相应VM扫描包含死元组的页面。
-
-​	相反，迫切模式扫描所有页面，无论每个页面是否包含死元组，它还会更新与冻结处理相关的系统目录，并在可能的情况下删除不必要的clog部分。
-
-​	6.3.1和6.3.2节分别描述了这些模式。第6.3.3节描述了在急切模式下改进冻结过程。
+​	6.3.1和6.3.2节分别描述了这些模式，第6.3.3节描述了在迫切模式下对冻结过程的改进。
 
 ### 6.3.1 惰性模式
 
@@ -178,7 +173,7 @@ $$
 $$
 
 
-​	而OldestXmin，OldestXmin  是当前正在运行的事务中最早的txid。 例如，如果在执行VACUUM命令时正在运行三个事务（txids 100,101和102），OldestXmin，OldestXmin  是100。如果不存在其他事务，OldestXmin，OldestXmin 是执行此VACUUM命令的txid。 这里，vacuum_freeze_min_age是一个配置参数（默认为50,000,000）。
+​	而`OldestXmin`是当前正在运行的事务中最早的**事务标识（txid）**。 例如，如果在执行`VACUUM`命令时正在运行三个事务（txid分别为100，101和102），这里`OldestXmin`就是100。如果不存在其他事务，`OldestXmin` 就是执行此`VACUUM`命令的事务标识。 这里，`vacuum_freeze_min_age`是一个配置参数（默认为50,000,000）。
 
 ​	图6.3显示了一个具体的例子。 这里，Table_1由三个页面组成，每个页面有三个元组。 执行VACUUM命令时，当前txid为50,002,500，并且没有其他事务。 在这种情况下，OldestXmin OldestXmin  是50,002,500; 因此，freezeLimit txid为2500.冻结处理如下执行。
 
@@ -188,61 +183,118 @@ $$
 
 * 第0页：
 
-		三个元组被冻结，因为所有t_xmin值都小于freezeLimit txid。此外，由于死元组，在此VACUUM过程中删除了Tuple_1。
+		三个元组被冻结，因为所有元组的`t_xmin`值都小于`freezeLimit_txid`。此外，因为元组1是个死元组，因此在本清理过程中被移除。
 
 * 第1页：
 
-  通过引用VM跳过此页面。
+  通过引用可见性映射，跳过了此页面的清理。
 
 * 第2页：
 
-  Tuple_7和Tuple_8被冻结; Tuple_7被删除。
+  元组7和元组8被冻结，且元组7被移除。
 
-在完成VACUUM过程之前，更新与清理有关的统计数据，例如， pg_stat_all_tables'n_live_tup，n_dead_tup，last_vacuum，vacuum_count等。
+在完成清理过程之前，与清理相关的统计数据会被更新，例如`pg_stat_all_tables`视图中的`n_live_tup`，`n_dead_tup`，`last_vacuum`，`vacuum_count`等。
 
-如上例所示，惰性模式可能无法完全冻结元组，因为它可以跳过页面。
+如上例所示，惰性模式可能无法完全冻结所有需要冻结的元组，因为它可能会跳过页面。
 
 ### 6.3.2 迫切模式
 
-​	急切模式补偿了懒惰模式的缺陷。它会扫描所有页面以检查表中的所有元组，更新相关的系统目录，并在可能的情况下删除不必要的文件和阻塞页面。
+​	迫切模式弥补了惰性模式的缺陷。它会扫描所有页面以检查表中的所有元组，更新相关的系统视图，并在可能的情况下删除不必要的文件和clog页面。
 
-当满足以下条件时执行急切模式。
+​	当满足以下条件时，会执行迫切模式。
 $$
 \begin{align}
 	\verb|pg_database.datfrozenxid| < (\verb|OldestXmin| - \verb|vacuum_freeze_table_age|)
 \end{align}
 $$
-​	在上面的条件中，`pg_database.datfrozenxid`表示`pg_database`系统数据字典中的列，并保存每个数据库的最老的已冻结的txid。细节将在后面描述；因此，我们假设所有`pg_database.datfrozenxid`的值都是1821（这是在版本9.5中安装新数据库集群之后的初始值）。 `vacuum_freeze_table_age`是配置参数（默认为150,000,000）。
+​	在上面的条件中，`pg_database.datfrozenxid`表示`pg_database`系统视图中的列，并保存每个数据库的最老的已冻结的事务标识。细节将在后面描述；因此，我们假设所有`pg_database.datfrozenxid`的值都是1821（这是在9.5版本中安装新数据库集群之后的初始值）。 `vacuum_freeze_table_age`是配置参数（默认为150,000,000）。
 
-​	图6.4显示了一个具体的例子。在表1中，Tuple_1和Tuple_7都已被删除。 Tuple_10和Tuple_11已插入第2页。执行VACUUM命令时，当前txid为150,002,000，并且没有其他事务。因此，OldestXmin为150,002,000，freezeLimit txid为100,002,000。在这种情况下，满足上述条件，因为$1821 < (150002000 - 150000000)$
+​	图6.4显示了一个具体的例子。在表1中，元组1和元组7都已被删除。 元组10和元组11已插入第2页。执行`VACUUM`命令时，当前事务标识为150,002,000，并且没有其他事务。因此，`OldestXmin=150,002,000`，`freezeLimit_txid为100,002,000`。在这种情况下，满足上述条件，因为$1821 < (150002000 - 150000000)$
 
 ​	因此，冻结过程会执行如下所示的迫切模式。
 
-（请注意，这是版本9.5或更早版本的行为;最新行为在第6.3.3节中描述。）
+（请注意，这是版本9.5或更早版本的行为；最新版本的行为会在第6.3.3节中描述。）
 
-**图6.4 在急切模式下（9.5或更早版本）冻结旧元组**
+**图6.4 在迫切模式下（9.5或更早版本）冻结旧元组**
 
 ![](img/fig-6-04.png)
 
 * 第0页：
 
-  即使所有元组都被冻结，也检查了Tuple_2和Tuple_3。
+  即使所有元组都被冻结，也会检查元组2和元组3。
 
 * 第1页：
 
-  此页面中的三个元组已被冻结，因为所有t_xmin值都小于freezeLimit txid。请注意，在惰性模式下会跳过此页面。
+  此页面中的三个元组已被冻结，因为所有元组的`t_xmin`值都小于`freezeLimit_txid`。请注意在惰性模式下会跳过此页面。
 
 * 第2页：
 
-  Tuple_10已被冻结。 Tuple_11没有。
+  元组10被冻结，而元组11没有。
 
-冻结每个表后，目标表的pg_class.relfrozenxid将更新。 pg_class是一个系统目录，每个pg_class.relfrozenxid列保存相应表的最新冻结xid。在此示例中，Table_1的pg_class.relfrozenxid更新为当前的freezeLimit txid（即100,002,000），这意味着冻结了表1中t_xmin小于100,002,000的所有元组。
+冻结一个表后，目标表的`pg_class.relfrozenxid`将被更新。 `pg_class`是一个系统视图，每个`pg_class.relfrozenxid`列保存相应表的最近冻结的事务标识。本例中表1的`pg_class.relfrozenxid`更新为当前的`freezeLimit_txid`（即100,002,000），这意味着表1中`t_xmin`小于100,002,000的所有元组都已被冻结。
 
-​	在完成VACUUM过程之前，必要时会更新pg_database.datfrozenxid。每个pg_database.datfrozenxid列都包含相应数据库中的最小pg_class.relfrozenxid。例如，如果仅在急切模式下冻结Table_1，则不会更新此数据库的pg_database.datfrozenxid，因为其他关系的pg_class.relfrozenxid（可从当前数据库中看到的其他表和系统目录）尚未更改（图6.5（1））。如果当前数据库中的所有关系都以急切模式冻结，则更新数据库的pg_database.datfrozenxid，因为此数据库的所有关系'pg_class.relfrozenxid都更新为当前freezeLimit txid（图6.5（2））。
+​	在完成清理过程之前，必要时会更新`pg_database.datfrozenxid`。每个`pg_database.datfrozenxid`列都包含相应数据库中的最小`pg_class.relfrozenxid`。例如，如果在迫切模式下仅仅对表1做冻结处理，则不会更新该数据库的`pg_database.datfrozenxid`，因为其他关系的`pg_class.relfrozenxid`（当前数据库可见的其他表和系统视图）尚未变更（图6.5(1)）。如果当前数据库中的所有关系都以迫切模式冻结，则会更新数据库的`pg_database.datfrozenxid`，因为此数据库的所有关系的`pg_class.relfrozenxid`都被更新为当前的`freezeLimit_txid`（图6.5(2)）。
 
 **图6.5  pg_database.datfrozenxid与pg_class.relfrozenxid之间的关系**
 
 ![](img/fig-6-05.png)
+
+
+
+> ####  如何显示`pg_class.relfrozenxid`与`pg_database.datfrozenxid`
+>
+> ​	如下所示，第一个查询显示`testdb`数据库中所有可见关系的`relfrozenxids`，第二个查询显示`testdb`数据库的`pg_database.datfrozenxld`。
+>
+> ```sql
+> testdb=# VACUUM table_1;
+> VACUUM
+> 
+> testdb=# SELECT n.nspname as "Schema", c.relname as "Name", c.relfrozenxid
+>              FROM pg_catalog.pg_class c
+>              LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+>              WHERE c.relkind IN ('r','')
+>                    AND n.nspname <> 'information_schema' AND n.nspname !~ '^pg_toast'
+>                    AND pg_catalog.pg_table_is_visible(c.oid)
+>                    ORDER BY c.relfrozenxid::text::bigint DESC;
+>    Schema   |            Name         | relfrozenxid 
+> ------------+-------------------------+--------------
+>  public     | table_1                 |    100002000
+>  public     | table_2                 |         1846
+>  pg_catalog | pg_database             |         1827
+>  pg_catalog | pg_user_mapping         |         1821
+>  pg_catalog | pg_largeobject          |         1821
+> 
+> ...
+> 
+>  pg_catalog | pg_transform            |         1821
+> (57 rows)
+> 
+> testdb=# SELECT datname, datfrozenxid FROM pg_database WHERE datname = 'testdb';
+>  datname | datfrozenxid 
+> ---------+--------------
+>  testdb  |         1821
+> (1 row)
+> ```
+
+
+
+> #### FREEZE选项
+>
+> ​	带有FREEZE选项的VACUUM命令强制冻结指定表中的所有txid。 这是在急切模式下执行的；但是，freezeLimit设置为OldestXmin（不是'OldestXmin - vacuum_freeze_min_age'）。 例如，当txid 5000执行VACUUM FULL命令并且没有其他正在运行的事务时，OldesXmin设置为5000并且冻结小于5000的txids。
+
+
+
+### 6.3.3 改进迫切模式中的冻结过程
+
+​	版本9.5或更早版本中的急切模式效率不高，因为始终扫描所有页面。 例如，在第6.3.2节的示例中，即使页面中的所有元组都被冻结，也会扫描第0页。
+
+​	为解决此问题，版本9.6中的VM和冻结过程已得到改进。 如第6.2.1节所述，新VM包含有关是否在每个页面中冻结所有元组的信息。 在急切模式下执行冻结处理时，可以跳过仅包含冻结元组的页面。
+
+​	图6.6显示了一个示例。 冻结此表时，将通过引用VM的信息跳过第0页。 冻结第一页后，将更新关联的VM信息，因为此页面的所有元组都已冻结。
+
+**图6.6  以迫切模式冻结旧元组（9.6版本或更高）**
+
+![](img/fig-6-06.png)
 
 
 
@@ -292,9 +344,9 @@ autovacuum调用的autovacuum worker逐步对各个表执行VACUUM处理，对�
 
 ## 6.6 完整清理（FULL VACUUM）
 
-​	虽然并发VACUUM对于运维至关重要，但还不够。例如，即使删除了许多死元组，也无法减小表大小。
+​	虽然并发清理对于运维至关重要，但这是不够的。例如，即使删除了许多死元组，也无法减小表的大小。
 
-​	图6.8显示了一个极端的例子。假设一个表由三个页面组成，每个页面包含六个元组。执行以下DELETE命令以删除元组，并执行VACUUM命令以删除死元组：
+​	图6.8展示了一个极端的例子。假设一个表由三个页面组成，每个页面包含六个元组。执行以下`DELETE`命令以删除元组，并执行`VACUUM`命令以移除死元组：
 
 **图6.8 显示（并发）VACUUM的缺点的示例**
 
@@ -305,7 +357,7 @@ testdb=# DELETE FROM tbl WHERE id % 6 != 0;
 testdb=# VACUUM tbl;
 ```
 
-​	死元组被移除; 但是，表格大小没有减少。 这既浪费磁盘空间又对数据库性能产生负面影响。 例如，在上面的示例中，当读取表中的三个元组时，必须从磁盘加载三个页面。
+​	死元组被移除; 但是，表的大小没有减少。 这既浪费了磁盘空间，又会对数据库性能产生负面影响。 例如，在上面的示例中，当读取表中的三个元组时，必须从磁盘加载三个页面。
 
 ​	为了解决这种情况，PostgreSQL提供了**完整清理**模式。 图6.9显示了该模式的概要。
 
