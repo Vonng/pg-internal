@@ -778,8 +778,23 @@ pg_control文件存储了40多条数据项，但接下来三个是比较重要�
 
 ### 9.9.3 WAL段管理（9.4版及以前）
 
-​	WAL段文件的数量主要由下列三个参数控制：`checkpoint_segments`， `checkpoint_completion_target`，以及`wal_keep_segments`。该数量通常会比
-$((2 + \verb|checkpoint_completion_target|) × \verb|checkpoint_segments| + 1 )$或$( \verb|checkpoint_segments| + \verb|wal_keep_segments| + 1)$要多。该值最多可以达到$(3×\verb|checkpoint_segments|+1)$个文件，取决于不同的服务器活动。复制槽的存在也会影响WAL文件的数量。
+WAL段文件的数量主要由下列三个参数控制：
+
+* `checkpoint_segments`
+*  `checkpoint_completion_target`
+* `wal_keep_segments`。
+
+WAL段文件的数量通常会：
+
+比$((2 + \verb|checkpoint_completion_target|) × \verb|checkpoint_segments| + 1 )$要大
+
+比$( \verb|checkpoint_segments| + \verb|wal_keep_segments| + 1)$要大
+
+且不超过$(3×\verb|checkpoint_segments|+1)$个文件
+
+WAL段文件具体数目的取决于不同的服务器活动，复制槽的存在也会影响WAL文件的数量。
+
+
 
 ​	如第9.7节中所提到的，当消耗了超过`checkpoint_segments`个数量的文件时，就会出现存档过程。因此可以保证WAL段文件中总是包含至少两个重做点，因为文件的数量始终大于$2×\verb|checkpoint_segments|$，对于由超时导致的存档同样适用。PostgreSQL总是会保留足够用于恢复的WAL段文件（有时候会超出必需）。
 

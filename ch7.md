@@ -6,9 +6,9 @@
 
 ## 7.1 堆内元组（HOT）
 
-​	在8.3版本中实现的HOT特性，使得更新行的时候可以将新行放在和老行同一个数据页中，从而高效地利用索引和表的数据页；HOT特性减少了没有必要的VACUUM处理。
+​	在8.3版本中实现的HOT特性，使得更新行的时候可以将新行放在和老行同一个数据页中，从而高效地利用索引和表的数据页；HOT特性减少了没有必要的清理过程。
 
-​	由于在源码的[README.HOT](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)中有关于HOT的详细介绍，本章只是简短的介绍HOT。首先7.1.1节描述了在没有HOT特性的时候，更新一行会是怎么样的，以此阐明要解决的问题。接下来在7.1.2中，介绍了HOT做了什么。
+​	在源码的[README.HOT](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)中有关于HOT的详细介绍，本章只是简短的介绍HOT。首先7.1.1节描述了在没有HOT特性的时候，更新一行会是怎么样的，以此阐明要解决的问题。接下来在7.1.2中介绍了HOT做了什么。
 
 ### 7.1.1 没有HOT时的行更新
 
