@@ -2,63 +2,50 @@
 
 [TOC]
 
-​	在PG的官方文档中，PostgreSQL支持SQL2011的大部分特性；查询处理是其中最复杂的子系统，并且PostgreSQL的查询处理相当高效。本章概述了查询处理的过程，特别关注查询优化的部分。
+​	如同PostgreSQL的官方文档说明的，PostgreSQL支持SQL2011的大部分特性；因此查询处理是PostgreSQL最复杂的子系统，并且PostgreSQL的查询处理相当高效。本章概述了查询处理的过程，特别关注了查询优化的部分。
 
 本章包括下面三个部分：
 
 + 第一部分：3.1节
 
-		本节介绍了简述了PostgreSQL的查询处理。
+		本节概述了PostgreSQL的查询处理。
 
 + 第二部分：3.2~3.4节
 
-		本节描述了在单表上获得最优执行计划的步骤。在3.2和3.3节分别解释了代价估计的过程和计划树的创建过程。第3.4节简要描述了执行器的操作。
+		这一部分描述了在单表上获得最优执行计划的步骤。在3.2和3.3节分别解释了代价估计和计划树创建的过程。第3.4节，简要描述了执行器的操作。
 
 + 第三部分：3.5~3.6节
 
-  本节描述了在多表上获得最优计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节解释了在多表上创建计划树的过程。
+  本节描述了在多表查询上获得最优计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节解释了在多表上创建计划树的过程。
 
-PostgreSQL支持三种有趣的技术，或曰实用的功能：即**外部数据包装（Foreign Data Wrapper, FDW）**，**并行查询**，以及11版本即将支持的JIT编译。前两者将在第4章中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
+PostgreSQL支持三种技术上很有趣且很实用的功能：即**外部数据包装（Foreign Data Wrapper, FDW）**，**并行查询**，以及11版本即将支持的JIT编译。前两者将在第4章中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
 
 
 
 ## 3.1 概览
 
-​	在PostgreSQL中，尽管在9.6版本后，基于多个后台工作进程，有了并行查询；但是基本还是每个连接对应的一个Background Worker，他都是包括五个部分，如下：
+​	在PostgreSQL中，尽管在9.6版本后，基于多个Background Worker进程，有了并行查询；但是基本还是每个连接对应的一个Backend进程，这个Backend进程包括五个部分，如下：
 
 1. **解析器（Parser）**
 
-   parser基于文本的SQL语句，生成 
-
-   > 基于Flex，Bison实现的词法语法解析
+   解析器基于SQL语句文本生成语法解析树（ParseTree） 。
 
 2. **分析器（Analyzer）**
 
-   对ParserTree进行语义分析，生成QueryTree
-
-   > 并且可以（但不一定做）一些权限检查和约束检查，一般放在执行的时候检查更全面
+   分析器对语法解析树进行语义分析，生成查询树（QueryTree）。
 
 3. **重写器（Rewriter）**
 
-   基于[规则](https://www.postgresql.org/docs/current/static/rules.html)系统中存在的规则，对QueryTree进程重写
-
-   > - 视图展开
-   > - 常量计算
-   > - 逻辑断言重写
-   > - 语义优化，根据一些约束条件，修改语义
-   > - 子查询展开
+   重写器基于[规则](https://www.postgresql.org/docs/current/static/rules.html)系统中存在的规则，对查询树进程重写
 
 4. **计划器（Planner）**
 
-   基于QueryTree生成可以高效执行的PlanTree；
-
-   > QueryTree描述了每个节点该做什么，PlanTree描述了每个节点具体的算法，比如使用IndexScan还是SeqScan）
+   计划器基于查询树，生成执行最高效的计划树（PlanTree）；
 
 5. **执行器（Executor）**
 
-   根PlanTree定义的顺序，访问表和索引，执行相应查询；
+   执行器按照计划树中的顺序，访问表和索引，执行相应查询；
 
-   
 
 **图3.1 查询处理**
 
@@ -66,21 +53,21 @@ PostgreSQL支持三种有趣的技术，或曰实用的功能：即**外部数�
 
 
 
-在本节中，概述了这些子系统。由于planner和Executor很复杂，后面的章节会对这些函数的细节进行阐述。
+在本节中，概述了这些子系统。由于计划器和执行器很复杂，后面的章节会对这些函数的细节进行阐述。
 
-> PostgreSQL的查询处理在[官方文档](http://www.postgresql.org/docs/current/static/overview.html)中有详细的阐述
+> PostgreSQL的查询处理在[官方文档](http://www.postgresql.org/docs/current/static/overview.html)中有详细的描述
 
 ### 3.1.1 解析器（Parser）
 
-parser基于文本的SQL语句，产生了一个后续子系统可以理解的语法解析树。下面展示一个忽略细节的例子。
+解析器基于SQL语句文本，产生了一个后续子系统可以理解的语法解析树。下面展示一个忽略细节的例子。
 
-我们看一下下面这个查询。
+考虑下面这个查询。
 
 ```sql
 testdb=# SELECT id, data FROM tbl_a WHERE id < 300 ORDER BY data;
 ```
 
-语法解析树的根节点是一个`parsenodes.h`中定义的 `SelectStmt`类型。图3.2(b)展示了图3.2（a）对应的的语法解析树。
+语法解析树的根节点是一个`parsenodes.h`中定义的 `SelectStmt`类型。图3.2（b）展示了图3.2（a）对应的的语法解析树。
 
 ```c
 typedef struct SelectStmt
@@ -134,8 +121,6 @@ typedef struct SelectStmt
 **图. 3.2. 语法解析树的例子**
 
 ![ParseTree](img/fig-3-02.png)
-
-
 
 `SELECT`查询的元素和语法解析树的元素是相符的。比如，(1)是目标列表的一个元素，并且它是表的'id'列，(4)是一个`WHERE`语句，等等。
 
