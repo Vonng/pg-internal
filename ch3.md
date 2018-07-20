@@ -205,11 +205,13 @@ QueryTree的细节在[官方文档](http://www.postgresql.org/docs/current/stati
 
 ### 3.1.3 重写器（Rewriter）
 
-​	重写器是[规则系统](https://www.postgresql.org/docs/current/static/rules.html)的实现机制，必要的话，并根据存在`pg_rules`中的规则，转换查询树。规则系统本身就是一个很有趣的系统，但是本章中略去了关于规则系统和重写器的描述，否则的话内容太长了。
+​	重写器是[规则系统](https://www.postgresql.org/docs/current/static/rules.html)的实现机制，必要的话，会根据存在`pg_rules`中的规则，转换查询树。规则系统本身就是一个很有趣的系统，但是本章中略去了关于规则系统和重写器的描述，否则的话内容太长了。
 
-> [View](https://www.postgresql.org/docs/current/static/rules-views.html)在PostgreSQL中是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/static/sql-createview.html)创建一个视图，就会创建相应的规则，并存储在`catalog`中。
+> 视图
 >
-> 假设下面的视图已经定义了，并在`pg_rule`中存了相应规则；
+> 视图在PostgreSQL中是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/static/sql-createview.html)创建一个视图，就会在系统表中创建相应的规则。
+>
+> 假设已经定义了下面的视图，并在`pg_rule`中存了相应规则；
 >
 > ```sql
 > sampledb=# CREATE VIEW employees_list 
@@ -217,29 +219,31 @@ QueryTree的细节在[官方文档](http://www.postgresql.org/docs/current/stati
 > sampledb-#            FROM employees AS e, departments AS d WHERE e.department_id = d.id;
 > ```
 >
-> 当发起了一个包含这个视图的查询，parser创建了一个如图. 3.4(a)的语法解析书。
+> 当发起了一个包含这个视图的查询，parser创建了一个如图. 3.4(a)的语法解析树。
 >
 > ```sql
 > sampledb=# SELECT * FROM employees_list;
 > ```
 >
-> 在这个阶段，rewriter会基于`pg_rules`存的view，将rangetable重写成一个子查询的语法解析树；
+> 在这个阶段，rewriter会基于`pg_rules`存的视图规则，将rangetable节点重写成一个子查询的语法解析树；
 >
 > **图3.4 重写阶段的一个例子**
 >
 > ![rewriter](img/fig-3-04.png)
 >
-> 由于PostgreSQL基于这种机制实现了视图，在9.2版本之前，视图不能更新。但是，从9.3版本后，视图可以更新；尽管如此，更新视图有很多限制，具体细节在[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)中。
+> 由于PostgreSQL基于这种机制实现了视图，因此在9.2版本之前，视图不能更新。但是，从9.3版本后，视图可以更新；尽管如此，更新视图有很多限制，具体细节参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
 
 ### 3.1.4 计划器与执行器
 
-**计划器（Planner）**从**重写器（Rewriter）**获取一个查询树，然后生成一个能被**执行器（Executor）**高效执行的（查询）计划树。	
+​	**计划器（Planner）**从**重写器（Rewriter）**获取一个查询树，然后生成一个能被**执行器（Executor）**高效执行的（查询）计划树。	
 
-​	在PostgreSQL中，Planner是完全基于代价估计的；它不支持基于规则和基于**提示（hint）**的查询优化。planner是RDBMS中最复杂的部分，因此，本章的后续章节会做一个planner的概述。
+​	在PostgreSQL中，计划器是完全基于代价估计的；它不支持基于规则和基于**提示（hint）**的查询优化。计划器是RDBMS中最复杂的部分，因此，本章的后续章节会对计划树做一个概述。
 
-> ​	PostgreSQL不支持SQL中的hints，并且永远不会支持。如果你想在查询中使用hints，考虑使用`pg_hint_plan`扩展，详细内容参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
+> pg_hint_plan
+>
+> PostgreSQL不支持SQL中的提示，并且永远不会支持。如果你想在查询中使用hints，考虑使用`pg_hint_plan`扩展，详细内容参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
 
-​	和其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令，展示了自己的计划树。例子如下：
+​	和其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令，展示了自己的计划树。如下例所示：
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
@@ -254,21 +258,21 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 这个`EXPLAIN`结果相应的计划树，如图3.5。
 
-**图3.5一个简单的计划树以及其余EXPLAIN命令的关系**
+**图3.5 一个简单的计划树以及其与EXPLAIN命令的关系**
 
 ![planTree](img/fig-3-05.png)
 
 
 
-​	每个PlanTree包括多个PlanNode，就是plantree列表中的每个*PlannedStmt*结构，其在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)定义，细节在3.3.3节阐述。
+​	每个计划树包括多个计划节点（plan node），就是*PlannedStmt*结构中的plantree列表，其在定[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，在3.3.3节（3.5.4.2节）阐述相关细节。
 
-​	每个PlanNode包括所有Executor需要的执行信息，在单表查询中，Executor就可以从下往上执行这个PlanTree。
+​	每个计划节点包含所有执行器需要的执行信息，在单表查询中，执行器就可以从下往上执行这个计划树。
 
-​	比如，在图3.5中的计划树就是一个sort节点和seq scan节点的列表；因此，Executor基于seq scan方式扫描表，然后对得到的结果排序。
+​	比如，在图3.5中的计划树就是一个Sort节点和SeqScan节点的列表；因此，执行器首先会基于SeqScan方式扫描表，然后对得到的结果进行排序。
 
-​	Executor通过第8章阐述的BufferManager，来访问数据库集群的表和索引。当处理一个查询时，Executor使用预先分配好的内存空间，比如*temp_buffers*和*work_mem*，必要的话还会创建临时文件。
+​	执行器通过第8章阐述的缓存管理器（BufferManager），来访问数据库集簇的表和索引。当处理一个查询时，执行器使用预先分配好的内存空间，比如*temp_buffers*和*work_mem*，必要的话还会创建临时文件。
 
-​	另外，当访问元组的时候，PostgreSQL使用并发控制机制来维护执行的事务的一致性和隔离性。关于并发控制机制参考第五章。
+​	另外，当访问元组的时候，PostgreSQL基于并发控制机制来维护运行中事务的一致性和隔离性。关于并发控制机制参考第5章。
 
 **图3.6 执行器，缓冲管理器，临时文件之间的关系**
 
@@ -276,17 +280,17 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 ## 3.2 单表查询的代价估计
 
-​	PostgreSQL是基于代价的查询优化。代价是一个无法准确定义的值，并且没有一个绝对的性能指标估计，但是可以比较操作之间的相对指标。
+​	PostgreSQL是基于代价的查询优化。代价是一个无法准确定义的值，并且没有一个绝对的性能指示方法，但是可以比较操作之间的相对性能差异。
 
-​	通过*costsize.c*中的函数，估计代价。所有的执行器执行的操作都有相应的代价函数。比如顺序扫描和索引扫描分别通过`cost_seqscan()` 和 `cost_index()`做代价估计。
+​	代价是通过*costsize.c*中的函数来估计的。所有的执行器执行的操作都有相应的代价函数。比如顺序扫描和索引扫描分别通过`cost_seqscan()` 和 `cost_index()`做代价估计。
 
-​	在PostgreSQL中，有三种代价：**启动代价（start_up）** ， **运行代价（run）**和**总代价（total）**。**total**是**start_up**和**run**的和；因此，只有启动代价和运行代价是单独估计的。
+​	在PostgreSQL中，有三种代价：**启动代价（start_up）** ， **运行代价（run）**和**总代价（total）**。**总代价**是**启动代价**和**运行代价**的和；因此，只有启动代价和运行代价是单独估计的。
 
-1. **启动代价（start_up）**：在取到第一个元组之前的代价，比如索引扫描的**start-up**就是读取目标变的索引页，取到第一个元组的代价
+1. **启动代价（start_up）**：在取到第一个元组之前的代价，比如索引扫描节点的**启动代价**就是读取目标表的索引页，取到第一个元组的代价
 2. **运行代价（run）**： 获取全部的元组的代价
 3. **总代价（total）**：前两者的和
 
-EXPLAIN命令展示了每个操作的启动代价和运行代价，下面有个简单的例子：
+EXPLAIN命令展示了每个操作的启动代价和总代价，下面有个简单的例子：
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl;
@@ -298,9 +302,9 @@ testdb=# EXPLAIN SELECT * FROM tbl;
 
 ​	在第4行中，这个命令展示了顺序扫描的信息。在代价部分，有两个值：0.00和145.00。这个例子中，启动代价和总代价分别是0.00和145.00。
 
-​	本节中，我们深入探究如何对顺序扫描，索引扫描和排序操作做代价估计。
+​	本节中，我们将探究顺序扫描，索引扫描和排序操作如何做代价估计的细节。
 
-​	在接下来的阐述中，我们使用下面说明的特定的表和索引：
+​	在接下来的叙述中，我们使用如下说明的特定的表和索引：
 
 ```sql
 testdb=# CREATE TABLE tbl (id int PRIMARY KEY, data int);
@@ -326,7 +330,7 @@ Indexes:
 testdb=# SELECT * FROM tbl WHERE id < 8000;
 ```
 
-在顺序扫描中，启动代价代价等于0，运行基于如下公式定义：
+在顺序扫描中，启动代价代价等于0，而运行代价基于如下公式定义：
 $$
 \begin{align}
   \verb|‘run cost’| 
@@ -380,15 +384,15 @@ testdb=# EXPLAIN SELECT * FROM tbl WHERE id < 8000;
 (2 rows)
 ```
 
-在第4行中，我们发现启动代价和总代价代价分别是0.00和170.0，并且它估计通过全表扫描会得到8000行。
+在第4行中，我们发现启动代价和总代价分别是0.00和170.0，并且它估计通过全表扫描会得到8000行（元组）。
 
-在第5行，展示了一个顺序扫描的过滤器'Filter:(id < 8000)'。更精确的是，它称为是一个*表级别谓词*。注意这种类型的过滤器是在读取所有元组的时候时候，它不会减少表物理页的扫描范围。
+在第5行，展示了一个顺序扫描的过滤器'Filter:(id < 8000)'。更精确的是，它称为是一个*表级过滤器谓词*。注意这种类型的过滤器用在读取所有元组的时候，它不会减少表物理页的扫描范围。
 
-> ​	作为对运行代价估计的理解，PostgreSQL假设所有的物理页都是从存储介质中拿到的；这意味着，PostgreSQL不考虑扫描的page是不是从shard buffer中取得的。
+> ​	为了理解运行代价估计，PostgreSQL假设所有的物理页都是从存储介质中拿到的；意味着，PostgreSQL不考虑扫描的page是不是会从shard buffer中取得。
 
 ### 3.2.2 索引扫描
 
-​	尽管PostgreSQL支持很多索引类型，比如Btree，GiST，BIN和BRIN，但是索引扫描的代价估计都是使用公共的代价函数：`cost_index()`。
+​	尽管PostgreSQL支持很多索引方法，比如Btree，GiST，BIN和BRIN，但是索引扫描的代价估计都是使用公共的代价函数：`cost_index()`。
 
 ​	在这一节中，我们基于下面的查询，探究索引扫描的代价估计：
 
@@ -422,14 +426,14 @@ $$
 
 #### 3.2.2.1 启动代价
 
-索引扫描的启动代价就是读取索引页中，从而访问目标表的第一个元组的代价，基于下面的公式定义：
+索引扫描的启动代价就是读取索引页，访问目标表的第一个元组的代价，基于下面的公式定义：
 $$
 \begin{align}
 \verb|‘start-up cost’| = \{\mathrm{ceil}(\log_2 (N_{index,tuple}))
 		 + (H_{index} + 1) \times 50\} \times \verb|cpu_operator_cost|,
 \end{align}
 $$
-而$H_{index}$是索引树的高度。
+其中$H_{index}$是索引树的高度。
 
 在这个情况下，按照公式(3)，$N_{index,tuple}$是10000；$H_{index}$是1；*cpu_operator_cost*是0.0025（默认值）。因此
 $$
@@ -449,7 +453,7 @@ $$
 
 > 如果使用的是第7章中描述的仅索引扫描，则不会估计表的CPU代价与表的IO代价。
 
-前三个代价如下：
+前三个代价（如，index cpu cost，table cpu cost和index IO cost）如下所示：
 
 $$
 \begin{align}
@@ -458,18 +462,18 @@ $$
  \verb|‘index IO cost’|  &= \mathrm{ceil}(\verb|Selectivity| \times N_{index,page}) \times \verb|random_page_cost|,
 \end{align}
 $$
-以上的*cpu_index_tuple_cost*和*random_page_cost*在postgresql.conf配置（默认分别是0.005和4.0）；*qual_op_cost*粗略来讲就是index的代价，这里就不多展开了，默认值是0.0025。*Selectivity*是通过where子句得出的索引查找范围，是一个**[0.1]**的浮点数，如下；比如，$Selectivity \times N_{tuple}$ 就是需要读的表元组数量，$Selectivity \times N_{tuple}$就是需要读的索引元组数量等等。
+以上的*cpu_index_tuple_cost*和*random_page_cost*在postgresql.conf配置（默认分别是0.005和4.0）；粗略来讲，*qual_op_cost*就是index比较计算的代价，这里就不多展开了，默认值是0.0025。*Selectivity*是通过where子句得出的索引查找范围的比；是一个**[0.1]**的浮点数，如下所述；比如，$Selectivity \times N_{tuple}$ 就是需要读的表元组数量，$Selectivity \times N_{index,tuple}$就是需要读的索引元组数量等等。
 
 > ##### 选择率（Selectivity）
 >
-> ​	查询谓词的选择率是通过柱状图和**众数（Most Common Value, MCV）**估计的，这些信息都存储于 *pg_stats* 中。这里基于特例，阐述一下选择率计算，细节可以看[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
+> ​	查询谓词的选择率是通过柱状图和**众数（Most Common Value, MCV）**估计的，这些信息都存储于 *pg_stats* 中。这里基于特例，阐述一下选择率计算，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
 >
-> 每列的MCV存储在*pg_stats*视图的 *most_common_vals* 和 *most_common_freqs* 中
+> 表中每列的MCV存储在*pg_stats*视图的 *most_common_vals* 和 *most_common_freqs* 对中
 >
 > + *most_common_vals*：该列上的MCV列表
 > + *most_common_freqs*：MCV列表相应的频率列表
 >
-> 下面是一个简单的例子。表*countries*有两个列：一个存储国家名的*country*列和一个存储洲的*continent*列；
+> 下面是一个简单的例子。表*countries*有两个列：一个存储国家名的*country*列和一个存储该国所属洲的*continent*列；
 >
 > ```sql
 > testdb=# \d countries
@@ -495,13 +499,13 @@ $$
 > (6 rows)
 > ```
 >
-> 考虑一下，下面的带有WHERE条件`continent = 'Asia'`的查询：
+> 考虑下面的带有WHERE条件`continent = 'Asia'`的查询：
 >
 > ```sql
 > testdb=# SELECT * FROM countries WHERE continent = 'Asia';
 > ```
 >
-> 这时候，planner使用continent列的MCV来估计索引扫描的代价，列的*most_common_vals* and *most_common_freqs* 如下：
+> 这时候，planner使用continent列的MCV来估计索引扫描的代价，列的*most_common_vals* and *most_common_freqs* 如下所示：
 >
 > ```sql
 > Expanded display is on.
@@ -512,13 +516,13 @@ $$
 > most_common_freqs | {0.274611,0.243523,0.227979,0.119171,0.0725389,0.0621762}
 > ```
 >
-> 和*most_common_vals* ： *Asia*值是对应的*most_common_freqs*是0.227979。因此，0.227979作为选择率的估计。
+> 和*most_common_vals* ： *Asia*值是对应的*most_common_freqs*是0.227979。因此，0.227979就是选择率的估计。
 >
 > 如果MCV不可用，就会使用目标列的*histogram_bounds*来估计代价。
 >
-> + **histogram_bounds**是将列的值划分为数量相同的一系列组。
+> + **histogram_bounds**是一系列值，这些值将列划分为数量大致相同的若干组。
 >
-> 一个特定的例子如下。这是表'tbl'中data列上的*histogram_bounds*值；
+> 如下一个特定的例子。这是表'tbl'中data列上的*histogram_bounds*值；
 >
 > ```sql
 > testdb=# SELECT histogram_bounds FROM pg_stats WHERE tablename = 'tbl' AND attname = 'data';
@@ -532,13 +536,13 @@ $$
 > (1 row)
 > ```
 >
-> 默认，histogram_bounds划分为100个桶。图 3.7阐明了本例中的桶和相应的histogram_bounds。桶从0开始，每个桶保存了相同数量（大致相同）的元组。histogram_bounds的值就是相应桶的边界。比如，histogram_bounds的第0个值是1，意思是这是*bucket_0*中的最小值。第1个值是100，意思是bucket_1中的最小值是100，等等。
+> 默认地，histogram_bounds划分为100个桶。图 3.7阐明了本例中的桶和相应的histogram_bounds。桶从0开始，每个桶保存了相同数量（大致相同）的元组。histogram_bounds的值就是相应桶的边界。比如，histogram_bounds的第0个值是1，意思是这是*bucket_0*中的最小值。第1个值是100，意思是bucket_1中的最小值是100，等等。
 >
 > 图3.7 桶和**histogram_bounds**
 >
 > ![](img/fig-3-07.png)
 >
-> 接下来，本节例子中的选择率计算如下。查询有WHERE子句`data < 240`，并且值240在第二个bucket中。在这个例子中，可以利用*线性插值法*，得出选择性；因此，查询中data列的选择性使用下面的公式计算：
+> 接下来，本节例子中的选择率计算如下所示。查询有WHERE子句`data < 240`，并且值240在第二个bucket中。在这个例子中，可以利用*线性插值法*，得出选择性；因此，查询中data列的选择性使用下面的公式计算：
 > $$
 > Selectivity = \frac{2+(240-hb[2])/(hb[3]-hb[2])}{100}=\frac{2+(240-200)/(300-200)}{100}=\frac{2+40/100}{100}=0.024    \ (6)
 > $$
@@ -550,7 +554,7 @@ $$
 'table\ cpu\ cost' = 0.024 \times 10000 \times 0.01 = 2.4 \ (8) \\
 'index\ IO\ cost' = ceil(0.024 \times 30) \times 4.0 = 4.0 \ (9)
 $$
-$'table\ IO\ cost '$基于以下公式定义：
+基于以下公式，得$'table\ IO\ cost '$定义：
 $$
 'table\ IO\ cost' = max\_IO\_cost + indexCorerelation^2 \times (min\_IO\_cost-max\_IO\_cost)
 $$
@@ -585,9 +589,9 @@ $$
 
 > ##### 索引相关性（index correlation）
 >
-> 索引相关性是列值在物理上的顺序和逻辑上的顺序的统计相关性（引自官方文档）。范围从-1到+1。下面有一个具体的例子，帮助理解索引扫描和索引相关性的关系。
+> 索引相关性是列值在物理上的顺序和逻辑上的顺序的统计相关性（引自官方文档）。范围从-1到+1。为了帮助理解索引扫描和索引相关性的关系，请看如下示例。
 >
-> 表*tbl_corr*有5个列：两个列式值类型，三个列是整数类型。这三个整数列保存从1到12的数字。物理上，表*tbl_corr*包含三个页，每个页有4个元组。每个数字列有一个，名字类似*index_col_asc*的索引。
+> 表*tbl_corr*有5个列：两个列式文本类型，三个列是整数类型。这三个整数列保存从1到12的数字。物理上，表*tbl_corr*包含三个页，每个页有4个元组。每个数字列有一个名如*index_col_asc*的索引。
 >
 > ```sql
 > testdb=# \d tbl_corr
@@ -649,7 +653,7 @@ $$
 > testdb=# SELECT * FROM tbl_corr WHERE col_asc BETWEEN 2 AND 4;
 > ```
 >
-> 如此，索引相关性是一种统计上的相关性，反映了在索引扫描代价估计中，由于索引顺序和物理元组顺序扭曲，导致的随机访问的影响。
+> 如此可知，索引相关性是一种统计上的相关性，反映了在索引扫描代价估计中，由于索引顺序和物理元组顺序扭曲程度，这会影响的随机访问的性能。
 >
 > **图. 3.8 索引相关性**
 >
@@ -663,7 +667,7 @@ $$
  \verb|‘total cost’| = 0.285 + 13.2 = 13.485. \tag{15}
 \end{align}
 $$
-确认下，上述SELECT查询的EXPLAIN结果如下所示：
+上述SELECT查询的EXPLAIN结果如下所示，我们确认一下：
 
 ```sql
 testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
@@ -674,9 +678,9 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 (2 rows)
 ```
 
-在第4行，我们发现启动和整体的代价分别是0.29和13.49，并且估计有240行（元组）被扫描。
+在第4行，我们发现启动代价总代价分别是0.29和13.49，并且估计有240行（元组）被扫描。
 
-在第5行，指出了一个索引条件`Index Cond:(data < 240)`。准确的说，这个条件是访问谓词，表达了索引扫描的开始和结束条件。
+在第5行，指出了一个索引条件`Index Cond:(data < 240)`。准确的说，这个条件是*访问谓词*，表示索引扫描的开始和结束条件。
 
 > 根据[这篇文章](https://use-the-index-luke.com/sql/explain-plan/postgresql/filter-predicates)，PostgreSQL的EXPLAIN命令不区分**访问谓词（access predicate）**和**索引过滤谓词（index filter predicate）**。因此，如果分析EXPLAIN的输出，除了注意索引条件，也要注意估计的行数。
 
@@ -684,19 +688,19 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 >
 > [seq_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[random_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别是1.0和4.0。这意味着PostgreSQL假设随机扫描是顺序扫描的4倍；很明显PostgreSQL的默认值是基于HDD设置的。
 >
-> 另一方面，最近SSD得到了广泛地使用，`random_page_cost`的默认值有点太大。如果在SSD上，使用`random_page_cost`的默认值，计划器会选择低效的的计划。因此，当使用SSD，最好将`random_page_cost`设置为1.0。
+> 另一方面，近年来SSD得到了广泛地使用，`random_page_cost`的默认值相对有点大。如果在SSD上使用`random_page_cost`的默认值，计划器会选择低效的的计划。因此，当使用SSD，最好将`random_page_cost`设置为1.0。
 >
 > [这篇文章](https://amplitude.engineering/how-a-single-postgresql-config-change-improved-slow-query-performance-by-50x-85593b8991b0)阐述了`random_page_cost`使用默认设置时的问题。
 
 ### 3.2.3 排序
 
-排序路径是在排序操作中使用的，比如ORDER BY，merge join的预处理等其他函数。排序的代价估计使用`cost_sort()`函数。
+排序路径是在排序操作中使用的，比如ORDER BY，归并连接的预处理操作等其他函数。排序的代价估计使用`cost_sort()`函数。
 
 在排序操作中，如果能在`work_mem`中放下所有元组，那么就是用快速排序算法。否则，创建一个临时文件，使用外部归并排序。
 
-排序计划路径的启动代价就是对目标表的排序代价，因此代价就是$O(N_{sort}\times log_2(N_{sort})$，这里$N_{sort}$就是需要排序的元组数。排序计划路径的运行代价就是读取已经排好序的元组的代价，因此代价就是$O(N_{sort})$。
+排序路径的启动代价就是对目标表的排序代价，因此代价就是$O(N_{sort}\times log_2(N_{sort})$，这里$N_{sort}$就是需要排序的元组数。排序路径的运行代价就是读取已经排好序的元组的代价，因此代价就是$O(N_{sort})$。
 
-在本小节中，我们探究如下查询的排序代价估计。假设这个查询只使用work_mem，不适用临时文件。
+在本小节中，我们探究如下查询的排序代价估计。假设这个查询只使用work_mem，不使用临时文件。
 
 ```sql
 testdb=# SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
@@ -706,7 +710,7 @@ testdb=# SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 $$
 ‘start-up\  cost’ = C+comparison\_cost\times N_{sort} \times log_2(N_{sort})，
 $$
-这里$C$就是上一次扫描的总代价，即，索引扫描的代价；由（15）得13.485；$N_{sort}=240$；comparison_cost定义为$2\times cpu\_operator\_cost$。因此，
+这里$C$就是上一次扫描的总代价，即，索引扫描的代价；由（15）得，等于13.485；$N_{sort}=240$；*comparison_cost*定义为$2\times cpu\_operator\_cost$。因此，
 $$
 ‘start-up\ cost’ = 13.485+(2\times 0.0025)\times240.0\times log_2(240.0)=22.973
 $$
@@ -718,7 +722,7 @@ $$
 $$
 'total\ cost'=22.973+0.6=23.573
 $$
-确认一下，以上SELECT查询的EXPLAIN命令结果如下：
+以上SELECT查询的EXPLAIN命令结果如下，确认一下：
 
 ```sql
 testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
@@ -737,15 +741,15 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 
 ## 3.3 创建单表查询的计划树
 
-​	由于计划器特别复杂，本节描述最简单的情况，即，单表上的查询计划树的创建。更复杂的查询，换句话说就是多表上的查询计划树的创建在3.6节阐述。
+​	由于计划器特别复杂，本节描述最简单的情况，即，单表上的查询计划树的创建。更复杂的查询，换句话说就是多表上的查询计划树的创建在3.6节中阐述。
 
-PostgreSQL中的计划器有三个步骤，如下：
+PostgreSQL中的计划器有三个步骤，如下所示：
 
-1. 预处理
+1. 进行预处理
 2. 在所有可能的访问路径中，找出最小代价的路径
 3. 基于最小代价的路径，创建查询计划树
 
-访问路径是代价估计的一部分；比如，顺序扫描，索引扫描，排序以及多种连接操作都有其相应的路径。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是relation.h中定义的*Path*。它就相当于是顺序扫描。所有访问路径都是基于这个结构实现。后文会详细介绍其中你的细节。
+一个访问路径是处理代价估计的一部分；比如，顺序扫描，索引扫描，排序以及多种连接操作都有其相应的路径。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是relation.h中定义的*Path*。它就相当于是顺序扫描。所有访问路径都是基于这个结构实现。后文会详细介绍其中的细节。
 
 ```sql
 typedef struct PathKey
@@ -914,7 +918,7 @@ typedef struct PlannerInfo
 } PlannerInfo;
 ```
 
-本节中，使用特定的例子描述如何从查询树中，创建查询计划树。
+本节中，使用特定的例子描述如何从查询树中，创建计划树。
 
 ### 3.3.1 预处理
 
@@ -922,17 +926,17 @@ typedef struct PlannerInfo
 
 尽管预处理有很多步，本小节中，我们只讨论和单表查询处理相关的主要步骤。其他的预处理操作在3.6节中描述。
 
-1. 目标列表（target list），和limit子句等，简单化；
+1. 目标列表（target list）和limit子句等的简单化；
 
    比如，通过`clauses.c`中的`eval_const_expressions()`，将`2+2`重写为`4`。
 
-2. 布尔操作，标准化
+2. 布尔操作的标准化
 
    比如，`NOT(NOT a)`重写为`a`
 
-3. 离散逻辑`AND/OR`，扁平化
+3. 离散逻辑`AND/OR`的扁平化
 
-   SQL标准中的AND/OR是二元操作符；但是，在PostgreSQL内部，它们是多元操作符，而计划器总是认为所有的嵌套AND/OR应该扁平化。举个特殊的例子。考虑一个布尔表达式`(id = 1) OR (id = 2) OR (id = 3)`，图3.9(a) 展示了使用二元表达式的查询树。通过使用三元表达式简化了这个查询树，如图3.9(b)。
+   SQL标准中的AND/OR是二元操作符；但是，在PostgreSQL内部，它们是多元操作符，并且在计划器中，总是假设所有的嵌套AND/OR应该扁平化。举个特殊的例子。考虑一个布尔表达式`(id = 1) OR (id = 2) OR (id = 3)`，如图3.9(a) 展示了使用二元表达式的查询树，并通过使用三元表达式将这个查询树扁平化，如图3.9(b)。
 
    **图3.9. 扁平布尔表达式的例子**
 
@@ -940,7 +944,7 @@ typedef struct PlannerInfo
 
 ### 3.3.2 得到最小代价估计的访问路径
 
-planner估计所有可能的访问路径的代价，然后选择代价最小的那个。具体来说，planner执行下面几个步骤：
+计划器对所有可能的访问路径，进行代价估计，然后选择代价最小的那个。具体来说，计划器执行下面几个步骤：
 
 ```c
 typedef enum RelOptKind
@@ -1021,7 +1025,84 @@ typedef struct RelOptInfo
 
 1. 创建一个RelOptInfo结构，存储访问路径和相应的代价。
 
-   通过make_one_rel()创建一个RelOptInfo结构，放在PlannerInfo的*simple_rel_array*中；如图3.10，在初始过程中，RelOptInfo维护了*baserestrictinfo*，如果相应索引存在，还有*indexlist*信息。baserestrictinfo就是查询的WHERE子句，indexlist存储目标表的相关索引。
+   通过make_one_rel()创建一个RelOptInfo结构体，放在PlannerInfo结构体的*simple_rel_array*中；如图3.10，在初始过程中，RelOptInfo维护了*baserestrictinfo*，如果存在相应索引，还有*indexlist*信息。baserestrictinfo就是查询的WHERE子句，indexlist存储目标表的相关索引。
+   ```c
+   typedef enum RelOptKind
+   {
+     RELOPT_BASEREL,
+     RELOPT_JOINREL,
+     RELOPT_OTHER_MEMBER_REL,
+     RELOPT_UPPER_REL,
+     RELOPT_DEADREL
+   } RelOptKind;
+   ```
+
+typedef struct RelOptInfo
+{
+  NodeTag   type;
+  RelOptKind  reloptkind;
+
+  /* all relations included in this RelOptInfo */
+  Relids    relids;     /* set of base relids (rangetable indexes) */
+
+  /* size estimates generated by planner */
+  double    rows;     /* estimated number of result tuples */
+
+  /* per-relation planner control flags */
+  bool    consider_startup; /* keep cheap-startup-cost paths? */
+  bool    consider_param_startup; /* ditto, for parameterized paths? */
+  bool    consider_parallel;  /* consider parallel paths? */
+
+  /* default result targetlist for Paths scanning this relation */
+  struct PathTarget *reltarget;   /* list of Vars/Exprs, cost, width */
+
+  /* materialization information */
+  List     *pathlist;     /* Path structures */
+  List     *ppilist;      /* ParamPathInfos used in pathlist */
+  List     *partial_pathlist;   /* partial Paths */
+  struct Path *cheapest_startup_path;
+  struct Path *cheapest_total_path;
+  struct Path *cheapest_unique_path;
+  List     *cheapest_parameterized_paths;
+
+  /* parameterization information needed for both base rels and join rels */
+  /* (see also lateral_vars and lateral_referencers) */
+  Relids    direct_lateral_relids;  /* rels directly laterally referenced */
+  Relids    lateral_relids;   /* minimum parameterization of rel */
+
+  /* information about a base rel (not set for join rels!) */
+  Index   relid;
+  Oid   reltablespace;    /* containing tablespace */
+  RTEKind   rtekind;    /* RELATION, SUBQUERY, or FUNCTION */
+  AttrNumber  min_attr;   /* smallest attrno of rel (often <0) */
+  AttrNumber  max_attr;   /* largest attrno of rel */
+  Relids      *attr_needed;   /* array indexed [min_attr .. max_attr] */
+  int32     *attr_widths;     /* array indexed [min_attr .. max_attr] */
+  List      *lateral_vars;      /* LATERAL Vars and PHVs referenced by rel */
+  Relids    lateral_referencers;  /* rels that reference me laterally */
+  List      *indexlist;   /* list of IndexOptInfo */
+  BlockNumber   pages;      /* size estimates derived from pg_class */
+  double    tuples;
+  double    allvisfrac;
+  PlannerInfo   *subroot;   /* if subquery */
+  List      *subplan_params;  /* if subquery */
+  int   rel_parallel_workers; /* wanted number of parallel workers */
+
+  /* Information about foreign tables and foreign joins */
+  Oid   serverid;   /* identifies server for the table or join */
+  Oid   userid;     /* identifies user to check access as */
+  bool    useridiscurrent;  /* join is only valid for current user */
+  /* use "struct FdwRoutine" to avoid including fdwapi.h here */
+  struct FdwRoutine *fdwroutine;
+  void      *fdw_private;
+
+  /* used by various scans and joins: */
+  List      *baserestrictinfo;  /* RestrictInfo structures (if base rel) */
+  QualCost  baserestrictcost; /* cost of evaluating the above */
+  List      *joininfo;    /* RestrictInfo structures for join clauses involving this rel */
+  bool    has_eclass_joins; /* T means joininfo is incomplete */
+} RelOptInfo;
+   ```
 
 2. 估计所有可能访问路径的代价，在RelOptInfo中添加访问路径。
 
@@ -1033,15 +1114,15 @@ typedef struct RelOptInfo
 
 3. 从RelOptInfo->pathlist中，找到最小代价的访问路径。
 
-4. 可能的话，估计LIMIT, ORDER BY 和 ARREGISFDD的代价。
+4. 需要的话，估计LIMIT, ORDER BY 和 ARREGISFDD操作的代价。
 
-为了更加清晰的理解planner的工作，下面有两个特别的例子。
+为了更加清晰的理解计划器的工作，下面有两个特别的例子。
 
 #### 3.3.2.1 例1
 
 首先我们考察一个不带索引的简单单表查询；这个查询包含WHERE 和 ORDER BY子句。
 
-```sql
+​```sql
 testdb=# \d tbl_1
      Table "public.tbl_1"
  Column |  Type   | Modifiers 
@@ -1050,29 +1131,29 @@ testdb=# \d tbl_1
  data   | integer | 
 
 testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
-```
+   ```
 
-图3.10和3.11中，描述了本例中planner的处理。
+图3.10和3.11中，描述了本例中计划器的处理。
 
-**图3.10 例1中如何得到最优路径**
+**图3.10 例1中如何得到最小代价路径**
 
 ![](img/fig-3-10.png)
 
 1. 创建一个RelOptInfo结构，将其存在`PlannerInfo->simple_rel_array`中。
 
-2. 在`RelOptInfo的baserestrictinfo`中，添加一个WHERE子句。
+2. 在`RelOptInfo->baserestrictinfo`中，添加一个WHERE子句。
 
-   通过initsplan.c中定义的`distribute_restrictinfo_to_rels()`，将`id<300`这个WHERE子句添加到`baserestrictinfo`中。另外，由于目标表没有相关索引，`RelOptInfo`的索引列表是NULL。
+   通过initsplan.c中定义的`distribute_restrictinfo_to_rels()`，将`id<300`这个WHERE子句添加到`baserestrictinfo`中。另外，由于目标表没有相关索引，`RelOptInfo->indexlist`是NULL。
 
-3. 为了排序需要，通过planner.c中的standard_qp_callback()行数，在PlannerInfo->sor_pathkeys中添加一个pathkey。
+3. 为了排序需要，通过planner.c中的standard_qp_callback()函数，在PlannerInfo->sor_pathkeys中添加一个pathkey。
 
-   *Pathkey*代表路径的排序顺序。本例中，因为order by的列是data，将data列添加到sort_pathkeys中，做为pathkey；
+   *Pathkey*代表路径的排序键。本例中，因为*order by*的列是data，将data列添加到sort_pathkeys中，做为pathkey；
 
-4. 创建一个path结构，并通过cost_seqscan函数估计顺序扫描的代价并写入到path中。然后，利用pathnode.c定义的`add_path()`函数，将这个path添加到RelOptInfo中。
+4. 创建一个path结构，并通过*cost_seqscan*函数估计顺序扫描的代价并写入到path中。然后，利用pathnode.c定义的`add_path()`函数，将这个path添加到RelOptInfo中。
 
-   如同上面提到的，Path包含`cost_seqscan`函数估计的启动代价和总代价，等等。
+   如上所述，Path包含`cost_seqscan`函数估计的启动代价和总代价，等等。
 
-   在本例中，目标表上没有索引，计划器只估计了顺序扫描的代价；因此，最小代价自然而然决定了。
+   在本例中，目标表上没有索引，计划器只估计了顺序扫描的代价；因此，最小代价自然而然确定了。
 
    **图3.11 如何得到例1中最小代价（接上图3.10）**
 
@@ -1082,7 +1163,7 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
    注意新的RelOptInfo没有`baserestrictinfo`，这个结构是WHERE子句的信息。
 
-6. 创建一个排序路径，并添加到新的RelOptInfo中；然后，将`SortPath->subpath`指向一个顺序扫描路径。
+6. 创建一个排序路径，并添加到新的RelOptInfo中；然后，将`SortPath->subpath`指向顺序扫描路径。
 
    ```c
    typedef struct SortPath
@@ -1092,9 +1173,9 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
    } SortPath;
    ```
 
-   SortPath结构包括两个path结构：path和subpath；path存储sort操作符本身的信息，subpath存储最优访问路径。注意顺序扫描的path->parent指向，在baserestrictinfo中存储WHERE子句信息的老RelOptInfo。因此，因此，下一步，即创建计划树中，尽管新的RelOptInfo没有baserestrictinfo， planner可以创建一个包含WHERE条件作为Filter的顺序扫描节点；
+   SortPath结构包括两个path结构：path和subpath；path存储sort操作符本身的信息，subpath存储最小代价路径。注意顺序扫描的path->parent的指向，其中在baserestrictinfo中存储WHERE子句信息的老RelOptInfo。因此，下一步，即创建计划树中，尽管新的RelOptInfo没有baserestrictinfo， planner可以创建一个包含WHERE条件作为Filter的顺序扫描节点；
 
-   基于这里获得的最小代价访问路径，生成一个查询树。在3.3.3节中描述了相关细节。
+   基于这里获得的最小代价访问路径，生成一个查询计划树。在3.3.3节中描述了相关细节。
 
 #### 3.3.2.2 例2
 
@@ -1114,7 +1195,7 @@ Indexes:
 testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 ```
 
-图3.12到3.14描述了planner处理这些例子。
+图3.12到3.14描述了这些例子中的计划器处理。
 
 **图. 3.12. 例2中得到最小代价的路径**
 
@@ -1128,13 +1209,13 @@ testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 
 ![](img/fig-3-14.png)
 
-1. 创建一个RelOptInfo结构
+1. 创建一个RelOptInfo结构体
 
 2. 在baserestrictinfo中，添加一个WHERE子句；并将目标表的索引添加到indexlist中。
 
    在本例中，在baserestrictinfo中，添加一个WHERE子句'id <240'，在RelOptInfo->indexlist中添加两个索引，*tbl_2_pkey*和*tbl_2_data_idx*；
 
-3. 创建一个path，估计顺序扫描的代价并添加到RelOptInfo->indexlist中。
+3. 创建一个Path结构，估计该路径的顺序扫描的代价并添加到RelOptInfo->indexlist中。
 
 4. 创建一个IndexPath，估计索引扫描的代价，并使用add_path()函数，将IndexPath添加到RelOptInfo->pathlist中。
 
@@ -1238,11 +1319,13 @@ testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 
 5. 创建另一个IndexPath，估计索引扫描的代价，将IndexPath添加到RelOptInfo->pathlist中。
 
-   下一步，创建一个*tbl_2_data_idx*的IndexPath，估计这个IndexPath的代价，并加入到pathlist中。这里例子中，*tbl_2_data_idx*没有相关的WHERE子句；因此indexclauses是NULL。
+   下一步，创建一个*tbl_2_data_idx*的IndexPath，估计这个IndexPath的代价，并加入到pathlist中。本例中，*tbl_2_data_idx*没有相关的WHERE子句；因此indexclauses是NULL。
+
+   > 注意，add_path()函数不总是会添加一个路径。该操作过于复杂，这里就省去了细节。详细细节可以参考add_path()函数的注释。
 
 6. 创建一个RelOptInfo结构
 
-7. 将最小代价的路径，添加到新的RelOptInfo的->pathlist中。
+7. 将最小代价的路径，添加到新的RelOptInfo的pathlist中。
 
    本例中，indexpath的最小代价路径是使用*tbl_2_pkey*；因此，将该路径添加到新的RelOptInfo中。
 
@@ -1290,13 +1373,13 @@ typedef struct PlannedStmt
 } PlannedStmt;
 ```
 
- 如上所述，计划树包含多种计划节点。PlanNode是基本的节点，其他节点都包含PlanNode。比如顺序扫描SeqScanNode，包含一个PlanNode和一个integer变量‘*scanrelid*’。PlanNode包含14个字段。下面是7个代表性字段：
+ 如上所述，计划树包含多种计划节点。PlanNode是基本的节点，其他节点都包含PlanNode。比如顺序扫描SeqScanNode，包含一个PlanNode和一个整形变量‘*scanrelid*’。PlanNode包含14个字段。下面是7个代表性字段：
 
 + startup_cost和total_cost是该节点对应操作的估计代价。
-+ rows是planner估计的需要扫描的行数。
++ rows是计划器估计的需要扫描的行数。
 + targetlist保存包含在这个查询树中的目标项列表。
-+ qual存储等值条件的列表。
-+ lefttree和righttree是以备添加子节点的节点。
++ qual存储判断条件的列表。
++ lefttree和righttree是用来添加子节点的节点。
 
 ```c
 /* ----------------
@@ -1377,11 +1460,11 @@ typedef struct Scan
 typedef Scan SeqScan;
 ```
 
-下面描述了，基于前小节的最小代价路径，生成的两个计划树。
+下文阐述了，基于前小节的例子的最小代价路径，生成的两个计划树。
 
 #### 3.3.3.1. 例1
 
-第一个例子是3.3.2.1节的例子的计划树。图. 3.11中展示的最小代价路径是排序路径和顺序扫描路径的结合；根节点是排序路径，子路径是顺序扫描路径。尽管忽略了细节的解释，但是很容易理解计划树可以从最小代价路径中简单生成。本例中，将SortNode添加到PlannedStmt结构中，并将SeqScanNode添加到SortNode的左子树中，如图.3.15(a)。
+第一个例子是3.3.2.1节的例子的计划树。图.3.11中展示的最小代价路径是排序路径和顺序扫描路径的结合；根节点是排序路径，子路径是顺序扫描路径。尽管忽略了细节的解释，但是很容易理解如何从最小代价路径中简单地生成计划树。本例中，将SortNode添加到PlannedStmt结构中，并将SeqScanNode添加到SortNode的左子树中，如图.3.15(a)。
 
 ```c
 typedef struct Sort
@@ -1399,11 +1482,11 @@ typedef struct Sort
 
 ![](img/fig-3-15.png)
 
-在SortNode中，左子树指向SeqScanNode。在SeqScanNode中，qual保存WHERE子句'id<300'。
+在SortNode中，左子树指向SeqScanNode。在SeqScanNode中，qual保存WHERE子句：'id<300'。
 
 #### 3.3.3.2 例2
 
-第一个例子是3.3.2.2节的例子的计划树。图. 3.14中展示的最小代价路径是索引扫描路径；因此，计划树只有IndexScanNode自己组成，如图3.15(b)。
+第二个例子是3.3.2.2节的例子的计划树。图.3.14中展示的最小代价路径是索引扫描路径；因此，计划树只有IndexScanNode自己组成，如图3.15(b)。
 
 ```c
 /* ----------------
@@ -1464,17 +1547,14 @@ typedef struct IndexScan
 
 在这个例子中，WHERE子句'id<240'是一个访问谓词；因此，其存储在IndexScanNode的indexqual中。
 
-每个
-
-
 
 ## 3.4 执行器如何工作
 
 ​	在单表查询中，执行器从下至上执行计划节点，并调用相应节点的处理函数。
 
-​	每个计划节点有执行相应操作的函数，这些函数在[src/backend/executor](src/backend/executor)目录中。比如，执行顺序扫描的的函数（SeqScan）在[nodeSeqscan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；执行索引扫描的函数（IndexScanNode）定义在[nodeIndexScan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；SortNode节点的排序函数定义在[nodeSort.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中等等。
+​	每个计划节点有执行相应操作的函数，这些函数在src/backend/executor目录中。比如，执行顺序扫描的的函数（SeqScan）在[nodeSeqscan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；执行索引扫描的函数（IndexScanNode）定义在[nodeIndexScan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；SortNode节点的排序函数定义在[nodeSort.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中等等。
 
-​	当然，理解执行器的最好方式就是阅读EXPLAIN命令的输出，因为PostgreSQL的EXPLAIN命令几乎就表示了计划树。下面解释一下3.3.3节的例1。
+​	当然，理解执行器的最好方式就是阅读EXPLAIN命令的输出，因为PostgreSQL的EXPLAIN命令几乎就表示一棵计划树。下文基于3.3.3节的例1对此作出解释。
 
 ```c
 testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
@@ -1487,15 +1567,15 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 (4 rows)
 ```
 
-让我们从下往上读一下EXPLAIN的结果，探究执行器是如何执行的：
+我们从下往上查看EXPLAIN的结果，探究执行器是如何执行的：
 
 **第六行**: 首先，Executor执行[nodeSeqscan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSeqscan.c)中定义的顺序扫描操作。
 
-第四行：接下来，Executor使用[nodeSort.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中定义的函数，对顺序扫描的结果进行排序。
+**第四行**：接下来，Executor使用[nodeSort.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中定义的函数，对顺序扫描的结果进行排序。
 
 > ### 临时文件
 >
-> 执行器使用内存中分配的`work_mem`和`temp_buffers`，但是如果查询处理中内存不够，就会使用临时文件。
+> 执行器使用内存中分配的`work_mem`和`temp_buffers`，但是如果某查询的处理中内存不够，就会使用临时文件。
 >
 > 使用`Analyze`选项，`EXPLAIN`会真正执行这个查询并展示实际的行数，实际执行时间和实际内存使用。如下例所示：
 >
@@ -2392,14 +2472,3 @@ testdb-#                WHERE a.id = b.id AND b.id = c.id AND a.data < 40;
 
 - [1] Abraham Silberschatz, Henry F. Korth, and S. Sudarshan, "[Database System Concepts](https://www.amazon.com/dp/0073523321)", McGraw-Hill Education, ISBN-13: 978-0073523323
 - [2] Thomas M. Connolly, and Carolyn E. Begg, "[Database Systems](https://www.amazon.com/dp/0321523067)", Pearson, ISBN-13: 978-0321523068
-
-
-
-
-
-
-
-
-
-
-

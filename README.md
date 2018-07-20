@@ -41,6 +41,14 @@
 [第十一章 流复制](ch11.md)
 
 
+##  常见名词译法约定
 
+database cluster ： 数据库集簇
+checkpoint ： 存档
+achive ： 归档
+latch ： 闩
+buffer manager ： 缓存管理器
+章节序号：阿拉伯数字
+。。。
 
 
