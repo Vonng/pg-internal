@@ -228,7 +228,7 @@ typedef struct sbufdesc
 
 ### 8.2.3 缓冲区描述符层
 
-​	缓冲区描述符的集合形成一个数组。在本文档中，该数组称为*缓冲区描述符层*。
+​	缓冲区描述符的集合组成了一个数组。在本文档中，该数组称为*缓冲区描述符层*。
 
 ​	当PostgreSQL服务器启动时，所有缓冲区描述符的状态为*空*。在PostgreSQL中，这些描述符包含一个名为**freelist**的链表（图8.5）。
 
@@ -236,7 +236,7 @@ typedef struct sbufdesc
 
 ![](img/fig-8-05.png)
 
-> 请注意，**freelist**在PostgreSQL是从完全不同的概念*freelist*中的Oracle。PostgreSQL的freelist只是空缓冲区描述符的链表。在PostgreSQL中，*自由空间映射*（在[第5.3.4节](http://www.interdb.jp/pg/pgsql05.html#_5.3.4.)中描述）充当Oracle中自由列表的相同角色。
+> ​	请注意PostgreSQL中的**freelist**完全不同于Oracle中freelists的概念。PostgreSQL的*freelist*只是空缓冲区描述符的链表。在PostgreSQL中，自由空间映射（FSM）（在[第5.3.4节](http://www.interdb.jp/pg/pgsql05.html#_5.3.4.)中描述）与充当Oracle中自由列表的相同角色。
 
 图8.6显示了第一页的加载方式。
 

@@ -242,7 +242,7 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
    行指针组成了一个简单的数组，作为一个元组索引。每个索引项从1开始按顺序编号，并称为**偏移号（offset number）**。当向页中添加新元组时，新的行指针也会被插入数组中，并指向新添加的元组。
 
-3. **头部数据（header data）**  —— 由结构`PageHeaderData`定义的头部数据分配在页的开头处。它长24个字节，包含有关页面的一般信息。该结构的主要变量如下所述。
+3. **首部数据（header data）**  —— 由结构`PageHeaderData`定义的头部数据分配在页的开头处。它长24个字节，包含有关页面的一般信息。该结构的主要变量如下所述。
 
    + `pd_lsn` —— 此变量存储由此页面的最后一次更改写入的XLOG记录的LSN。它是一个8字节无符号整数，与WAL（Write-Ahead Logging）机制相关。细节在第9章中描述。
    + `pd_checksum` —— 此变量存储此页面的校验和值。（请注意，版本9.3或更高版本支持此变量；在早期版本中，此部分用于存储页面的timelineId。）
@@ -251,88 +251,75 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
    ```c
    /* @src/include/storage/bufpage.h */
-
+   
    /*
-    * disk page organization
+    * 磁盘页面布局
     *
-    * space management information generic to any page
+    * 对任何页面都适用的通用空间管理信息
     *
-    *		pd_lsn		- identifies xlog record for last change to this page.
-    *		pd_checksum - page checksum, if set.
-    *		pd_flags	- flag bits.
-    *		pd_lower	- offset to start of free space.
-    *		pd_upper	- offset to end of free space.
-    *		pd_special	- offset to start of special space.
-    *		pd_pagesize_version - size in bytes and page layout version number.
-    *		pd_prune_xid - oldest XID among potentially prunable tuples on page.
+    *		pd_lsn		- 本页面最近变更对应xlog记录的标识。
+    *		pd_checksum - 页面校验和
+    *		pd_flags	- 标记位
+    *		pd_lower	- 空闲空间开始位置
+    *		pd_upper	- 空闲空间结束位置
+    *		pd_special	- 特殊空间开始位置
+    *		pd_pagesize_version - 页面的大小，以及页面布局的版本号
+    *		pd_prune_xid - 本页面中可以修剪的最老的元组中的XID.
     *
-    * The LSN is used by the buffer manager to enforce the basic rule of WAL:
-    * "thou shalt write xlog before data".  A dirty buffer cannot be dumped
-    * to disk until xlog has been flushed at least as far as the page's LSN.
+    * 缓冲管理器使用LSN来强制WAL的基本规则："WAL需先于数据写入"。直到xlog刷盘位置超过
+    * 本页面的LSN之前，不能将缓冲区的脏页刷入磁盘。
     *
-    * pd_checksum stores the page checksum, if it has been set for this page;
-    * zero is a valid value for a checksum. If a checksum is not in use then
-    * we leave the field unset. This will typically mean the field is zero
-    * though non-zero values may also be present if databases have been
-    * pg_upgraded from releases prior to 9.3, when the same byte offset was
-    * used to store the current timelineid when the page was last updated.
-    * Note that there is no indication on a page as to whether the checksum
-    * is valid or not, a deliberate design choice which avoids the problem
-    * of relying on the page contents to decide whether to verify it. Hence
-    * there are no flag bits relating to checksums.
+    * pd_checksum 存储着页面的校验和，如果本页面配置了校验。0是一个合法的校验和值。 如果页面
+    * 没有使用校验和，我们就不会设置这个字段的值；通常这意味着该字段值为0，但如果数据库是从早于
+    * 9.3版本从 pg_upgrade升级而来，也可能会出现非零的值。因为那时候这块地方用于存储页面最后
+    * 更新时的时间线标识。 注意，并没有标识告诉你页面的标识符到底是有效还是无效的，也没有与之关
+    * 联的标记为。这是特意设计成这样的，从而避免了需要依赖页面的具体内容来决定是否校验页面本身。
     *
-    * pd_prune_xid is a hint field that helps determine whether pruning will be
-    * useful.  It is currently unused in index pages.
+    * pd_prune_xid是一个提示字段，用于帮助确认剪枝是否有用。目前对于索引页没用。
     *
-    * The page version number and page size are packed together into a single
-    * uint16 field.  This is for historical reasons: before PostgreSQL 7.3,
-    * there was no concept of a page version number, and doing it this way
-    * lets us pretend that pre-7.3 databases have page version number zero.
-    * We constrain page sizes to be multiples of 256, leaving the low eight
-    * bits available for a version number.
+    * 页面版本编号与页面尺寸被打包成了单个uint16字段，这是有历史原因的：在PostgreSQL7.3之前
+    * 并没有页面版本编号这个概念，这样做能让我们假装7.3之前的版本的页面版本编号为0。我们约束页面
+    * 的尺寸必需为256的倍数，留下低位的8个位用于页面版本编号。
     *
-    * Minimum possible page size is perhaps 64B to fit page header, opaque space
-    * and a minimal tuple; of course, in reality you want it much bigger, so
-    * the constraint on pagesize mod 256 is not an important restriction.
-    * On the high end, we can only support pages up to 32KB because lp_off/lp_len
-    * are 15 bits.
+    * 最小的可行页面大小可能是64字节，能放下页的首部，空闲空间，以及一个最小的元组。当然在实践中
+    * 肯定要大得多(默认为8192字节)，所以页面大小必需是256的倍数并不是一个重要限制。而在另一端，
+    * 我们最大只能支持32KB的页面，因为 lp_off/lp_len字段都是15bit。
     */
    typedef struct PageHeaderData
    {
-   	/* XXX LSN is member of *any* block, not only page-organized ones */
-   	PageXLogRecPtr pd_lsn;		/* LSN: next byte after last byte of xlog
-   								 * record for last change to this page */
-   	uint16		pd_checksum;	/* 校验和 */
-   	uint16		pd_flags;		/* 标记位，详情见下 */
-   	LocationIndex pd_lower;		/* offset to start of free space */
-   	LocationIndex pd_upper;		/* offset to end of free space */
-   	LocationIndex pd_special;	/* offset to start of special space */
-   	uint16		pd_pagesize_version;
-   	TransactionId pd_prune_xid; /* oldest prunable XID, or zero if none */
-   	ItemIdData	pd_linp[FLEXIBLE_ARRAY_MEMBER]; /* line pointer array */
+   	PageXLogRecPtr 	pd_lsn;			/* 最近应用至本页面XLog记录的LSN */
+   	uint16			pd_checksum;	/* 校验和 */
+   	uint16		  	pd_flags;		/* 标记位，详情见下 */
+   	LocationIndex 	pd_lower;		/* 空闲空间起始位置 */
+   	LocationIndex 	pd_upper;		/* 空闲空间终止位置 */
+   	LocationIndex 	pd_special;		/* 特殊用途空间的开始位置 */
+   	uint16		  	pd_pagesize_version;
+   	TransactionId 	pd_prune_xid; 	/* 最老的可修剪XID, 如果没有设置为0 */
+   	ItemIdData		pd_linp[FLEXIBLE_ARRAY_MEMBER]; /* 行指针的数组 */
    } PageHeaderData;
-
-   typedef struct PageHeaderData
+   
+   
+   /* 缓冲区页中的项目指针(item pointer)，也被称为行指针(line pointer)。
+    *
+    * 在某些情况下，项目指针处于 “使用中”的状态，但在本页中没有任何相关联的存储区域。
+    * 按照惯例，lp_len == 0 表示该行指针没有关联存储。独立于其lp_flags的状态. 
+    */
+   typedef struct ItemIdData
    {
-     /* XXX LSN is member of *any* block, not only page-organized ones */
-     XLogRecPtr    pd_lsn;      /* LSN: next byte after last byte of xlog
-                                 * record for last change to this page */
-     uint16        pd_checksum; /* 校验和 */
-     uint16        pd_flags;    /* 标记位 */
-     LocationIndex pd_lower;    /* 空闲空间的开始位置(偏移量) */
-     LocationIndex pd_upper;    /* offset to end of free space */
-     LocationIndex pd_special;  /* offset to start of special space */
-     uint16        pd_pagesize_version;
-     TransactionId pd_prune_xid;/* oldest prunable XID, or zero if none */
-     ItemIdData    pd_linp[1];  /* beginning of line pointer array */
-   } PageHeaderData;
-
-   typedef PageHeaderData *PageHeader;
-
-   typedef uint64 XLogRecPtr;
+   	unsigned	lp_off:15,		/* 元组偏移量 (相对页面起始处) */
+   				lp_flags:2,		/* 行指针的状态，见下 */
+   				lp_len:15;		/* 元组的长度，以字节计 */
+   } ItemIdData;
+   
+   /* lp_flags有下列可能的状态，LP_UNUSED的行指针可以立即重用，而其他状态的不行。 */
+   #define LP_UNUSED		0		/* unused (lp_len必需始终为0) */
+   #define LP_NORMAL		1		/* used (lp_len必需始终>0) */
+   #define LP_REDIRECT		2		/* HOT 重定向 (lp_len必需为0) */
+   #define LP_DEAD			3		/* 死元组，也许有，也许没有对应的存储 */
+   
    ```
 
-   行指针末尾和最新元组开头之间的空白空间称为可用空间（free space）或空洞（hole）。
+   行指针末尾和最新元组开头之间的空白空间称为**可用空间（free space）**或**空洞（hole）**。
 
    为了识别表中的元组，内部使用元组标识符（TID）。TID包括一对值：包含元组的页的区块编号，以及指向元组的行指针的偏移编号。其典型的用例是索引。更多细节请参见第1.4.2节。
 

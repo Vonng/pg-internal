@@ -97,13 +97,63 @@ Txids可以相互比较。例如，对于txid=100的事务，大于100的txids�
 
 ![](img/fig-5-02.png)
 
-> `HeapTupleHeaderData`结构在src / include / access / htup_details.h中定义。
+> `HeapTupleHeaderData`结构在src/include/access/htup_details.h中定义。
+
+```c
+typedef struct HeapTupleFields
+{
+        TransactionId t_xmin;		   /* inserting xact ID */
+        TransactionId t_xmax;              /* deleting or locking xact ID */
+
+        union
+        {
+                CommandId       t_cid;     /* inserting or deleting command ID, or both */
+                TransactionId 	t_xvac;    /* old-style VACUUM FULL xact ID */
+        } t_field3;
+} HeapTupleFields;
+
+typedef struct DatumTupleFields
+{
+        int32          datum_len_;          /* varlena header (do not touch directly!) */
+        int32          datum_typmod;   	    /* -1, or identifier of a record type */
+        Oid            datum_typeid;   	    /* composite type OID, or RECORDOID */
+
+        /*                                                                                               
+         * Note: field ordering is chosen with thought that Oid might someday                            
+         * widen to 64 bits.                                                                             
+         */
+} DatumTupleFields;
+
+typedef struct HeapTupleHeaderData
+{
+        union
+        {
+                HeapTupleFields t_heap;
+                DatumTupleFields t_datum;
+        } t_choice;
+
+        ItemPointerData t_ctid;         /* 当前元组，或更新元组的TID */
+
+        /* 下面的字段必需与结构MinimalTupleData相匹配! */
+        uint16          t_infomask2;    /* 属性与标记位 */
+        uint16          t_infomask;     /* 很多标记位 */
+        uint8           t_hoff;         /* 首部+位图+填充的长度 */
+        /* ^ - 23 bytes - ^ */
+        bits8           t_bits[1];      /* NULL值的位图 —— 变长的 */
+
+        /* 本结构后面还有更多数据 */
+} HeapTupleHeaderData;
+
+typedef HeapTupleHeaderData *HeapTupleHeader;
+```
+
+
 
 虽然HeapTupleHeaderData结构包含七个字段，但后续部分中需要四个字段。
 
 * t_xmin保存插入此元组的事务的txid。
 * t_xmax保存删除或更新此元组的事务的txid。如果尚未删除或更新此元组，则t_xmax设置为0，这意味着无效。
-* t_cid保存命令id（cid），这意味着在从0开始的当前事务中执行此命令之前执行了多少SQL命令。例如，假设我们在单个事务中执行三个INSERT命令：'BEGIN;插;插;插;承诺;'。如果第一个命令插入此元组，则t_cid设置为0.如果第二个命令插入此命令，则t_cid设置为1，依此类推。
+* t_cid保存命令id（cid），这意味着在从0开始的当前事务中执行此命令之前执行了多少SQL命令。例如，假设我们在单个事务中执行三个INSERT命令`BEGIN;INSERT;INSERT;INSERT;COMMIT;`。如果第一个命令插入此元组，则t_cid设置为0.如果第二个命令插入此命令，则t_cid设置为1，依此类推。
 * t_ctid保存指向自身或新元组的元组标识符（tid）。第1.3节中描述的tid用于标识表中的元组。更新此元组时，此元组的t_ctid指向新元组;否则，t_ctid指向自己。
 
 
@@ -168,11 +218,12 @@ Tuple_1：
 假设txle_1被txid 111删除。在这种情况下，Tuple_1的头字段设置如下。
 
 Tuple_1：
-	* t_xmax设置为111。
+
+* t_xmax设置为111。
 
 如果提交了txid 111，则不再需要Tuple_1。通常，不需要的元组在PostgreSQL中称为死元组。
 
-应该最终从页面中删除死元组。清除死元组称为VACUUM处理，将在第6章中介绍。
+应该最终从页面中删除死元组。清除死元组称为**清理（VACUUM）过程**，将在第6章中介绍。
 
 
 
@@ -454,11 +505,11 @@ Rule 10:         ELSE
 
 相反，如果t_xmax的状态为COMMITTED但t_xmax在获取的事务快照中处于活动状态（规则9），则元组可见，因为t_xmax应被视为正在进行中。
 
-* 规则5：如果状态（t_xmin）=委托∧快照（t_xmin）=有效⇒隐形
-* 规则6：如果状态（t_xmin）=委托∧（t_xmax =无效∨状态（t_xmax）= ABORTED）⇒可见
-* 规则7：如果状态（t_xmin）=委托∧状态（t_xmax）=IN_PROGRESS∧t_xmax=current_txid⇒隐形
-* 规则8：如果状态（t_xmin）=委托∧状态（t_xmax）=IN_PROGRESS∧t_xmax≠current_txid⇒可见
-* 规则9：如果状态（t_xmin）=委托∧状态（t_xmax）=委托∧快照（t_xmax）=有效⇒可见
+* 规则5：如果状态（t_xmin）= COMMIT ∧快照（t_xmin）=有效⇒隐形
+* 规则6：如果状态（t_xmin）=COMMIT∧（t_xmax =无效∨状态（t_xmax）= ABORTED）⇒可见
+* 规则7：如果状态（t_xmin）=COMMIT∧状态（t_xmax）=IN_PROGRESS∧t_xmax=current_txid⇒隐形
+* 规则8：如果状态（t_xmin）=COMMIT∧状态（t_xmax）=IN_PROGRESS∧t_xmax≠current_txid⇒可见
+* 规则9：如果状态（t_xmin）=COMMIT∧状态（t_xmax）=COMMIT∧快照（t_xmax）=有效⇒可见
 * 规则10：如果状态（t_xmin）=已确认∧状态（t_xmax）=已提交∧快照（t_xmax）≠有效⇒不可见
 
 

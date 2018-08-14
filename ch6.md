@@ -280,7 +280,7 @@ $$
 
 > #### FREEZE选项
 >
-> ​	带有`FREEZE`选项的`VACUUM`命令会强制冻结指定表中的所有事务标识。虽然这是在急切模式下执行的，但这里`freezeLimit`会被设置为`OldestXmi`n（而不是`OldestXmin - vacuum_freeze_min_age`）。 例如，当`txid=5000`执行`VACUUM FULL`命令且没有其他正在运行的事务时，`OldesXmin`会被设置为5000，而事务标识小于5000的元组将会被冻结。
+> ​	带有`FREEZE`选项的`VACUUM`命令会强制冻结指定表中的所有事务标识。虽然这是在急切模式下执行的，但这里`freezeLimit`会被设置为`OldestXmin`（而不是`OldestXmin - vacuum_freeze_min_age`）。 例如，当`txid=5000`执行`VACUUM FULL`命令且没有其他正在运行的事务时，`OldesXmin`会被设置为5000，而事务标识小于5000的元组将会被冻结。
 
 
 
