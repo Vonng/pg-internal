@@ -235,7 +235,7 @@ QueryTree的细节在[官方文档](http://www.postgresql.org/docs/current/stati
 
 ### 3.1.4 计划器与执行器
 
-​	**计划器（Planner）**从**重写器（Rewriter）**获取一个查询树，然后生成一个能被**执行器（Executor）**高效执行的（查询）计划树。	
+**计划器（Planner）**从**重写器（Rewriter）**获取一个查询树，然后生成一个能被**执行器（Executor）**高效执行的（查询）计划树。	
 
 ​	在PostgreSQL中，计划器是完全基于代价估计的；它不支持基于规则和基于**提示（hint）**的查询优化。计划器是RDBMS中最复杂的部分，因此，本章的后续章节会对计划树做一个概述。
 
@@ -457,9 +457,10 @@ $$
 
 $$
 \begin{align}
- \verb|‘index cpu cost’| &= \verb|Selectivity| \times N_{index,tuple} \times (\verb|cpu_index_tuple_cost| + \verb|qual_op_cost|), \\
- \verb|‘table cpu cost’| &= \verb|Selectivity| \times N_{tuple}  \times \verb|cpu_tuple_cost|, \\
- \verb|‘index IO cost’|  &= \mathrm{ceil}(\verb|Selectivity| \times N_{index,page}) \times \verb|random_page_cost|,
+ \verb|index_cpu_cost| &= \verb|Selectivity| \times N_{index,tuple} \times (\verb|cpu_index_tuple_cost| + \verb|qual_op_cost|) \\
+ \verb|table_cpu_cost| &= \verb|Selectivity| \times N_{tuple}  \times \verb|cpu_tuple_cost| \\
+ \verb|index_io_cost|   &= \mathrm{ceil}(\verb| Selectivity | \times N_{index,page}) \times \verb|random_page_cost|\\
+ \verb|table_io_cost| &=  \verb|max_io_cost| +  \verb|indexCorerelation|^2 \times ( \verb|min_io_cost|-  \verb|max_io_cost|)
 \end{align}
 $$
 以上的*cpu_index_tuple_cost*和*random_page_cost*在postgresql.conf配置（默认分别是0.005和4.0）；粗略来讲，*qual_op_cost*就是index比较计算的代价，这里就不多展开了，默认值是0.0025。*Selectivity*是通过where子句得出的索引查找范围的比；是一个**[0.1]**的浮点数，如下所述；比如，$Selectivity \times N_{tuple}$ 就是需要读的表元组数量，$Selectivity \times N_{index,tuple}$就是需要读的索引元组数量等等。
@@ -1102,7 +1103,7 @@ typedef struct RelOptInfo
   List      *joininfo;    /* RestrictInfo structures for join clauses involving this rel */
   bool    has_eclass_joins; /* T means joininfo is incomplete */
 } RelOptInfo;
-   ```
+```
 
 2. 估计所有可能访问路径的代价，在RelOptInfo中添加访问路径。
 
@@ -1131,7 +1132,7 @@ testdb=# \d tbl_1
  data   | integer | 
 
 testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
-   ```
+```
 
 图3.10和3.11中，描述了本例中计划器的处理。
 
