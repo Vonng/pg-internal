@@ -14,7 +14,7 @@
 
 ###### 图. 4.1. FDW的基本概念
 
-![Fig. 4.1. Basic concept of FDW.](./img/fig-4-fdw-1.png)
+![Fig. 4.1. Basic concept of FDW.](img/fig-4-1.png)
 
 在安装必要的扩展并进行适当的设置后，您可以访问远程服务器上的外部表。 例如，假设有两个远程服务器，名字分别为postgresql和mysql，它们分别具有foreign_pg_tbl table和foreign_my_tbl table。 在此示例中，您可以执行SELECT查询，从本地服务器访问外部表，如下所示。
 
@@ -57,7 +57,7 @@ PostgreSQL的FDW将在以下部分中详细介绍。 第4.1.1节概述了Postgre
 
 ###### 图. 4.2. FDW们是如何执行的
 
-![Fig. 4.2. How FDWs perform.](./img/fig-4-fdw-2.png)
+![Fig. 4.2. How FDWs perform.](img/fig-4-2.png)
 
 （1）分析器创建输入SQL的查询树。
 （2）规划器（或执行器）连接到远程服务器。
@@ -105,7 +105,7 @@ localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 
 ###### 图 4.3. 扫描外部表的计划树例子
 
-![Fig. 4.3. Example of the plan tree that scans a foreign table.](./img/fig-4-fdw-3.png)
+![Fig. 4.3. Example of the plan tree that scans a foreign table.](img/fig-4-3.png)
 
 使用mysql_fdw会从查询树重新创建MySQL的SELECT文本。 使用redis_fdw或rw_redis_fdw会创建SELECT命令。
 
@@ -124,7 +124,7 @@ localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 
 ###### 图. 4.4. 基于mysql_fdw的SELECT语句的典型执行序列
 
-![Fig. 4.4. Typical sequence of SQL statements to execute a SELECT query in mysql_fdw](./img/fig-4-fdw-4.png)
+![Fig. 4.4. Typical sequence of SQL statements to execute a SELECT query in mysql_fdw](img/fig-4-4.png)
 
 这里是远程服务器的实际日志; 显示远程服务器收到的语句。
 
@@ -157,7 +157,7 @@ mysql> SELECT command_type,argument FROM mysql.general_log;
 
 ###### 图. 4.5. 基于postgres_fdw的SELECT语句的典型执行序列
 
-![Fig. 4.5. Typical sequence of SQL statements to execute a SELECT query in postgres_fdw.](./img/fig-4-fdw-5.png)
+![Fig. 4.5. Typical sequence of SQL statements to execute a SELECT query in postgres_fdw.](img/fig-4-5.png)
 
 这里是远程服务器的实际日志。
 
@@ -298,7 +298,7 @@ SELECT id，data FROM public.tbl_b
 
 ###### 图. 4.6. 在9.5之后的版本执行多表查询的执行序列
 
-![Fig. 4.6. Sequence of SQL statements to execute the Multi-Table Query in version 9.5 or earlier.](./img/fig-4-fdw-6.png)
+![Fig. 4.6. Sequence of SQL statements to execute the Multi-Table Query in version 9.5 or earlier.](img/fig-4-6.png)
 
 这里是远程服务器的实际日志。
 
