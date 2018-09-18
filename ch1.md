@@ -2,26 +2,28 @@
 
 [TOC]
 
-为了帮助理解后续章节，本章和第二章总结了PostgreSQL的入门知识。本章中，描述了以下几个主题：
+第一章和第二章总结了PostgreSQL的入门知识，以便理解后续章节的内容。本章包括以下几个主题：
 
-* 数据库集簇的逻辑结构
+* **数据库集簇（database cluster）**的逻辑结构
 * 数据库集簇的物理结构
-* 堆表文件的内部布局
-* 表上的数据写入与读取的方法
+* **堆表（heap table）**文件的内部布局
+* 从表中读写数据的方式
 
 如果你已经熟悉这些内容，可以跳过本章。
 
+
+
 ## 1.1 数据库集簇的逻辑结构
 
-**数据库集簇（database cluster）**是PostgreSQL服务管理的数据库集合。 如果你是第一次听到这个定义，对此你会感到疑惑，但PostgreSQL中的术语“数据库集簇”并**不**意味着“一组数据库服务器”。 一个PostgreSQL服务在单台主机上运行，并管理单个数据库集簇。
+**数据库集簇（database cluster）**是一组**数据库（database）** 的集合，由一个PostgreSQL服务器管理。第一次听到这个定义也许会令人疑惑，PostgreSQL中的术语“数据库集簇”，**并非** 意味着“一组数据库服务器”。 一个PostgreSQL服务器只会在单机上运行并管理单个数据库集簇。
 
-​	图1.1显示了数据库集簇的逻辑结构。 数据库是数据库对象的集合。 在关系型数据库理论中，数据库对象是用于存储或引用数据的数据结构。 （堆）表是一个典型的例子，还有更多像索引，序列，视图，函数等。 在PostgreSQL中，数据库本身也是数据库对象，并且在逻辑上彼此分离。 所有其他数据库对象（例如，表，索引等）属于它们相对应的数据库。
+图1.1展示了一个数据库集簇的逻辑结构。 **数据库（database）**是**数据库对象（database objects）**的集合。 在关系型数据库理论中，数据库对象是用于存储或引用数据的数据结构。 （堆）表是一个典型的例子，还有更多种对象，例如索引，序列，视图，函数等。 在PostgreSQL中数据库本身也是数据库对象，并在逻辑上彼此分离。 所有其他的数据库对象（例如表，索引等）归属于各自相应的数据库。
 
 **图1.1 数据库集簇的逻辑结构**
 
 ![](img/fig-1-01.png)
 
-​	在PostgreSQL内部，通过所有数据库对象相应的**对象标识符（Object Identifiers, OID）**进行管理，这些标识符是无符号的4字节整型。取决于数据库对象的类型，数据库对象与相应OID之间的关系存储在相应的[**系统目录**](https://www.postgresql.org/docs/current/static/catalogs.html)中。 例如，`pg_database`和`pg_class`中分别存储了数据库和堆表对象的OID，因此执行以下查询，你可以查找想要的OID：
+在PostgreSQL内部，所有的数据库对象都通过相应的**对象标识符（Object Identifiers, OID）**进行管理，这些标识符是无符号的4字节整型。数据库对象与相应OID之间的关系存储在相应的[**系统目录**](https://www.postgresql.org/docs/current/static/catalogs.html)中，依具体的对象类型而异。 例如数据库和堆表对象的OID分别存储在`pg_database`和`pg_class`中，因此当你希望找出OID时，可以执行以下查询：
 
 ```sql
 sampledb=# SELECT datname, oid FROM pg_database WHERE datname = 'sampledb';
@@ -41,57 +43,59 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 
 ## 1.2 数据库集簇的物理结构
 
-​	基本上，一个数据库集簇对应一个称为**基本目录（base directory）**的目录，它包含一些子目录和许多文件。 执行`initdb`命令会在指定目录下创建基本目录，从而初始化一个新的数据库集簇。 虽然不是必须的，但通常将`PGDATA`设置为基本目录。
+数据库集簇在本质上就是一个文件目录，名曰**基础目录（base directory）**，包含着一系列子目录与文件。 执行 [*initdb*](https://www.postgresql.org/docs/current/static/app-initdb.html) 命令会在指定目录下创建基础目录从而初始化一个新的数据库集簇。 通常会将基础目录的路径配置到环境变量`PGDATA`中，但这并不是必须的。
 
-​	图1.2 展示了一个PostgreSQL中数据库集簇的例子。 一个数据库对应*base*子目录下的一个子目录，其中的每个表和索引在其所属数据库的子目录下都会存储（至少）一个文件。另外， 还有几个包含特定数据和配置文件的子目录。 虽然PostgreSQL支持表空间，但该术语的含义与其他RDBMS不同。 PostgreSQL中的一个表空间对应一个目录，该目录包含基本目录外的一些数据。
+图1.2 展示了一个PostgreSQL数据库集簇的例子。 *base* 子目录中的每一个子目录都对应一个数据库，数据库中每个表和索引都会在相应子目录下存储为（至少）一个文件；还有几个包含特定数据的子目录，以及配置文件。 虽然PostgreSQL支持**表空间（Tablespace）**，但该术语的含义与其他RDBMS不同。 PostgreSQL中的表空间对应一个包含基础目录之外数据的目录。
 
 **图1.2 数据库集簇示例**
 
 ![](img/fig-1-02.png)
 
-在后面的小节中，将阐述数据库集簇的布局，数据库布局以及表与索引相应的文件的布局，并且会描述PostgreSQL中的表空间。
+后续小节将描述数据库集簇的布局，数据库的布局，表和索引对应的文件布局，以及PostgreSQL中表空间的布局。
+
+### 
 
 ### 1.2.1 数据库集簇的布局
 
-在[官方文档](https://www.postgresql.org/docs/current/static/storage-file-layout.html)中，描述了数据库集簇的布局。 表1.1中列出了文档一部分中的主要文件和子目录：
+[官方文档](https://www.postgresql.org/docs/current/static/storage-file-layout.html)中描述了数据库集簇的布局。 表1.1中列出了主要的文件与子目录：
 
 **表 1.1： 基本目录下的数据库文件和子目录的布局（参考官方文档）**
 
-| 文件                              | 描述                                                         |
-| --------------------------------- | ------------------------------------------------------------ |
-| PG_VERSION                        | 包含PostgreSQL主版本号的文件                                 |
-| pg_hba.conf                       | 控制PosgreSQL客户端身份验证的文件                            |
-| pg_ident.conf                     | 用于控制PostgreSQL用户名映射的文件                           |
-| postgresql.conf                   | 用于设置配置参数的文件                                       |
-| postgresql.auto.conf              | 用于存储在ALTER SYSTEM（版本9.4或更高版本）中设置的配置参数的文件 |
-| postmaster.opts                   | 记录服务器上次启动的命令行选项的文件                         |
+| 文件                 | 描述                                                  |
+| -------------------- | ----------------------------------------------------- |
+| PG_VERSION           | 包含PostgreSQL主版本号                                |
+| pg_hba.conf          | 控制PosgreSQL客户端认证                               |
+| pg_ident.conf        | 控制PostgreSQL用户名映射                              |
+| postgresql.conf      | 配置参数                                              |
+| postgresql.auto.conf | 存储使用`ALTER SYSTEM`修改的配置参数（9.4或更新版本） |
+| postmaster.opts      | 记录服务器上次启动的命令行选项                        |
 
 
 | 子目录                              | 描述                                                         |
 | --------------------------------- | ------------------------------------------------------------ |
-| base/                             | 包含每个数据库子目录                                         |
-| global/                           | 包含集簇范围的表，例如pg_database，以及pg_control文件的子目录。   |
-| pg_commit_ts/                     | 包含事务提交时间戳数据的子目录（9.5或更高版本）。          |
-| pg_clog/ (9.6以前) | 包含事务提交状态数据的子目录。它在版本10中重命名为pg_xact。<br />CLOG将在5.4节中描述 |
-| pg_dynshmem/                      | 包含动态共享内存子系统中使用的文件的子目录。版本9.4或更高版本。 |
-| pg_logical/                       | 包含逻辑解码的状态数据的子目录。版本9.4或更高版本。              |
-| pg_multixact/                     | 包含多事务状态数据的子目录                                       |
-| pg_notify/                        | 包含`LISTEN`/`NOTIFY`状态数据的子目录                     |
-| pg_repslot/                       | 包含复制槽数据的子目录。版本9.4或更高版本。                  |
-| pg_serial/                        | 包含已提交的可序列化事务的相关信息的子目录（版本9.1或更高版本） |
-| pg_snapshots/                     | 包含导出快照的子目录（版本9.2或更高版本）。 PostgreSQL的函数`pg_export_snapshot`在此子目录中创建快照信息文件。 |
-| pg_stat/                          | 包含统计子系统的永久文件的子目录                          |
-| pg_stat_tmp/                      | 包含统计子系统的临时文件的子目录                              |
-| pg_subtrans/                      | 包含子事务状态数据的子目录                                   |
-| pg_tblspc/                        | 包含指向表空间的符号链接的子目录                             |
-| pg_twophase/                      | 包含准备好的事务的状态文件的子目录                             |
-| pg_wal/ (10以后) | （版本10或更高版本）包含WAL（ Write Ahead Logging）段文件的子目录。<br />它在版本10中从pg_xlog重命名而来。 |
-| pg_xact/ (10以后) | （版本10或更高版本）包含事务提交状态数据的子目录。它在版本10中从pg_clog重命名。CLOG将在5.4节中描述。 |
-| pg_xlog/ (9.6前) | （版本9.6或更早版本）包含WAL（Write Ahead Logging）段文件的子目录。<br />它在版本10中重命名为pg_wal。 |
+| base/                             | 每个数据库对应的子目录存储于此                                  |
+| global/                           | 数据库集簇范畴的表（例如`pg_database`），以及`pg_control`文件。 |
+| pg_commit_ts/                     | 事务提交的时间戳数据（9.5及更新版本）。 |
+| pg_clog/ (9.6-) | 事务提交状态数据（9.6及更老版本），在版本10中重命名为`pg_xact`。CLOG将在[5.4节](ch5.md)中描述 |
+| pg_dynshmem/                      | 动态共享内存子系统中使用的文件（9.4或更新版本）。 |
+| pg_logical/                       | 逻辑解码的状态数据（9.4或更新版本）。          |
+| pg_multixact/                     | 多事务状态数据                                       |
+| pg_notify/                        | `LISTEN`/`NOTIFY`状态数据                     |
+| pg_repslot/                       | 复制槽数据（9.4或更新版本）。           |
+| pg_serial/                        | 已提交的可串行化事务相关信息（9.1或更新版本） |
+| pg_snapshots/                     | 导出快照（9.2或更新版本）。 PostgreSQL函数`pg_export_snapshot`在此子目录中创建快照信息文件。 |
+| pg_stat/                          | 统计子系统的永久文件                        |
+| pg_stat_tmp/                      | 统计子系统的临时文件                            |
+| pg_subtrans/                      | 子事务状态数据                                   |
+| pg_tblspc/                        | 指向表空间的符号链接                             |
+| pg_twophase/                      | 两阶段事务（prepared transactions）的状态文件 |
+| pg_wal/ (10+) | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。 |
+| pg_xact/ (10+) | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](ch5.md)中描述。 |
+| pg_xlog/ (9.6-) | WAL（Write Ahead Logging）段文件（9.6及更老版本），它在版本10中重命名为`pg_wal`。 |
 
 ### 1.2.2 数据库布局
 
-一个数据库是*base*子目录下的一个子目录；并且数据库目录的名称与数据库的OID相同。 例如，当数据库*sampledb*的OID为16384时，其子目录名称为16384。
+一个数据库与*base*子目录下的一个子目录对应；且该子目录的名称与相应数据库的OID相同。 例如当数据库*sampledb* 的OID为16384时，它对应的子目录名称即为16384。
 
 ```bash
 $ cd $PGDATA
@@ -101,9 +105,9 @@ drwx------  213 postgres postgres  7242  8 26 16:33 16384
 
 ### 1.2.3 表与索引相关文件的布局
 
-每个小于1GB的表或索引都在相应的数据库目录中存储为单个文件。表和索引作为数据库对象，在数据库内部是通过OID来管理的，而这些数据文件由变量 *relfilenode* 管理。 表和索引的 *relfilenode* 值通常（但不总是）与相应的OID匹配，细节如下所述。
+每个小于1GB的表或索引都在相应的数据库目录中存储为单个文件。在数据库内部，表和索引作为数据库对象是通过OID来管理的，而这些数据文件则由变量 *relfilenode* 管理。 表和索引的 *relfilenode* 值通常与其OID一致，但也有例外，下面将详细展开。
 
-让我们看一下表`sampletbl`的OID和 *relfilenode*：
+让我们看一看表 *sampletbl* 的 *oid* 和 *relfilenode*：
 
 ```sql
 sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampletbl';
@@ -113,7 +117,7 @@ sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampl
 (1 row)
 ```
 
-从上面的结果可以看到oid和relfilenode值都相等。还可以看到表`sampletbl`的数据文件路劲是*base/16384/18740*。
+从上面的结果可以看出*oid* 和 *relfilenode* 值相等。还可以看到表 *sampletbl* 的数据文件路径是*’base/16384/18740‘*。
 
 ```bash
 $ cd $PGDATA
@@ -121,7 +125,7 @@ $ ls -la base/16384/18740
 -rw------- 1 postgres postgres 8192 Apr 21 10:21 base/16384/18740
 ```
 
-表和索引的 *relfilenode* 值会被一些命令（例如，`TRUNCATE`，`REINDEX`，`CLUSTER`）改变。 例如，如果我们对表`sampletbl`，执行`TRUNCATE`，PostgreSQL会为表分配一个新的 *relfilenode*（18812），删除旧的数据文件（18740），并创建一个新的（18812）。
+表和索引的 *relfilenode* 值会被一些命令（例如`TRUNCATE`，`REINDEX`，`CLUSTER`）所改变。 例如对表 *sampletbl* 执行`TRUNCATE`，PostgreSQL会为表分配一个新的 *relfilenode*（18812），删除旧的数据文件（18740），并创建一个新的数据文件（18812）。
 
 ```sql
 sampledb=# TRUNCATE sampletbl;
@@ -134,17 +138,17 @@ sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampl
 (1 row)
 ```
 
->  在9.0或更高版本中，内建函数`pg_relation_filepath`能够返回具有指定OID或名称的关系的文件路径名，这非常有用。
+>  在9.0或更高版本中，内建函数`pg_relation_filepath`能够根据OID或名称返回关系对应的文件路径，非常实用。
 >
-> ```sql
-> sampledb=# SELECT pg_relation_filepath('sampletbl');
+>  ```sql
+>  sampledb=# SELECT pg_relation_filepath('sampletbl');
 >  pg_relation_filepath 
-> ----------------------
+>  ----------------------
 >  base/16384/18812
-> (1 row)
-> ```
+>  (1 row)
+>  ```
 
-当表和索引的文件大小超过1GB时，PostgreSQL会创建一个名为 *relfilenode.1* 的新文件并使用。如果新文件已填满，则将创建名为*relfilenode.2*的下一个新文件，依此类推。
+当表和索引的文件大小超过1GB时，PostgreSQL会创建并使用一个名为 *relfilenode.1* 的新文件。如果新文件也填满了，则会创建下一个名为 *relfilenode.2*的新文件，依此类推。
 
 ```sql
 $ cd $PGDATA
@@ -155,11 +159,10 @@ $ ls -la -h base/16384/19427*
 ```
 
 > 在构建PostgreSQL时，可以使用配置选项`--with-segsize`更改表和索引的最大文件大小。
->
 
-仔细查看数据库子目录，您会发现每个表都有两个相关联的文件，后缀分别为`_fsm`和`_vm`。这些被称为可用空间（free space map）和可见性映射（visibility map），分别存储表文件中每个页面上的可用空间容量和可见性的信息（更多细节见第5.3.4节和第6.2节）。索引只有自己的可用空间映射，没有可见性映射。
+仔细观察数据库子目录就会发现，每个表都有两个与之相关联的文件，后缀分别为`_fsm`和`_vm`。这些实际上是**空闲空间映射（free space map）**和**可见性映射（visibility map）**，分别存储了表文件每个页面上的空闲空间信息与可见性信息（更多细节见[第5.3.4节](ch5.md)和[第6.2节](ch6.md)）。索引没有可见性映射，只有空闲空间映射。
 
-具体示例如下所示：
+一个具体的示例如下所示：
 
 ```bash
 $ cd $PGDATA
@@ -169,25 +172,31 @@ $ ls -la base/16384/18751*
 -rw------- 1 postgres postgres  8192 Apr 21 10:18 base/16384/18751_vm
 ```
 
-​	在内部，它们也被称为每种关系的**分支（fork）**；可用空间映射是表/索引数据文件的第一个分支（分支编号为1），可见性映射表是数据文件的第二个分支（分支编号为2）。数据文件的分支编号为0。
+在内部，它们也被称为每种关系的**分支（fork）**；空闲空间映射是表/索引数据文件的第一个分支（分支编号为1），可见性映射表是数据文件的第二个分支（分支编号为2），数据文件的分支编号为0。
+
+> 译注：每个 **关系（relation）** 可能会有四种分支，分支编号分别为0，1，2，3，0号分支`main`为关系数据文件本体，1号分支`fsm`保存了`main`分支中空闲空间的信息，2号分支`vm`保存了`main`分支中可见性的信息，3号分支`init`是很少见的特殊分支，通常用于不被日志记录（unlogged）的表与索引。
+>
+> 每个分支都会被存储为磁盘上的一到多个文件：PostgreSQL会将过大的分支文件切分为若干个段，以免文件的尺寸超过某些特定文件系统允许的大小，也便于一些归档工具进行并发复制，默认的段大小为1GB。
+
+
 
 ### 1.2.4 表空间
 
-PostgreSQL中的**表空间（Tablespace）**是基本目录之外的附加数据区域。 此功能在8.0版中实现。
+PostgreSQL中的**表空间（Tablespace）**是基础目录之外的附加数据区域。 在8.0版本中引入了该功能。
 
-图1.3显示了表空间的内部布局，以及与主数据区域的关系。
+图1.3展示了表空间的内部布局，以及表空间与主数据区域的关系。
 
 **图 1.3 数据库集簇的表空间**
 
 ![](img/fig-1-03.png)
 
-​	在执行[`CREATE TABLESPACE`](https://www.postgresql.org/docs/current/static/sql-createtablespace.html)语句时，会在你所指定的目录下被创建表空间。而在该目录下，又会创建特定版本的子目录（例如，`PG_9.4_201409291`）。特定版本的命名方法如下所示。
+执行[`CREATE TABLESPACE`](https://www.postgresql.org/docs/current/static/sql-createtablespace.html)语句会在指定的目录下创建表空间。而在该目录下还会创建版本特定的子目录（例如`PG_9.4_201409291`）。版本特定的命名方式为：
 
 ```
-PG_'主版本号'_'目录版本号'
+PG_主版本号_目录版本号
 ```
 
-​	例如，如果在`/home/postgres/tblspc`中创建一个表空间`new_tblspc`，其oid为16386，则会在表空间下创建一个名如`PG_9.4_201409291`的子目录。
+举个例子，如果在`/home/postgres/tblspc`中创建一个表空间`new_tblspc`，其oid为16386，则会在表空间下创建一个名如`PG_9.4_201409291`的子目录。
 
 ```bash
 $ ls -l /home/postgres/tblspc/
@@ -195,7 +204,7 @@ total 4
 drwx------ 2 postgres postgres 4096 Apr 21 10:08 PG_9.4_201409291
 ```
 
-​	表空间目录由`pg_tblspc`子目录中的符号链接寻址，链接名称与表空间的OID值相同。
+表空间目录通过`pg_tblspc`子目录中的符号链接寻址，链接名称与表空间的OID值相同。
 
 ```
 $ ls -l $PGDATA/pg_tblspc/
@@ -203,7 +212,7 @@ total 0
 lrwxrwxrwx 1 postgres postgres 21 Apr 21 10:08 16386 -> /home/postgres/tblspc
 ```
 
-​	如果在表空间下创建新数据库（OID为16387），则会在特定版本的子目录下创建相应目录。
+如果在该表空间下创建新的数据库（OID为16387），则会在版本特定的子目录下创建相应目录。
 
 ```bash
 $ ls -l /home/postgres/tblspc/PG_9.4_201409291/
@@ -211,7 +220,7 @@ total 4
 drwx------ 2 postgres postgres 4096 Apr 21 10:10 16387
 ```
 
-​	如果创建的新表属于基本目录下的数据库，首先，在特定版本的子目录下创建名称与现有数据库OID相同的新目录，然后将新表文件放在创建的目录下。
+如果在该表空间内创建的新表属于基础目录下的数据库，首先，在特定版本的子目录下创建名称与现有数据库OID相同的新目录，然后将新表文件放在创建的目录下。
 
 ```sql
 sampledb=# CREATE TABLE newtbl (.....) TABLESPACE new_tblspc;
@@ -226,9 +235,9 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 ## 1.3 堆表文件的内部布局
 
-​	在数据文件（堆表和索引，以及可用空间映射和可见性映射）内部，它被划分为固定长度的**页（pages）**（或**区块（blocks）**），默认为8192字节（8 KB）。 每个文件中的页从0开始按顺序编号，这些数字称为**区块号（block numbers）**。 如果文件已填满，PostgreSQL通过在文件末尾添加一个新的空页，来增大文件。
-
-​	页的内部布局取决于数据文件类型。 理解后续的章节需要了解这些知识，本节中描述了表的布局。
+	在数据文件（堆表和索引，以及可用空间映射和可见性映射）内部，它被划分为固定长度的**页（pages）**（或**区块（blocks）**），默认为8192字节（8 KB）。 每个文件中的页从0开始按顺序编号，这些数字称为**区块号（block numbers）**。 如果文件已填满，PostgreSQL通过在文件末尾添加一个新的空页，来增大文件。
+	
+	页的内部布局取决于数据文件类型。 理解后续的章节需要了解这些知识，本节中描述了表的布局。
 
 **图 1.4. 堆表文件的页面布局**
 
@@ -329,7 +338,7 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 
 
-## 1.4 读写元组的方法
+## 1.4 读写元组的方式
 
 本章的最后，将描述读取及写入堆元组的方法。
 
@@ -354,9 +363,9 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 ![](img/fig-1-06.png)
 
-> PostgreSQL还支持TID扫描，位图扫描（[Bitmap-Scan](https://wiki.postgresql.org/wiki/Bitmap_Indexes)）和仅索引扫描（Index-Only-Scan）。
+> PostgreSQL还支持TID扫描，位图扫描（[Bitmap-Scan](https://wiki.postgresql.org/wiki/Bitmap_Indexes)）和**仅索引扫描（Index-Only-Scan）**。
 >
-> TID-Scan是一种通过使用所需元组的TID直接访问元组的方法。 例如，要在表中找到第0个页面中的第一个元组，执行以下查询：
+> TID扫描是一种通过使用所需元组的TID直接访问元组的方法。 例如，要在表中找到第0个页面中的第一个元组，可以执行以下查询：
 >
 > ```sql
 > sampledb=# SELECT ctid, data FROM sampletbl WHERE ctid = '(0,1)';
@@ -366,5 +375,5 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 > (1 row)
 > ```
 >
-> 仅索引扫描将在第7章中详细介绍。
+> 仅索引扫描将在[第7章](ch7.md)中详细介绍。
 
