@@ -580,7 +580,7 @@ exec_simple_query() @postgres.c
 
 > 上图的XLOG格式是9.4版本的
 
-5. 函数`XLogWrite()`会冲刷WAL缓冲区，并将所有内容写入WAL段文件中。如果`wal_sync_method`参数被配置为`open_sync`或`open_datasync`，记录会被同步写入，因为函数会使用带有`O_SYNC`或`O_DSYNC`标记的`open()`系统调用。如果该参数被配置为`fsync`，`fsync_writethrough`，`fdatasync`，相应的系统调用就是`fsync()`，带有`F_FULLSYNC`选项的`fcntl()`，以及`fdatasync()`。无论哪一种情况，所有的XLOG记录都会被确保写入存储之中。
+5. 函数`XLogWrite()`会冲刷WAL缓冲区，并将所有内容写入WAL段文件中。如果`wal_sync_method`参数被配置为`open_sync`或`open_datasync`，记录会被同步写入（译者注：而不是提交才会刷新wal缓冲区），因为函数会使用带有`O_SYNC`或`O_DSYNC`标记的`open()`系统调用。如果该参数被配置为`fsync`，`fsync_writethrough`，`fdatasync`，相应的系统调用就是`fsync()`，带有`F_FULLSYNC`选项的`fcntl()`，以及`fdatasync()`。无论哪一种情况，所有的XLOG记录都会被确保写入存储之中。
 6. 函数`TransactionIdCommitTree()`将CLOG中当前事务的状态从`IN_PROGRESS`更改为`COMMITTED`。
 
 **图9.12 XLOG记录的写入顺序（续图9.11）**
@@ -595,7 +595,7 @@ exec_simple_query() @postgres.c
 
 如果出现上述情况之一，无论其事务是否已提交，WAL缓冲区上的所有WAL记录都将写入WAL段文件中。
 
-​	DML（数据操作语言，Data Manipulation Language）操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如上所述，`COMMIT`操作会写入包含着提交的事务ID的XLOG记录。另一个例子是`Checkpoint`操作会写入关于该存档概述信息的XLOG记录。此外，尽管不是很常见，`SELECT`语句在一些特殊情况下也会创建XLOG记录。例如在SELECT语句处理的过程中如果遇到了由HOT（Heap Only Tuple），需要删除不必要元组并拼接必要的元组时，修改对应页面的XLOG记录就会写入WAL缓冲区。
+​	DML（数据操作语言，Data Manipulation Language）操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如上所述，`COMMIT`操作会写入包含着提交的事务ID的XLOG记录。另一个例子是`Checkpoint`操作会写入关于该存档概述信息的XLOG记录。此外，尽管不是很常见，`SELECT`语句在一些特殊情况下也会创建XLOG记录。例如在SELECT语句处理的过程中，如果因为HOT（Heap Only Tuple）需要删除不必要元组并拼接必要的元组时，修改对应页面的XLOG记录就会写入WAL缓冲区。
 
 
 
