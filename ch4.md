@@ -1,38 +1,38 @@
-# 第4章 外部数据包装器和并行查询
+# 第4章 外部数据包装器与并行查询
 
 [TOC]
 
-本章将介绍两个技术上有趣且实用的特性：外部数据包装器（FDW）和并行查询。
+本章将介绍两种相当实用，而且很有趣的特性：**外部数据包装器（Foreign Data Wrapper FDW）**和**并行查询（Parallel Query）**。
 
-目前，仅在第4.1节阐述FDW；第4.2节的并行查询正在完成中。
+
 
 ## 4.1. 外部数据包装器（FDW）
 
-2003年，SQL标准中添加了一个访问远程数据的规范，称为SQL外部数据管理（SQL / MED）。 PostgreSQL一直在开发此功能，从9.1版开始，实现了SQL / MED的部分特性。
+2003年，SQL标准中添加了一个访问远程数据的规范，称为[SQL外部数据管理](https://wiki.postgresql.org/wiki/SQL/MED)（SQL/MED）。从9.1版本开始，PostgreSQL开发了这一功能，实现了SQL/MED的部分特性。
 
-在SQL / MED中，远程服务器上的表称为外部表。 PostgreSQL的外部数据包装器（FDW）使用SQL / MED来管理与本地表类似的外部表。
+在SQL/MED中，远程服务器上的表被称为**外部表（Foreign Table）**。 PostgreSQL的**外部数据包装器（FDW）** 使用与本地表类似的方式，通过SQL/MED来管理外部表。
 
-###### 图. 4.1. FDW的基本概念
+**图4.1 FDW的基本概念**
 
 ![Fig. 4.1. Basic concept of FDW.](img/fig-4-1.png)
 
-在安装必要的扩展并进行适当的设置后，您可以访问远程服务器上的外部表。 例如，假设有两个远程服务器，名字分别为postgresql和mysql，它们分别具有foreign_pg_tbl table和foreign_my_tbl table。 在此示例中，您可以执行SELECT查询，从本地服务器访问外部表，如下所示。
+安装完必要的扩展并配置妥当后，就可以访问远程服务器上的外部表了。 例如假设有两个远程服务器分别名为 *postgresql* 和 *mysql*，它们上面分别有两张表：*foreign_pg_tbl* 和*foreign_my_tbl table*。 在这个例子中，可以在本体服务器上执行SELECT查询以访问外部表，如下所示。
 
 ```sql
-localdb=# -- foreign_pg_tbl is on the remote postgresql server. 
+localdb=# -- foreign_pg_tbl 在远程postgresql服务器上
 localdb-# SELECT count(*) FROM foreign_pg_tbl;
  count 
 -------
  20000
 
-localdb=# -- foreign_my_tbl is on the remote mysql server. 
+localdb=# -- foreign_my_tbl 在远程mysql服务器上
 localdb-# SELECT count(*) FROM foreign_my_tbl;
  count 
 -------
  10000
 ```
 
-此外，您可以在本地对不同服务器中的外部表执行连接操作。
+此外，还您可以在本地对不同服务器中的外部表执行连接操作。
 
 ```sql
 localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.id = m.id;
@@ -478,9 +478,9 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-#### 4.1.2.3. 聚集函数
+#### 4.1.2.3 聚合函数
 
-在版本9.6或更早版本中，类似于前一小节中提到的排序操作，AVG（）和COUNT（）等聚合函数将在本地服务器上处理，如下所示。
+在版本9.6或更早版本中，类似于前一小节中提到的排序操作，AVG()和COUNT()等聚合函数将在本地服务器上处理，如下所示。
 
 ```sql
 localdb=# EXPLAIN SELECT AVG(data) FROM tbl_a AS a WHERE a.id < 200;
@@ -546,10 +546,12 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-> 下推
+> #### 下推
 >
-> 与给定示例类似，下推是本地服务器允许远程服务器处理某些操作（例如聚合过程）的操作。
+> 与上面的例子类似，**下推（push-down）** 指的是允许一些本地服务器上的操作在远程服务器上执行，例如聚合函数。
+
+
 
 ## 4.2. 并行查询
 
-todo...
+施工中
