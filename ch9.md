@@ -2,13 +2,13 @@
 
 [TOC]
 
-​	事务日志（**transaction log**）是数据库的关键组件，因为当出现系统故障时，任何数据库管理系统都不允许丢失数据。事务日志是数据库系统中所有**变更（change）**与**行为（action）**的历史记录，当诸如电源故障，或其他服务器错误导致服务器崩溃时，它能用来确保数据不会丢失。由于日志包含每个已执行事务相关的充足信息，因此当服务器崩溃时，数据库服务器应能通过重放事务日志中的更改与操作，来恢复数据库集群。
+​	事务日志（**transaction log**）是数据库的关键组件，因为当出现系统故障时，任何数据库管理系统都不允许丢失数据。事务日志是数据库系统中所有**变更（change）**与**行为（action）**的历史记录，当诸如电源故障，或其他服务器错误导致服务器崩溃时，它能用来确保数据不会丢失。由于日志包含每个已执行事务相关的充足信息，因此当服务器崩溃时，数据库服务器应能通过重放事务日志中的更改与行为，来恢复数据库集群。
 
 ​	在计算机科学领域，WAL是**Write Ahead Logging**的缩写，它指的是将**变更与行为写入事务日志的协议或规则**；而在PostgreSQL中，WAL是**Write Ahead Log**的缩写。在这里它被当成事务日志的同义词，而且也用来指代一种将**行为**写入事务日志（WAL）的实现机制。虽然有些令人困惑， 但本文将使用PostgreSQL中的定义。
 
-​	WAL机制在7.1版本中首次实现，用以减缓服务器崩溃的影响。它还是**时间点恢复（Point-in-Time Recovery PIRT）**与**流复制（Streaming Replication, SR）**实现的基础，这两者将分别在[第10章](ch10.md)和[第11章](ch11.md)中介绍。
+​	WAL机制在7.1版本中首次实现，用以减轻服务器崩溃的影响。它还是**时间点恢复（Point-in-Time Recovery PIRT）**与**流复制（Streaming Replication, SR）**实现的基础，这两者将分别在[第10章](ch10.md)和[第11章](ch11.md)中介绍。
 
-​	尽管理解WAL机制对于管理、集成PostgreSQL非常重要，但由于它的复杂性，不可能做到简要介绍。因此本章将会对WAL做一个完整的解释。第一节描绘了关于WAL的全景，介绍了一些重要的概念与关键词。接下来的小节中会依次讲述其他主题：
+​	尽管理解WAL机制对于管理、集成PostgreSQL非常重要，但由于它的复杂性，不可能做到简要介绍。因此本章将会对WAL做一个完整的解释。第一节描绘了WAL的全貌，介绍了一些重要的概念与关键词。接下来的小节中会依次讲述其他主题：
 
 * 事务日志（WAL）的逻辑结构与物理结构
 * WAL数据的内部布局
@@ -19,9 +19,9 @@
 * 管理WAL段文件
 * 持续归档
 
-## 9.1 概览
+## 9.1 概述
 
-​	让我们先来概览一下WAL机制。为了阐明WAL要解决的问题，第一部分展示了如果PostgreSQL在没有实现WAL时崩溃会发生什么。第二部分介绍了一些关键概念，并概览了本章中的一些关键主题。最后一部分完成了WAL的概述，并引入了一个更为重要的概念。
+​	让我们先来概述一下WAL机制。为了阐明WAL要解决的问题，第一部分展示了如果PostgreSQL在没有实现WAL时崩溃会发生什么。第二部分介绍了一些关键概念，并概览了本章中的一些关键主题。最后一部分完成了WAL的概述，并引入了一个更为重要的概念。
 
 ### 9.1.1 没有WAL的插入操作
 
@@ -43,13 +43,13 @@
 
 ### 9.1.2 插入操作与数据库恢复
 
-​	为了应对上述的系统失效问题，同时又不招致性能损失，PostgreSQL支持了WAL。这一部分描述了一些关键词和概念，WAL数据的写入和数据库系统的恢复。
+​	为了应对上述的系统失效问题，同时又不招致性能损失，PostgreSQL支持了WAL。这一部分描述了一些关键词和概念，以及WAL数据的写入和数据库系统的恢复。
 
 ​	为了应对系统失效，PostgreSQL将所有修改作为历史数据写入持久化存储中。这份历史数据称为**XLOG记录（xlog record）**或**WAL数据（wal data）**。
 
 ​	当插入、删除、提交等变更动作发生时，PostgreSQL会将XLOG记录写入内存中的**WAL缓冲区（WAL Buffer）**。当事务提交或中止时，它们会被立即写入持久存储上的**WAL段文件（WAL segment file）**中（更精确来讲，其他场景也可能会有XLOG记录写入，细节将在9.5节中描述）。XLOG记录的**日志序列号（Log Sequence Number, LSN）**标识了该记录在事务日志中的位置，记录的LSN被用作XLOG记录的唯一标识符。
 
-​	顺便一提，当我们考虑数据库系统如何恢复时，可能会想到一个问题：PostgreSQL是从哪一点开始恢复的？答案是**重做点（REDO Point）**，即最新一个**存档点（Checkpoint）**开始时**XLOG记录**写入的位置。（PostgreSQL中的存档点将在9.7节中描述）。实际上，数据库恢复过程与存档过程紧密相连，两者是不可分割的。
+​	顺便一提，当我们考虑数据库系统如何恢复时，可能会想到一个问题：PostgreSQL是从哪一点开始恢复的？答案是**重做点（REDO Point）**，即最新一个**检查点（Checkpoint）**开始时**XLOG记录**写入的位置。（PostgreSQL中的检查点将在9.7节中描述）。实际上，数据库恢复过程与存档过程紧密相连，两者是不可分割的。
 
 > WAL与存档过程在7.1版本中同时实现
 
@@ -61,7 +61,7 @@
 
 > 表A的LSN展示的是表A页面中页首部里`pd_lsn`类型的`PageXLogRecPtr`字段，与页面的LSN是一回事。
 
-1. 存档者是一个后台进程，周期性地执行存档过程。当存档者开始存档时，它会向当前WAL段文件写入一条XLOG记录，称为**存档记录（Checkpoint Record）**。这条记录包含了最新的**重做点**位置。
+1. 存档者是一个后台进程，周期性地执行存档过程。当存档者开始存档时，它会向当前WAL段文件写入一条XLOG记录，称为**检查点（Checkpoint Record）**。这条记录包含了最新的**重做点**位置。
 2. 发起第一条`INSERT`语句时，PostgreSQL从数据库集簇文件中加载表A的页面到内存中的共享缓冲池，向页面中插入一条元组，然后在`LSN_1`位置创建并写入一条相应的XLOG记录，然后将表A的LSN从`LSN_0`更新为`LSN_1`。在本例中，XLOG记录是由首部数据与**完整元组**组成的一对值。
 3. 当该事务提交时，PostgreSQL向WAL缓冲区创建并写入一条关于该提交行为的XLOG记录，然后将WAL缓冲区中的所有XLOG记录刷写入WAL段文件中。
 4. 发起第二条`INSERT`语句时，PostgreSQL向页面中插入一条新元组，然后在`LSN_2`位置创建并写入一条相应的XLOG记录，然后将表A的LSN从`LSN_1`更新为`LSN_2`。
@@ -84,7 +84,7 @@ PostgreSQL可以通过按时间顺序重放写在WAL段文件中的XLOG记录来
 
 > PostgreSQL不支持**撤销日志（UNDO log）**
 
-尽管写XLOG记录肯定有一定的代价，这些代价和写全页相比微不足道。我们可以确保这一方式的付出的代价是值得的，比如系统崩溃时的恢复能力。
+尽管写XLOG记录肯定有一定的代价，这些代价和写全页相比微不足道。我们可以确保这一方式付出的代价是值得的，比如获得了系统崩溃时的恢复能力。
 
 ### 9.1.3 整页写入
 
@@ -92,7 +92,7 @@ PostgreSQL可以通过按时间顺序重放写在WAL段文件中的XLOG记录来
 
 > 译注：PostgreSQL默认使用8K的页面，操作系统通常使用4k的页面，可能出现只写入一个4k页面的情况。
 
-​	PostgreSQL支持诸如**整页写入（full-page write）**的功能来处理这种失效。如果启用，PostgreSQL会在每次存档点之后，在每个页面第一次发生变更时，会将**整个页面**及相应首部作为一条XLOG记录写入。这个功能默认是开启的。在PostgreSQL中，这种包含完整页面的XLOG记录称为**备份区块（backup block）**，或者**整页镜像（full-page image）**。
+​	PostgreSQL支持诸如**整页写入（full-page write）**的功能来处理这种失效。如果启用，PostgreSQL会在每次检查点之后，在每个页面第一次发生变更时，会将**整个页面**及相应首部作为一条XLOG记录写入。这个功能默认是开启的。在PostgreSQL中，这种包含完整页面的XLOG记录称为**备份区块（backup block）**，或者**整页镜像（full-page image）**。
 
 **图9.4 整页写入**
 
@@ -279,7 +279,7 @@ XLOG记录的数据部分可以分为两类：备份区块（完整的页面）�
 
 ![](img/fig-9-08.png)
 
-XLOG记录的内部布局如下所述，让我们来看几个特定的例子。
+让我们通过几个特定的例子，来阐述XLOG记录的内部布局。
 
 #### 9.4.2.1 备份区块
 
@@ -311,7 +311,7 @@ typedef struct BkpBlock
 
 1. 首部部分，`XLogRecord`结构体
 2. 结构体 `xl_heap_insert`
-3. 被插入的元组 —— 更精确地说，元组中被移除了一些字节。
+3. 被插入的元组 —— 更精确地说，是移除了一些字节的元组。
 
 结构体`xl_heap_insert`包含的变量用于在数据库集簇中定位被插入的元组。（即，包含该元组的表的`RelFileNode`，以及该元组的`tid`），以及该元组的可见性标记位。
 
@@ -350,14 +350,14 @@ typedef struct xl_heap_insert
 } xl_heap_insert;
 ```
 
-> 在结构体`xl_heap_header`的代码中解释了移除插入元组中若干字节的原因：
+> 在结构体`xl_heap_header`的代码注释中解释了移除插入元组中若干字节的原因：
 >
 > 我们并没有在WAL中存储被插入或被更新元组的固定部分（即HeapTupleHeaderData，堆元组首部），我们可以在需要时从WAL中的其它部分重建这几个字段，以此节省一些字节。或者根本就无需重建。
 
-这里还有一个例子值得一提，如图9.8(c)所示，存档记录的XLOG记录相当简单，它由如下所示的两个数据结构组成：
+这里还有一个例子值得一提，如图9.8(c)所示，检查点的XLOG记录相当简单，它由如下所示的两个数据结构组成：
 
 1. `XLogRecord`结构（首部部分）
-2. 包含存档点信息的`CheckPoint`结构体（参见[9.7节](#9.7)）
+2. 包含检查点信息的`CheckPoint`结构体（参见[9.7节](#9.7)）
 
 > `xl_heap_header`结构定义在[src/include/access/htup.h](https://github.com/postgres/postgres/blob/master/src/include/access/htup.h)中，而`CheckPoint`结构体定义在[src/include/catalog/pg_control.h](https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_control.h)中。
 
@@ -373,7 +373,7 @@ typedef struct xl_heap_insert
 
 ![](img/fig-9-09.png)
 
-首部部分包含零个或多个`XLogRecordBlockHeaders`，以及零个或一个`XLogRecordDataHeaderShort`（或`XLogRecordDataHeaderLong`）；它必须至少包含这些中的至少一个。当记录存储着整页镜像时（即备份区块），`XLogRecordBlockHeader`会包含`XLogRecordBlockImageHeader`，如果启用压缩还会包含`XLogRecordBlockCompressHeader`。
+首部部分包含零个或多个`XLogRecordBlockHeaders`，以及零个或一个`XLogRecordDataHeaderShort`（或`XLogRecordDataHeaderLong`）；它必须至少包含其中一个。当记录存储着整页镜像时（即备份区块），`XLogRecordBlockHeader`会包含`XLogRecordBlockImageHeader`，如果启用压缩还会包含`XLogRecordBlockCompressHeader`。
 
 ```c
 /* 追加写入XLOG记录的区块数据首部。
@@ -473,7 +473,7 @@ typedef struct XLogRecordBlockCompressHeader
 } XLogRecordBlockCompressHeader;
 ```
 
-​	数据部分则由零或多个区块数据与零或多个主数据组成，区块数据与`XLogRecordBlockHeader(s)`对应，而**主数据（main data）**则与`XLogRecordDataHeader`对应。
+​	数据部分则由零或多个区块数据与零或一个主数据组成，区块数据与`XLogRecordBlockHeader(s)`对应，而**主数据（main data）**则与`XLogRecordDataHeader`对应。
 
 > #### WAL压缩
 >
@@ -485,7 +485,7 @@ typedef struct XLogRecordBlockCompressHeader
 
 ![](img/fig-9-10.png)
 
-和前一小节一样，这里展示了一些特殊的例子。
+和前一小节一样，这里通过一些特例来描述。
 
 #### 9.4.3.1 备份区块
 
@@ -501,13 +501,13 @@ typedef struct XLogRecordBlockCompressHeader
 
 `XLogRecordDataHeaderShort`存储了`xl_heap_insert`结构的长度，该结构是当前记录的主数据部分（见下）。
 
-> ​	除了某些特例外（例如逻辑解码与推测插入（speculative insertion）），XLOG记录的**主数据**不会包含整页镜像。它们会在记录重放时被忽略，属于冗余数据，未来可能会对其改进。
+> ​	除了某些特例外（例如逻辑解码与推测插入（speculative insertion）），包含整页镜像的XLOG记录的**主数据**不会被使用。它们会在记录重放时被忽略，属于冗余数据，未来可能会对其改进。
 >
 > ​	此外，备份区块记录的主数据与创建它们的语句相关。例如`UPDATE`语句就会追加写入`xl_heap_lock`或`xl_heap_updated`。
 
 #### 9.4.3.2 非备份区块
 
-​	接下来会描述由`INSERT`语句创建的非备份区块（如图9.10(b)所示），它由四个数据结构与一个数据对象组成：
+​	接下来描述由`INSERT`语句创建的非备份区块（如图9.10(b)所示），它由四个数据结构与一个数据对象组成：
 
 1. `XLogRecord`结构 （首部部分）
 2. `XLogRecordBlockHeader`结构
@@ -520,13 +520,13 @@ typedef struct XLogRecordBlockCompressHeader
 ​	新版本的`xl_heap_insert`仅包含两个值：当前元组在区块内的偏移量，以及一个可见性标志。该结构变得十分简单，因为`XLogRecordBlockHeader`存储了旧版本中该结构体的绝大多数数据。
 
 ```c
-/* 关于插入，这些是我们需要知道的 */
+/* This is what we need to know about insert */
 typedef struct xl_heap_insert
 {
-	OffsetNumber offnum;		/* 被插入元组的偏移量 */
+	OffsetNumber offnum;		/* inserted tuple's offset */
 	uint8		flags;
 
-	/* xl_heap_header & 与元组数据在0号备份区块中 */
+	/* xl_heap_header & TUPLE DATA in backup block 0 */
 } xl_heap_insert;
 ```
 
@@ -580,7 +580,7 @@ exec_simple_query() @postgres.c
 
 > 上图的XLOG格式是9.4版本的
 
-5. 函数`XLogWrite()`会冲刷WAL缓冲区，并将所有内容写入WAL段文件中。如果`wal_sync_method`参数被配置为`open_sync`或`open_datasync`，记录会被同步写入，因为函数会使用带有`O_SYNC`或`O_DSYNC`标记的`open()`系统调用。如果该参数被配置为`fsync`，`fsync_writethrough`，`fdatasync`，相应的系统调用就是`fsync()`，带有`F_FULLSYNC`选项的`fcntl()`，以及`fdatasync()`。无论哪一种情况，所有的XLOG记录都会被确保写入存储之中。
+5. 函数`XLogWrite()`会冲刷WAL缓冲区，并将所有内容写入WAL段文件中。如果`wal_sync_method`参数被配置为`open_sync`或`open_datasync`，记录会被同步写入（译者注：而不是提交才会刷新wal缓冲区），因为函数会使用带有`O_SYNC`或`O_DSYNC`标记的`open()`系统调用。如果该参数被配置为`fsync`，`fsync_writethrough`，`fdatasync`，相应的系统调用就是`fsync()`，带有`F_FULLSYNC`选项的`fcntl()`，以及`fdatasync()`。无论哪一种情况，所有的XLOG记录都会被确保写入存储之中。
 6. 函数`TransactionIdCommitTree()`将CLOG中当前事务的状态从`IN_PROGRESS`更改为`COMMITTED`。
 
 **图9.12 XLOG记录的写入顺序（续图9.11）**
@@ -595,7 +595,7 @@ exec_simple_query() @postgres.c
 
 如果出现上述情况之一，无论其事务是否已提交，WAL缓冲区上的所有WAL记录都将写入WAL段文件中。
 
-​	DML（数据操作语言，Data Manipulation Language）操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如上所述，`COMMIT`操作会写入包含着提交的事务ID的XLOG记录。另一个例子是`Checkpoint`操作会写入关于该存档概述信息的XLOG记录。此外，尽管不是很常见，`SELECT`语句在一些特殊情况下也会创建XLOG记录。例如在SELECT语句处理的过程中如果遇到了由HOT（Heap Only Tuple），需要删除不必要元组并拼接必要的元组时，修改对应页面的XLOG记录就会写入WAL缓冲区。
+​	DML（数据操作语言，Data Manipulation Language）操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如上所述，`COMMIT`操作会写入包含着提交的事务ID的XLOG记录。另一个例子是`Checkpoint`操作会写入关于该存档概述信息的XLOG记录。此外，尽管不是很常见，`SELECT`语句在一些特殊情况下也会创建XLOG记录。例如在SELECT语句处理的过程中，如果因为HOT（Heap Only Tuple）需要删除不必要元组并拼接必要的元组时，修改对应页面的XLOG记录就会写入WAL缓冲区。
 
 
 
@@ -618,21 +618,21 @@ exec_simple_query() @postgres.c
 
 > 在9.1或更早的版本中，后台写入进程（见8.6节）同时负责脏页写入与存档。
 
-在接下来的几个小节中会简要描述存档过程与`pg_control`文件，`pg_control`文件保存了当前存档点的元数据。
+在接下来的几个小节中会简要描述存档过程与`pg_control`文件，`pg_control`文件保存了当前检查点的元数据。
 
 ### 9.7.1 存档过程概述
 
-​	存档进程负责两个方面：为数据库恢复做准备工作，以及共享缓冲池上脏页的清除工作。在本小节介绍其内部过程时，将重点关注前一个方面。参见图9.13和以下描述。
+​	存档进程负责两个方面：为数据库恢复做准备工作，以及共享缓冲池上脏页的刷盘工作。在本小节介绍其内部过程时，将重点关注前一个方面。参见图9.13和以下描述。
 
-**图9.13 PostgreSQL存盘的内部流程**
+**图9.13 PostgreSQL存档的内部流程**
 
 ![](img/fig-9-13.png)
 
-1. 当存档进程启动时，会将**重做点（REDO Point）**存储在内存中；**重做点**是上次存盘开始时刻XLOG记录的写入位置，也是数据库回复的开始位置。
-2. 该存档相应的XLOG记录（即存档记录）会被写入WAL缓冲区，该记录的数据部分是由CheckPoint结构体定义的，包含了一些变量，比如第一步中重做点的位置。另外，写入存档记录的位置，就按照字面意义叫做**checkpoint**。
+1. 当存档进程启动时，会将**重做点（REDO Point）**存储在内存中；**重做点**是上次存档开始时刻时XLOG记录的写入位置，也是数据库恢复的开始位置。
+2. 该存档相应的XLOG记录（即检查点）会被写入WAL缓冲区，该记录的数据部分是由CheckPoint结构体定义的，包含了一些变量，比如第一步中重做点的位置。另外，写入检查点的位置，就按照字面意义叫做检查点（**checkpoint**）。
 3. 共享内存中的所有数据（例如，CLOG的内容）都会被刷入持久存储中。
-4. 共享缓冲池中的所有脏页都会被逐渐刷写回存储中。
-5. 更新`pg_control`文件，该文件包含了一些基础信息，例如上一次存档记录的位置，后面会介绍该文件的细节
+4. 共享缓冲池中的所有脏页都会被逐渐刷写到存储中。
+5. 更新`pg_control`文件，该文件包含了一些基础信息，例如上一次检查点的位置，后面会介绍该文件的细节
 
 ```c
 typedef struct CheckPoint
@@ -660,16 +660,16 @@ typedef struct CheckPoint
 } CheckPoint;
 ```
 
-​	让我们从数据库恢复的角度来总结上面的内容，存档过程会创建包含重做点的存档记录，并将存档位置与其他信息存储到`pg_control`文件中。因此，PostgreSQL能够通过从重做点回放WAL数据来进行恢复（重做点是从存档记录中获取的）。
+​	让我们从数据库恢复的角度来总结上面的内容，存档过程会创建包含重做点的检查点，并将存档位置与其他信息存储到`pg_control`文件中。因此，PostgreSQL能够通过从重做点回放WAL数据来进行恢复（重做点是从检查点中获取的）。
 
 ### 9.7.2 pg_crontrol文件
 
-​	由于pg_control文件包含了存档的基本信息，因此它对于数据库恢复肯定是必不可少的。如果它被破坏或不可读，则恢复过程就无法启动，因为系统不知道从哪里开始恢复。
+​	由于pg_control文件包含了存档的基本信息，因此它对于数据库恢复肯定是必不可少的。如果它被破坏或不可读，因为系统不知道从哪里开始恢复，则恢复过程就无法启动。
 
 尽管pg_control文件存储了40多条数据项，如下三个是接下来和我们讨论内容相关的：
 
 1. **状态（State）** —— 最近存档过程开始时数据库的状态，总共有七种状态：`start up`表示系统正在启动，`shut down`表示系统被关机命令正常关闭，`in production`表示数据库正在运行，诸如此类。
-2. **最新存档位置（Latest Checkpoint Location）** —— 最新存档记录的LSN位置
+2. **最新存档位置（Latest Checkpoint Location）** —— 最新检查点的LSN位置
 3. **上次存档位置（Prior Checkpoint Location）**—— 前一个检查点的LSN位置，在版本11中已经弃用，细节如引文所示。
 
 `pg_control`文件存储在数据目录中`global`子目录内；可以使用`pg_controldata`程序显示其内容。
@@ -695,12 +695,12 @@ typedef struct CheckPoint
 ![](img/fig-9-14.png)
 
 1. PostgreSQL在启动时读取pg_control文件的所有项。如果`state`项是`in production`，PostgreSQL将进入恢复模式，因为这意味着数据库没有正常停止；如果是'shut down'，它就会进入正常的启动模式。
-2. PostgreSQL从合适的WAL段文件中读取最近的存档记录，该记录的位置写在`pg_control`文件中，并从该存档记录中获得重做点。如果最新的存档记录是无效的，PostgreSQL会读取前一个存档点。如果两个记录都不可读，它就会放弃自我恢复（注意在PostgreSQL11中不会存储前一个存档点）。
+2. PostgreSQL从合适的WAL段文件中读取最近的检查点，该记录的位置写在`pg_control`文件中，并从该检查点中获得重做点。如果最新的检查点是无效的，PostgreSQL会读取前一个检查点。如果两个记录都不可读，它就会放弃自我恢复（注意在PostgreSQL11中不会存储前一个检查点）。
 3. 使用合适的资源管理器按顺序读取并重放XLOG记录，从重做点开始，直到最新WAL段文件的最后位置。当遇到一条属于备份区块的XLOG记录时，无论其LSN如何，它都会覆写相应表的页面。其他情况下，只有当此记录的LSN大于相应页面的`pd_lsn`时，才会重放该（非备份区块的）XLOG记录。
 
 
 
-​	第二件事是关于LSN的比较：为什么应该比较非备份区块的LSN和相应页面的`pd_lsn`。与前面的示例不同，将使用需要在两个LSN之间进行比较的特定示例来解释。见图 9.15和图9.16。 （注意，省略了WAL缓冲区以简化描述）。
+​	第二件事是关于LSN的比较：为什么应该比较非备份区块的LSN和相应页面的`pd_lsn`。与前面的示例不同，这里使用需要在两个LSN之间进行比较的特定示例来解释。见图 9.15和图9.16。 （注意，省略了WAL缓冲区以简化描述）。
 
 **图9.15 当后台写入者工作时的插入操作**
 
@@ -728,15 +728,15 @@ typedef struct CheckPoint
 1. PostgreSQL加载第一条XLOG记录和表A的页面，但不重放它，因为该记录的LSN不大于表A的LSN（两个值都是`LSN_1`）。实际上一目了然，没有重放该记录的必要性。
 2. 接下来，PostgreSQL会重放第二条XLOG记录，因为该记录的LSN（LSN_2）大于当前表A的LSN（LSN_1）。
 
-从这个例子中可以看出，如果非备份区块的重放顺序不正确，或者多次重放非备份区块，数据库集群将不再一致。简而言之，非备份区块的重做（重放）操作不是**幂等（idempotent）**的。因此，为了确保正确的重放顺序，非备份区块中的记录只有当且仅当其LSN大于相应页面的`pd_lsn`时，才执行重放。
+从这个例子中可以看出，如果非备份区块的重放顺序不正确，或者多次重放非备份区块，数据库集群将不再一致。简而言之，非备份区块的重做（重放）操作不是**幂等（idempotent）**的。因此，为了确保正确的重放顺序，非备份区块中的记录当且仅当其LSN大于相应页面的`pd_lsn`时，才执行重放。
 
-​	另一方面，由于备份区块的重放操作是幂等的，因此备份块可以重放任意次，而不管其LSN为何。
+​	另一方面，由于备份区块的重放操作是幂等的，不管其LSN为何值，备份块可以重放任意次。
 
 
 
 ## 9.9 WAL段文件管理
 
-​	PostgreSQL将XLOG记录写入`pg_xlog`子目录中的WAL段文件中（版本10之后是`pg_wal`子目录），当旧的段文件写满时就会切换至新的段文件。WAL文件的数量会根据几个配置参数而变化，一些服务器的行为也会相应变化。此外，在9.5版中，段文件的管理机制有了一些改善。
+​	PostgreSQL将XLOG记录写入`pg_xlog`子目录中的WAL段文件中（版本10之后是`pg_wal`子目录），当旧的段文件写满时就会切换至新的段文件。WAL文件的数量会根据几个配置参数的变化而变化，一些服务器的行为也会相应变化。此外，在9.5版中，段文件的管理机制也有了一些改善。
 
 ### 9.9.1 WAL段切换
 
@@ -746,13 +746,13 @@ typedef struct CheckPoint
 2. 函数`pg_switch_xlog()`（10以后为`pg_switch_wal()`）被调用。
 3. 启用了`archive_mode`，且已经超过`archive_timeout`配置的时间。
 
-被切换的文件通常会被回收（重命名或重用），以供未来之用。但如果不是必需的话，也可能会被移除。
+被切换的文件通常会被回收（重命名或重用），以供未来之用。但如果不是需要的话，也可能会被移除。
 
 ### 9.9.2 WAL段管理（9.5版及以后）
 
-​	每当存档启动时，PostgreSQL都会估计并准备下一个存档周期所需的WAL段文件数。这种估计基于前一个存档周期中消耗的文件数量。从包含上一个重做点的段文件开始计数，而这个值应当在`min_wal_size`（默认80MB，5个文件）与`max_wal_size`之间（默认1GB，64个文件）。如果检查点启动，必需的段文件会被保留或回收，而不必要的文件会被移除。
+​	每当存档过程启动时，PostgreSQL都会估计并准备下一个存档周期所需的WAL段文件数。这种估计基于前一个存档周期中消耗的文件数量，即从包含上一个重做点的段文件开始计数，而这个值应当在`min_wal_size`（默认80MB，5个文件）与`max_wal_size`之间（默认1GB，64个文件）。如果存档过程启动，必需的段文件会被保留或回收，而不必要的段文件会被移除。
 
-一个具体的例子如图9.17所示，假设在存档开始前有六个文件，`WAL_3`包含了上一个重做点（版本10及以前，版本11后就是当前重做点），PostgreSQL估计会需要五个文件，在这种情况下，`WAL_1`被重命名为`WAL_7`回收利用，而`WAL_2`会被移除。
+​	一个具体的例子如图9.17所示，假设在存档开始前有六个文件，`WAL_3`包含了上一个重做点（版本10及以前，版本11后就是当前重做点），PostgreSQL估计会需要五个文件，在这种情况下，`WAL_1`被重命名为`WAL_7`回收利用，而`WAL_2`会被移除。
 
 > ​	任何比包含上一个重做点的段文件更老的段文件都可以被移除，因为按照9.8节中描述的恢复机制，这些文件永远不会被用到了。
 
@@ -770,7 +770,7 @@ typedef struct CheckPoint
 
 ​	WAL文件的数量会根据服务器活动而自动适配。 如果WAL数据写入量持续增加，则WAL段文件的估计数量以及WAL文件的总大小也会逐渐增加。 在相反的情况下（即WAL数据写入量减少），这些值也会减少。
 
-​	如果WAL文件的总大小超过`max_wal_size`，则将启动存档。 图9.19说明了这种情况。 存档将会创建一个新的重做点，最近的重做点将会变为上一个重做点。不是必需的文件将被回收。通过这种方式，PostgreSQL将始终只保留数据库恢复所必需的WAL段文件。
+​	如果WAL文件的总大小超过`max_wal_size`，则将启动存档。 图9.19说明了这种情况。 存档将会创建一个新的重做点，最近的重做点将会变为上一个重做点，不是必需的文件将被回收。通过这种方式，PostgreSQL将始终只保留数据库恢复所必需的WAL段文件。
 
 **图9.19 存档与回收WAL段文件**
 
@@ -798,9 +798,9 @@ WAL段文件具体数目的取决于不同的服务器活动，复制槽的存�
 
 
 
-​	如第9.7节中所提到的，当消耗了超过`checkpoint_segments`个数量的文件时，就会出现存档过程。因此可以保证WAL段文件中总是包含至少两个重做点，因为文件的数量始终大于$2×\verb|checkpoint_segments|$，对于由超时导致的存档同样适用。PostgreSQL总是会保留足够用于恢复的WAL段文件（有时候会超出必需）。
+​	如第9.7节中所提到的，当消耗了超过`checkpoint_segments`个数量的文件时，就会启动存档过程。因此可以保证WAL段文件中总是包含至少两个重做点，因为文件的数量始终大于$2×\verb|checkpoint_segments|$，对于由超时导致的存档同样适用。PostgreSQL总是会保留足够用于恢复的WAL段文件（有时候会超出必需的量）。
 
-> ​	在版本9.4或更早版本中，调整参数`checkpoint_segments`是一个痛苦的问题。 如果设置为较小的值，则存档会频繁发生，这会导致性能下降；而如果设置为较大的数值，则WAL文件总是需要巨大的磁盘空间，其中一些并不是必需的。
+> ​	在版本9.4或更早版本中，调整参数`checkpoint_segments`是一个痛苦的问题。 如果设置为较小的值，则存档会频繁发生，这会导致性能下降；而如果设置为较大的数值，则WAL文件总是需要巨大的磁盘空间，但其中一些空间不是必须的。
 >
 > ​	在9.5版本中，WAL文件的管理策略得到了改善，而`checkpoint_segments`参数被弃用，因此上述的权衡问题已经得到解决。
 
@@ -816,7 +816,7 @@ WAL段文件具体数目的取决于不同的服务器活动，复制槽的存�
 archive_command = 'cp %p /home/postgres/archives/%f'
 ```
 
-这里`%p`是将被拷贝的WAL段文件路径的占位符，而`%f`是归档日志文件名的占位符。
+这里`%p`是被拷贝WAL段文件的路径占位符，而`%f`是归档日志文件名的占位符。
 
 **图9.20 持续归档**
 
