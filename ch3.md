@@ -1216,7 +1216,7 @@ testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 
    在本例中，在baserestrictinfo中，添加一个WHERE子句'id <240'，在RelOptInfo->indexlist中添加两个索引，*tbl_2_pkey*和*tbl_2_data_idx*；
 
-3. 创建一个Path结构，估计该路径的顺序扫描的代价并添加到RelOptInfo->indexlist中。
+3. 创建一个Path结构，估计该路径的顺序扫描的代价并添加到RelOptInfo-pathlist中。
 
 4. 创建一个IndexPath，估计索引扫描的代价，并使用add_path()函数，将IndexPath添加到RelOptInfo->pathlist中。
 
