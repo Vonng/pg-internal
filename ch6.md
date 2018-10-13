@@ -146,8 +146,6 @@ $ ls -la base/16384/18751*
 
 ​	VM在9.6版中得到了增强，以提高冻结处理的效率。新的VM除了显示页面可见性之外，还包含了页面中元组是否全部冻结的信息。（第6.3.3节）。
 
-
-
 ## 6.3 冻结过程
 
 ​	冻结过程有两种模式，依特定条件而择其一执行。为方便起见，将这些模式称为**惰性模式（lazy mode）**和**迫切模式（eager mode）**。
@@ -163,7 +161,7 @@ $ ls -la base/16384/18751*
 
 ### 6.3.1 惰性模式
 
-当开始冻结处理时，PostgreSQL计算`freezeLimit txid`并冻结其`t_xmin`小于`freezeLimit` txid的元组。
+当开始冻结处理时，PostgreSQL计算`freezeLimit txid`并冻结其`t_xmin`小于`freezeLimit txid`的元组。
 
 `freezeLimit txid`定义如下：
 $$
@@ -175,7 +173,7 @@ $$
 
 ​	而`OldestXmin`是当前正在运行的事务中最早的**事务标识（txid）**。 例如，如果在执行`VACUUM`命令时正在运行三个事务（txid分别为100，101和102），这里`OldestXmin`就是100。如果不存在其他事务，`OldestXmin` 就是执行此`VACUUM`命令的事务标识。 这里，`vacuum_freeze_min_age`是一个配置参数（默认为50,000,000）。
 
-​	图6.3显示了一个具体的例子。 这里，Table_1由三个页面组成，每个页面有三个元组。 执行VACUUM命令时，当前txid为50,002,500，并且没有其他事务。 在这种情况下，OldestXmin OldestXmin  是50,002,500; 因此，freezeLimit txid为2500.冻结处理如下执行。
+​	图6.3显示了一个具体的例子。 这里，Table_1由三个页面组成，每个页面有三个元组。 执行VACUUM命令时，当前txid为50,002,500，并且没有其他事务。在这种情况下，`OldestXmin`是50,002,500；因此，`freezeLimit txid`为2500.冻结过程按照如下步骤执行。
 
 **图6.3 惰性模式下的元组冻结**
 
@@ -195,7 +193,7 @@ $$
 
 在完成清理过程之前，与清理相关的统计数据会被更新，例如`pg_stat_all_tables`视图中的`n_live_tup`，`n_dead_tup`，`last_vacuum`，`vacuum_count`等。
 
-如上例所示，惰性模式可能无法完全冻结所有需要冻结的元组，因为它可能会跳过页面。
+如上例所示，因为惰性模式可能会跳过页面，它可能无法完全冻结所有需要冻结的元组。
 
 ### 6.3.2 迫切模式
 
@@ -229,7 +227,7 @@ $$
 
 * 第2页：
 
-  元组10被冻结，而元组11没有。
+  将元组10冻结，而元组11没有冻结。
 
 冻结一个表后，目标表的`pg_class.relfrozenxid`将被更新。 `pg_class`是一个系统视图，每个`pg_class.relfrozenxid`列保存相应表的最近冻结的事务标识。本例中表1的`pg_class.relfrozenxid`更新为当前的`freezeLimit_txid`（即100,002,000），这意味着表1中`t_xmin`小于100,002,000的所有元组都已被冻结。
 
@@ -280,7 +278,7 @@ $$
 
 > #### FREEZE选项
 >
-> ​	带有`FREEZE`选项的`VACUUM`命令会强制冻结指定表中的所有事务标识。虽然这是在急切模式下执行的，但这里`freezeLimit`会被设置为`OldestXmin`（而不是`OldestXmin - vacuum_freeze_min_age`）。 例如，当`txid=5000`执行`VACUUM FULL`命令且没有其他正在运行的事务时，`OldesXmin`会被设置为5000，而事务标识小于5000的元组将会被冻结。
+> ​	带有`FREEZE`选项的`VACUUM`命令会强制冻结指定表中的所有事务标识。虽然这是在迫切模式下执行的，但这里`freezeLimit`会被设置为`OldestXmin`（而不是`OldestXmin - vacuum_freeze_min_age`）。 例如，当`txid=5000`执行`VACUUM FULL`命令且没有其他正在运行的事务时，`OldesXmin`会被设置为5000，而事务标识小于5000的元组将会被冻结。
 
 
 
@@ -302,7 +300,7 @@ $$
 
 ​	如5.4节中所述，**提交日志（clog）**存储着事务的状态。 当更新`pg_database.datfrozenxid`时，PostgreSQL会尝试删除不必要的clog文件。 注意相应的clog页面也会被删除。
 
-​	图6.7展示了一个例子。 如果clog文件`0002`中包含最小的`pg_database.datfrozenxid`，则可以删除旧文件（`0000`和`0001`），因为存储在这些文件中的所有事务都可以在整个数据库集簇中被视为冻结。
+​	图6.7展示了一个例子。 如果clog文件`0002`中包含最小的`pg_database.datfrozenxid`，则可以删除旧文件（`0000`和`0001`），因为存储在这些文件中的所有事务在整个数据库集簇中已经被视为冻结了。
 
 **图6.7  删除不必要的阻塞文件和页面**
 
@@ -340,11 +338,15 @@ $$
 
 ​	自动清理守护进程唤起的`autovacuum worker`逐步对各个表执行VACUUM，从而将对数据库活动的影响降到最小。
 
+> ###### 关于如何维护AUTOVACUUM
+>
+> 参考文章[PostgreSQL中的Autovacuum调整以及Autovacuum内幕][https://www.percona.com/blog/2018/08/10/tuning-autovacuum-in-postgresql-and-autovacuum-internals/]
+
 
 
 ## 6.6 完整清理（FULL VACUUM）
 
-​	虽然并发清理对于运维至关重要，但光有它还不够。例如考虑这种情况：即使删除了许多死元组，也无法减小表的大小。
+​	虽然并发清理对于运维至关重要，但光有它还不够。比如，即使删除了许多死元组，也无法减小表的大小。
 
 ​	图6.8展示了一个极端的例子。假设一个表由三个页面组成，每个页面包含六个元组。执行以下`DELETE`命令以删除元组，并执行`VACUUM`命令以移除死元组：
 
@@ -359,7 +361,7 @@ testdb=# VACUUM tbl;
 
 ​	死元组被移除了， 但表的大小没有减少。 这中情况既浪费了磁盘空间，又会对数据库性能产生负面影响。 例如在上面的例子中，当读取表中的三个元组时，必须从磁盘加载三个页面。
 
-​	为了解决这种情况，PostgreSQL提供了**完整清理**模式。 图6.9显示了该模式的概要。
+​	为了解决这种情况，PostgreSQL提供了**完整清理**模式。 图6.9显示了该模式的概述。
 
 **图6.9 完整VACUUM模式概述**
 
@@ -385,7 +387,7 @@ testdb=# VACUUM tbl;
 > (1)  FOR each table
 > (2)       获取表上的AccessExclusiveLock锁
 > (3)       创建一个新的表文件
-> (4)       FOR each live tuple in the old table
+> (4)       FOR 每个活元组 in 老表
 > (5)            将活元组拷贝到新表中
 > (6)            如果有必要，冻结该元组。
 >           END FOR
@@ -398,7 +400,7 @@ testdb=# VACUUM tbl;
 > (11)  移除不必要的clog文件
 > ```
 
-使用`VACUUM FULL`命令时应考虑两点。
+使用`VACUUM FULL`命令时，应考虑两点。
 
 1. 当执行完整清理时，没有人可以访问（读/写）表。
 2. 最多会临时使用两倍于表的磁盘空间；因此在处理大表时，有必要检查剩余磁盘容量。
