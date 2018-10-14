@@ -4,11 +4,11 @@
 
 ​	当多个事务同时在数据库中运行时，**并发控制**是一种维持**一致性**与**隔离性**的技术，这是ACID的两个属性。
 
-​	从宽泛的意义来说，有三种并发控制技术：**多版本并发控制（MVCC）**，**严格两阶段锁定（S2PL）**和**乐观并发控制（OCC）**，每种技术都有多种变体。在MVCC中，每个写操作都会创建数据项的一个新版本，同时保留旧版本。当事务读取数据对象时，系统会选择其中的一个版本，来确保各个事务间相互隔离。 MVCC的主要优势在于“读不会阻塞写，而写也不会阻塞读”，相反的例子是，基于S2PL的系统在写操作发生时必须阻塞读操作，因为因为写入者获取了对象的排他锁。 PostgreSQL和一些RDBMS使用一种MVCC的变体，称为**快照隔离（Snapshot Isolation，SI）**。
+​	从宽泛的意义来说，有三种并发控制技术：**多版本并发控制（MVCC）**，**严格两阶段锁定（S2PL）**和**乐观并发控制（OCC）**，每种技术都有多种变体。在MVCC中，每个写操作都会创建数据项的一个新版本，同时保留旧版本。当事务读取数据对象时，系统会选择其中的一个版本，来确保各个事务间相互隔离。 MVCC的主要优势在于“读不会阻塞写，而写也不会阻塞读”，相反的例子是，基于S2PL的系统在写操作发生时必须阻塞读操作，因为写入者获取了对象的排他锁。 PostgreSQL和一些RDBMS使用一种MVCC的变体，称为**快照隔离（Snapshot Isolation，SI）**。
 
-​	为了实现SI，一些RDBMS（例如Oracle）使用回滚段。当写入新的数据对象时，旧版本的对象先被写入回滚段，随后用新对象覆写至数据区域。 PostgreSQL使用更简单的方法：一个新数据对象被直接插入到相关的表页中。读取对象时，PostgreSQL通过**可见性检查规则**，为每个事物选择合适的对象版本作为响应。
+​	为了实现SI，一些RDBMS（例如Oracle）使用回滚段。当写入新的数据对象时，旧版本的对象先被写入回滚段，随后用新对象覆写至数据区域。 PostgreSQL使用更简单的方法：一个新数据对象被直接插入到相关的表页中。读取对象时，PostgreSQL通过**可见性检查规则**，为每个事务选择合适的对象版本作为响应。
 
-​	在ANSI SQL-92标准中定义的三种异常，脏读，不可重复读和幻读不会在SI中出现。但SI无法实现真正的可串行化，因为可能会出现序列化异常：例如**写偏差（write skew）**和**只读事务偏差（Read-only Transaction Skew）**。需要注意的是：ANSI SQL-92标准中可序列化的定义与现代理论中的定义**并不相同**。为了解决这个问题，PostgreSQL从9.1版本之后添加了**可序列化快照隔离（SSI，Serializable Snapshot Isolation）**，SSI可以检测序列化异常，并解决这种异常导致的冲突。因此，9.1版本之后的PostgreSQL提供了真正的`SERIALIZABLE`隔离等级。（此外，SQL Server也使用SSI，而Oracle仍然使用SI）。
+​	在ANSI SQL-92标准中定义的三种异常，脏读，不可重复读和幻读，不会在SI中出现。但SI无法实现真正的可串行化，因为可能会出现序列化异常：例如**写偏差（write skew）**和**只读事务偏差（Read-only Transaction Skew）**。需要注意的是：ANSI SQL-92标准中可序列化的定义与现代理论中的定义**并不相同**。为了解决这个问题，PostgreSQL从9.1版本之后添加了**可序列化快照隔离（SSI，Serializable Snapshot Isolation）**，SSI可以检测序列化异常，并解决这种异常导致的冲突。因此，9.1版本之后的PostgreSQL提供了真正的`SERIALIZABLE`隔离等级（此外，SQL Server也使用SSI，而Oracle仍然使用SI）。
 
 本章包括以下四个部分：
 
@@ -22,13 +22,13 @@
 
   本部分说明了实现并发控制机制所需的关键功能。
 
-  第5.4,5.5和5.6节描述了提交日志（clog），分别讲述了事务状态，事务快照和可见性检查规则。
+  第5.4，5.5和5.6节描述了提交日志（clog），分别讲述了事务状态，事务快照和可见性检查规则。
 
 * 第3部分：第5.7节-5.9节。
 
   本部分使用特定示例描述PostgreSQL中的并发控制。
 
-  第5.7节描述了可见性检查。本节还说明如何防止ANSI SQL标准中定义的三个异常。第5.8节描述了防止丢失更新，第5.9节简要描述了SSI。
+  第5.7节描述了可见性检查。本部分还说明了如何防止ANSI SQL标准中定义的三个异常。第5.8节描述了如何防止丢失更新，第5.9节简要描述了SSI。
 
 * 第4部分：第5.10节。
 
@@ -48,7 +48,7 @@
 >
 > (1)：在9.0及更早版本中，此级别被当做`SERIALIZABLE`，因为它不会出现ANSI SQL-92标准中定义的三种异常。 但随着9.1版中SSI的实现，该级别已被改称为`REPEATABLE READ`，并引入了真正的`SERIALIZABLE`级别。
 
-> PostgreSQL对DML（增删改查）使用SSI，对DDL（CREATE，DROP等）使用2PL。
+> PostgreSQL对DML（SELECT, UPDATE, INSERT, DELETE等命令）使用SSI，对DDL（CREATE TABLE等命令）使用2PL。
 
 
 
@@ -69,27 +69,27 @@ testdb=# SELECT txid_current();
 PostgreSQL保留以下三个特殊txid：
 
 * 0表示无效的txid。
-* 1表示Bootstrap txid，仅用于数据库集群的初始化。
+* 1表示初始txid，仅用于数据库集群的初始化。
 * 2表示冻结txid，如第5.10.1节所述。
 
-Txids可以相互比较。例如，对于txid=100的事务，大于100的txids是“未来的”，并且从txid=100之后的txid都是不可见的；小于100的txids是“过去”且可见的（图5.1a））。
+Txid们可以相互比较。例如，对于txid=100的事务，大于100的txid是“未来的”，并且从txid=100之后的txid都是不可见的；小于100的txid是“过去”且可见的（图 5.1a））。
 
 **图5.1  PostgreSQL中的事务ID**
 
 ![](img/fig-5-01.png)
 
-由于实际系统中的txid空间不足，PostgreSQL将txid空间视为一个圆。之前的21亿txids是'过去'，接下来的21亿txids是'未来'（图5.1 b）。
+由于实际系统中的txid空间不足，PostgreSQL将txid空间视为一个圆。之前的21亿个txid是'过去的'，接下来的21亿个txid是'未来的'（图5.1 b）。
 
 请注意，所谓的txid环绕问题在第5.10.1节中描述。
 
 >
-> 请注意，不会为BEGIN命令分配txid。在PostgreSQL中，当执行BEGIN命令后执行第一个命令时，事务管理器会分配tixd，然后启动其事务。
+>请注意，不会为BEGIN命令分配txid。在PostgreSQL中，当执行BEGIN命令后执行第一个命令时，事务管理器会分配tixd，然后启动其事务。
 
 
 
 ## 5.2 元组结构
 
-表页中的堆元组被分类为普通数据元组和TOAST元组。本节仅介绍普通数据元组。
+表页中的堆元组被分类为普通堆数据元组和TOAST元组。本节仅介绍普通堆数据元组。
 
 堆元组包括三个部分，即HeapTupleHeaderData结构，NULL位图和用户数据（图5.2）。
 
@@ -102,26 +102,21 @@ Txids可以相互比较。例如，对于txid=100的事务，大于100的txids�
 ```c
 typedef struct HeapTupleFields
 {
-        TransactionId t_xmin;		   /* inserting xact ID */
-        TransactionId t_xmax;              /* deleting or locking xact ID */
+        TransactionId t_xmin;		   /* 插入事务的ID */
+        TransactionId t_xmax;              /*删除或锁定事务的ID*/
 
         union
         {
-                CommandId       t_cid;     /* inserting or deleting command ID, or both */
-                TransactionId 	t_xvac;    /* old-style VACUUM FULL xact ID */
+                CommandId       t_cid;     /* 插入或删除的命令ID */
+                TransactionId 	t_xvac;    /* 老式VACUUM FULL的事务ID */
         } t_field3;
 } HeapTupleFields;
 
 typedef struct DatumTupleFields
 {
-        int32          datum_len_;          /* varlena header (do not touch directly!) */
-        int32          datum_typmod;   	    /* -1, or identifier of a record type */
-        Oid            datum_typeid;   	    /* composite type OID, or RECORDOID */
-
-        /*                                                                                               
-         * Note: field ordering is chosen with thought that Oid might someday                            
-         * widen to 64 bits.                                                                             
-         */
+        int32          datum_len_;          /* 变长头部长度*/
+        int32          datum_typmod;   	    /* -1或者是记录类型的标识 */
+        Oid            datum_typeid;   	    /* 复杂类型的OID或记录ID */
 } DatumTupleFields;
 
 typedef struct HeapTupleHeaderData
@@ -152,7 +147,7 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 虽然HeapTupleHeaderData结构包含七个字段，但后续部分中需要四个字段。
 
 * t_xmin保存插入此元组的事务的txid。
-* t_xmax保存删除或更新此元组的事务的txid。如果尚未删除或更新此元组，则t_xmax设置为0，这意味着无效。
+* t_xmax保存删除或更新此元组的事务的txid。如果尚未删除或更新此元组，则t_xmax设置为0，既无效。
 * t_cid保存命令id（cid），这意味着在从0开始的当前事务中执行此命令之前执行了多少SQL命令。例如，假设我们在单个事务中执行三个INSERT命令`BEGIN;INSERT;INSERT;INSERT;COMMIT;`。如果第一个命令插入此元组，则t_cid设置为0.如果第二个命令插入此命令，则t_cid设置为1，依此类推。
 * t_ctid保存指向自身或新元组的元组标识符（tid）。第1.3节中描述的tid用于标识表中的元组。更新此元组时，此元组的t_ctid指向新元组;否则，t_ctid指向自己。
 
@@ -160,15 +155,13 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 ## 5.3 元组的增删改
 
-本节介绍如何插入，删除和更新元组。然后，简要描述用于插入和更新元组的自由空间映射（FSM）。
+本节介绍如何插入，删除和更新元组。然后，简要描述用于插入和更新元组的自由空间映射表（FSM）。
 
-要关注元组，页眉和行指针不会在下面表示。图5.3显示了如何表示元组的示例。
+主要关注元组，页眉和行指针不会在下面表示。图5.3显示了元组的具体表示。
 
 **图5.3 元组的表示**
 
 ![](img/fig-5-03.png)
-
-
 
 ### 5.3.1 插入
 
@@ -215,7 +208,7 @@ Tuple_1：
 **图5.5 删除元组**
 
 ![](img/fig-5-05.png)
-假设txle_1被txid 111删除。在这种情况下，Tuple_1的头字段设置如下。
+假设Tuple_1被txid 111删除。在这种情况下，Tuple_1的头字段设置如下。
 
 Tuple_1：
 
@@ -235,7 +228,6 @@ Tuple_1：
 
 ![](img/fig-5-06.png)
 
-
 假设由txid 99插入的行由txid 100更新两次。
 
 当执行第一个UPDATE命令时，通过将txid 100设置为t_xmax来逻辑删除Tuple_1，然后插入Tuple_2。然后，重写Tuple_1的t_ctid以指向Tuple_2。 Tuple_1和Tuple_2的头字段如下。
@@ -250,6 +242,7 @@ Tuple_2：
 * t_xmax设置为0。
 * t_cid设置为0。
 * t_ctid设置为（0,2）。
+
 当执行第二个UPDATE命令时，如在第一个UPDATE命令中，逻辑删除Tuple_2并插入Tuple_3。 Tuple_2和Tuple_3的头字段如下。
 
 Tuple_2：
@@ -261,11 +254,9 @@ Tuple_2：
 * t_cid设置为1。
 * t_ctid设置为（0,3）。
 
-与删除操作一样，如果提交了txid 100，则Tuple_1和Tuple_2将是死元组，并且如果txid 100被中止，则Tuple_2和Tuple_3将是死元组。
+与删除操作一样，如果提交了txid 100，则Tuple_1和Tuple_2将是死元组，并且如果txid 100被中止，则Tuple_2和Tuple_3也将是死元组。
 
-
-
-### 5.3.4 空闲空间映射
+### 5.3.4 空闲空间映射表（TODO）
 
 插入堆或索引元组时，PostgreSQL使用相应表或索引的FSM来选择可插入的页面。
 
