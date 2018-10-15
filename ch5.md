@@ -409,7 +409,7 @@ Transaction_C不需要事务快照，因为它处于REPEATABLE READ级别并使�
 
 ### 5.6.1  t_xmin的状态为ABORTED
 
-t_xmin状态为ABORTED的元组始终不可见（规则1），因为插入此元组的事务已中止。
+t_xmin状态为ABORTED的元组始终不可见（Rule 1），因为插入此元组的事务已中止。
 
 ```sql
  /* t_xmin status = ABORTED */
@@ -420,11 +420,11 @@ Rule 1: IF t_xmin status is 'ABORTED' THEN
 
 该规则明确表示为以下数学表达式。
 
-* **规则 1:** If Status(t_xmin) = ABORTED ⇒ Invisible
+* **Rule  1:** If Status(t_xmin) = ABORTED ⇒ Invisible
 
 ### 5.6.2  t_xmin的状态为IN_PROGRESS
 
-t_xmin状态为IN_PROGRESS的元组基本上是不可见的（规则3和4），但在一个条件下除外。
+t_xmin状态为IN_PROGRESS的元组基本上是不可见的（Rule 3和4），但在一个条件下除外。
 
 ```SQL
  /* t_xmin status = IN_PROGRESS */
@@ -441,19 +441,19 @@ Rule 4:        ELSE   /* t_xmin ≠ current_txid */
              END IF
 ```
 
-如果这个元组被另一个事务插入并且t_xmin的状态是IN_PROGRESS，则该元组显然是不可见的（规则4）。
+如果这个元组被另一个事务插入并且t_xmin的状态是IN_PROGRESS，则该元组显然是不可见的（Rule 4）。
 
-如果t_xmin等于当前txid（即，当前事务插入了该元组）并且t_xmax不是INVALID，则该元组是不可见的，因为它已被当前事务更新或删除（规则3）。
+如果t_xmin等于当前txid（即，当前事务插入了该元组）并且t_xmax不是INVALID，则该元组是不可见的，因为它已被当前事务更新或删除（Rule 3）。
 
-例外条件是当前事务插入此元组并且t_xmax为INVALID的情况。 在这种情况下，此元组在当前事务中可见（规则2）。
+例外条件是当前事务插入此元组并且t_xmax为INVALID的情况。 在这种情况下，此元组在当前事务中可见（Rule 2）。
 
-- **规则 2:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax = INVAILD ⇒ Visible
-- **规则 3:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax ≠ INVAILD ⇒ Invisible
-- **规则 4:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin ≠ current_txid ⇒ Invisible
+- **Rule  2:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax = INVAILD ⇒ Visible
+- **Rule  3:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax ≠ INVAILD ⇒ Invisible
+- **Rule  4:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin ≠ current_txid ⇒ Invisible
 
 ### 5.6.3  t_xmin的状态为COMMITTED
 
-t_xmin状态为COMMITTED的元组是可见的（规则6,8和9），但在三个条件下除外。
+t_xmin状态为COMMITTED的元组是可见的（Rule 6,8和9），但在三个条件下除外。
 
 ```sql
  /* t_xmin status = COMMITTED */
@@ -478,34 +478,34 @@ Rule 10:         ELSE
             END IF
 ```
 
-规则6是显而易见的，因为t_xmax是INVALID或ABORTED。三个例外条件以及规则8和9都描述如下。
+Rule 6是显而易见的，因为t_xmax是INVALID或ABORTED。三个例外条件以及Rule 8和9都描述如下。
 
-第一个例外情况是t_xmin在获取的事务快照中处于活动状态（规则5）。在这种情况下，这个元组是不可见的，因为t_xmin应该被视为正在进行中。
+第一个例外情况是t_xmin在获取的事务快照中处于活动状态（Rule 5）。在这种情况下，这个元组是不可见的，因为t_xmin应该被视为正在进行中。
 
-第二个例外情况是t_xmax是当前的txid（规则7）。在这种情况下，与规则3一样，此元组是不可见的，因为它已被此事务本身更新或删除。
+第二个例外情况是t_xmax是当前的txid（Rule 7）。在这种情况下，与Rule 3一样，此元组是不可见的，因为它已被此事务本身更新或删除。
 
-相反，如果t_xmax的状态是IN_PROGRESS并且t_xmax不是当前的txid（规则8），则元组是可见的，因为它尚未被删除。
+相反，如果t_xmax的状态是IN_PROGRESS并且t_xmax不是当前的txid（Rule 8），则元组是可见的，因为它尚未被删除。
 
-第三个例外情况是t_xmax的状态为COMMITTED，并且t_xmax在获取的事务快照中不是活动的（规则10）。在这种情况下，此元组是不可见的，因为它已被另一个事务更新或删除。
+第三个例外情况是t_xmax的状态为COMMITTED，并且t_xmax在获取的事务快照中不是活动的（Rule 10）。在这种情况下，此元组是不可见的，因为它已被另一个事务更新或删除。
 
-相反，如果t_xmax的状态为COMMITTED，但t_xmax在获取的事务快照中处于活动状态（规则9），则元组可见，因为t_xmax应被视为正在进行中。
+相反，如果t_xmax的状态为COMMITTED，但t_xmax在获取的事务快照中处于活动状态（Rule 9），则元组可见，因为t_xmax应被视为正在进行中。
 
-* **规则 5:** If Status(t_xmin) = COMMITTED ∧ Snapshot(t_xmin) = active ⇒ Invisible
-* **规则 6:** If Status(t_xmin) = COMMITTED ∧ (t_xmax = INVALID ∨ Status(t_xmax) = ABORTED) ⇒ Visible
-* **规则 7:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax = current_txid ⇒ Invisible
-* **规则 8:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax ≠ current_txid ⇒ Visible
-* **规则 9:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) = active ⇒ Visible
-* **规则 10:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) ≠ active ⇒ Invisible
+* **Rule  5:** If Status(t_xmin) = COMMITTED ∧ Snapshot(t_xmin) = active ⇒ Invisible
+* **Rule  6:** If Status(t_xmin) = COMMITTED ∧ (t_xmax = INVALID ∨ Status(t_xmax) = ABORTED) ⇒ Visible
+* **Rule  7:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax = current_txid ⇒ Invisible
+* **Rule  8:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax ≠ current_txid ⇒ Visible
+* **Rule  9:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) = active ⇒ Visible
+* **Rule  10:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) ≠ active ⇒ Invisible
 
 
 
-## 5.7 可见性检查（TODO）
+## 5.7 可见性检查
 
 本节描述PostgreSQL如何执行可见性检查，即如何选择给定事务中适当版本的堆元组。本节还介绍了PostgreSQL如何防止ANSI SQL-92标准中定义的异常：脏读，可重读和幻读。
 
 ### 5.7.1 可见性检查
 
-图5.10显示了描述可见性检查的方案
+图5.10显示了一个场景，描述可见性检查。
 
 **图5.10 描述可见性检查的场景**
 
@@ -513,22 +513,23 @@ Rule 10:         ELSE
 
 在图5.10所示的场景中，SQL命令按以下时间顺序执行。
 
-* T1：开始交易（txid 200）
-* T2：开始交易（txid 201）
+* T1：启动事务（txid 200）
+* T2：启动事务（txid 201）
 * T3：执行txid 200和201的SELECT命令
 * T4：执行txid 200的UPDATE命令
 * T5：执行txid 200和201的SELECT命令
 * T6：提交txid 200
 * T7：执行txid 201的SELECT命令
-为了简化描述，假设只有两个事务，即txid 200和201. txid 200的隔离级别是READ COMMITTED，并且txid 201的隔离级别是READ COMMITTED或REPEATABLE READ。
+
+为了简化描述，假设只有两个事务，即txid 200和201。txid 200的隔离级别是READ COMMITTED，并且txid 201的隔离级别是READ COMMITTED或REPEATABLE READ。
 
 我们将探索SELECT命令如何为每个元组执行可见性检查。
 
 **T3的SELECT命令：**
 
-在T3，表tbl中只有一个Tuple_1，它在规则6中可见;因此，两个事务中的SELECT命令都返回'Jekyll'。
+在T3，表tbl中只有一个Tuple_1，它在Rule 6中可见；因此，两个事务中的SELECT命令都返回’Jekyll‘。
 
-- Rule6(Tuple_1) ⇒ Status(t_xmin:199) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible
+- Rule 6(Tuple_1) ⇒ Status(t_xmin:199) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible
 
 ```sql
 testdb=# -- txid 200
@@ -550,10 +551,10 @@ testdb=# SELECT * FROM tbl;
 
 **T5的SELECT命令**
 
-首先，我们探索由txid 200执行的SELECT命令。规则7不能看到Tuple_1，规则2可以看到Tuple_2; 因此，此SELECT命令返回'Hyde'。
+首先，我们探讨由txid 200执行的SELECT命令。由Rule 7，Tuple_1不可见，由Rule 2，Tuple_2可见; 因此，此SELECT命令返回'Hyde'。
 
-- Rule7(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 = current_txid:200 ⇒ Invisible
-- Rule2(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 = current_txid:200 ∧ t_xmax = INVAILD ⇒ Visible
+- Rule 7(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 = current_txid:200 ⇒ Invisible
+- Rule 2(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 = current_txid:200 ∧ t_xmax = INVAILD ⇒ Visible
 
 ```sql
 testdb=# -- txid 200
@@ -564,10 +565,10 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-另一方面，在由txid 201执行的SELECT命令中，Tuple_1由规则8可见，而Tuple_2由规则4不可见; 因此，此SELECT命令返回'Jekyll'。
+另一方面，在由txid 201执行的SELECT命令中，Tuple_1由Rule 8可见，而Tuple_2，由Rule 4不可见; 因此，此SELECT命令返回'Jekyll'。
 
-- Rule8(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 ≠ current_txid:201 ⇒ Visible
-- Rule4(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 ≠ current_txid:201 ⇒ Invisible
+- Rule 8(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 ≠ current_txid:201 ⇒ Visible
+- Rule 4(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 ≠ current_txid:201 ⇒ Invisible
 
 ```sql
 testdb=# -- txid 201
@@ -578,16 +579,16 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-如果更新的元组在提交之前从其他事务中可见，则它们被称为Dirty Reads，也称为wr-conflicts。 但是，如上所示，PostgreSQL中的任何隔离级别都不会出现脏读。
+如果更新的元组在提交之前从其他事务中可见，则它们被称为脏读（Dirty Reads），也称为写读冲突（wr-conflicts）。 但是，如上所示，PostgreSQL中的任何隔离级别都不会出现脏读。
 
 **T7的SELECT命令**
 
 在下文中，描述了T7的SELECT命令在两个隔离级别中的行为。
 
-首先，我们探讨txid 201何时处于READ COMMITTED级别。 在这种情况下，txid 200被视为COMMITTED，因为事务快照是'201：201：'。 因此，规则10不能看到Tuple_1，规则6可以看到Tuple_2，SELECT命令返回'Hyde'。
+首先，我们探讨txid 201何时处于READ COMMITTED级别。 在这种情况下，txid 200被视为COMMITTED，因为事务快照是'201：201：'。因此，由Rule 10，Tuple_1不可见，由Rule 6，Tuple_2可见，SELECT命令返回'Hyde'。
 
-- Rule10(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) ≠ active ⇒ Invisible
-- Rule6(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible
+- Rule 10(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) ≠ active ⇒ Invisible
+- Rule 6(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible
 
 ```sql
 
@@ -601,7 +602,7 @@ testdb=# SELECT * FROM tbl;
 
 注意，在提交txid 200之前和之后执行的SELECT命令的结果是不同的。 这通常称为不可重复读取。
 
-相反，当txid 201处于REPEATABLE READ级别时，txid 200必须被视为IN_PROGRESS，因为事务快照是'200：200：'。 因此，规则9可以看到Tuple_1，规则5看不到Tuple_2，SELECT命令返回'Jekyll'。 请注意，在REPEATABLE READ（和SERIALIZABLE）级别中不会发生不可重复读取。
+相反，当txid 201处于REPEATABLE READ级别时，txid 200必须被视为IN_PROGRESS，因为事务快照是'200：200：'。 因此，由Rule9，可以看到Tuple_1，由Rule5看不到Tuple_2，SELECT命令返回'Jekyll'。 请注意，在REPEATABLE READ（和SERIALIZABLE）级别中不会发生不可重复读取。
 
 - Rule9(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) = active ⇒ Visible
 - Rule5(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ Snapshot(t_xmin:200) = active ⇒ Invisible
@@ -617,7 +618,7 @@ testdb=# SELECT * FROM tbl;
 
 > 提示位（Hint Bits）
 >
-> 为了获得事务的状态，PostgreSQL内部提供了三个函数，即TransactionIdIsInProgress，TransactionIdDidCommit和TransactionIdDidAbort。 实现这些功能是为了减少对缓存的频繁访问，例如缓存。 但是，如果在检查每个元组时执行它们，则会发生瓶颈。
+> 为了获得事务的状态，PostgreSQL内部提供了三个函数，即TransactionIdIsInProgress，TransactionIdDidCommit和TransactionIdDidAbort。 实现这些功能是为了减少clog的频繁访问，例如clog缓存。 但是，如果在检查每个元组时执行它们，则会成为瓶颈。
 >
 > 为了解决这个问题，PostgreSQL使用了提示位，如下所示。
 >
@@ -628,15 +629,15 @@ testdb=# SELECT * FROM tbl;
 > #define HEAP_XMAX_INVALID         0x0800   /* t_xmax invalid/aborted */
 > ```
 >
-> 在读取或写入元组时，如果可能，PostgreSQL会将提示位设置为元组的t_informask。 例如，假设PostgreSQL检查元组的t_xmin的状态并获得COMMITTED状态。 在这种情况下，PostgreSQL将一个提示位HEAP_XMIN_COMMITTED设置为元组的t_infomask。 如果已经设置了提示位，则不再需要TransactionIdDidCommit和TransactionIdDidAbort。 因此，PostgreSQL可以有效地检查每个元组的t_xmin和t_xmax的状态。
+> 在读取或写入元组时，如果可能，PostgreSQL会将提示位设置为元组的t_informask。 例如，假设PostgreSQL检查了元组的t_xmin的状态以及COMMITTED状态。 在这种情况下，PostgreSQL将一个提示位HEAP_XMIN_COMMITTED设置为元组的t_infomask。 如果已经设置了提示位，则不再需要TransactionIdDidCommit和TransactionIdDidAbort。 因此，PostgreSQL可以有效地检查每个元组的t_xmin和t_xmax的状态。
 
 
 
 ### 5.7.2 PostgreSQL可重复读等级中的幻读
 
-ANSI SQL-92标准中定义的REPEATABLE READ允许Phantom Reads。 但是，PostgreSQL的实现不允许它们。 原则上，SI不允许Phantom Reads。
+ANSI SQL-92标准中定义的REPEATABLE READ允许幻读（Phantom Reads）。 但是，PostgreSQL的实现不允许它们发生。 原则上，SI不允许幻读。
 
-假设两个事务，即Tx_A和Tx_B，同时运行。 它们的隔离级别为READ COMMITTED和REPEATABLE READ，它们的txids分别为100和101。 首先，Tx_A插入一个元组。 然后，它承诺。 插入的元组的t_xmin为100.接着，Tx_B执行SELECT命令; 但是，Tx_A插入的元组对于规则5是不可见的。因此，不会发生幻像读取。
+假设两个事务，即Tx_A和Tx_B，同时运行。 它们的隔离级别为READ COMMITTED和REPEATABLE READ，它们的txid分别为100和101。 首先，Tx_A插入一个元组。 然后提交。 插入的元组的t_xmin为100.接着，Tx_B执行SELECT命令; 但是，按照Rule 5，Tx_A插入的元组是不可见的。因此，不会发生幻像读取。
 
 - Rule5(new tuple): Status(t_xmin:100) = COMMITTED ∧ Snapshot(t_xmin:100) = active ⇒ Invisible
 
@@ -674,7 +675,7 @@ testdb=# SELECT * FROM tbl WHERE id=1;
 
 
 
-## 5.8 防止丢失更新
+## 5.8 防止丢失更新（TODO）
 
 丢失更新（也称为ww冲突）是并发事务更新相同行时发生的异常，必须在REPEATABLE READ和SERIALIZABLE级别中防止它。 本节介绍PostgreSQL如何防止丢失更新并显示示例。
 
