@@ -2,248 +2,231 @@
 
 [TOC]
 
-​	如同PostgreSQL的官方文档说明的，PostgreSQL支持SQL2011的大部分特性；因此查询处理是PostgreSQL最复杂的子系统，并且PostgreSQL的查询处理相当高效。本章概述了查询处理的过程，特别关注了查询优化的部分。
+查询处理是PostgreSQL中最为复杂的子系统。如PostgreSQL[官方文档](https://www.postgresql.org/docs/current/static/features.html)所述，PostgreSQL支持SQL2011标准中的大多数特性，查询处理子系统能够高效地处理这些SQL。本章概述了查询处理的流程，特别关注了查询优化的部分。
 
 本章包括下面三个部分：
 
 + 第一部分：3.1节
 
-		本节概述了PostgreSQL的查询处理。
+   本节概述了PostgreSQL的查询处理流程。
 
 + 第二部分：3.2~3.4节
 
-		这一部分描述了在单表上获得最优执行计划的步骤。在3.2和3.3节分别解释了代价估计和计划树创建的过程。第3.4节，简要描述了执行器的操作。
+   这一部分描述了获取单表查询上最优执行计划的步骤。3.2节讨论了代价估计的过程，3.3节说明了创建计划树的过程，3.4节简要描述了执行器的工作过程。
 
 + 第三部分：3.5~3.6节
 
-  本节描述了在多表查询上获得最优计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节解释了在多表上创建计划树的过程。
+  这一部分描述了获取多表查询上最优执行计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节说明了为多表查询创建计划树的过程。
 
-PostgreSQL支持三种技术上很有趣且很实用的功能：即**外部数据包装（Foreign Data Wrapper, FDW）**，**并行查询**，以及11版本即将支持的JIT编译。前两者将在第4章中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
+PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外部数据包装（Foreign Data Wrapper, FDW）**](https://www.postgresql.org/docs/current/static/fdwhandler.html)，[**并行查询**](https://www.postgresql.org/docs/current/static/parallel-query.html)，以及版本11即将支持的[JIT编译](https://www.postgresql.org/docs/11/static/jit-reason.html)。前两者将在第4章中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
 
 
 
 ## 3.1 概览
 
-​	在PostgreSQL中，尽管在9.6版本后，基于多个Background Worker进程，有了并行查询；但是基本还是每个连接对应的一个Backend进程，这个Backend进程包括五个部分，如下：
+在PostgreSQL中，尽管在9.6版本后有了基于多个后台工作进程的并行查询，但基本上还是每个连接对应一个后端进程，后端进程由五个子系统组成，如下所示：
 
 1. **解析器（Parser）**
 
-   解析器基于SQL语句文本生成语法解析树（ParseTree） 。
+   解析器根据SQL语句生成一颗语法解析树（parse tree） 。
 
 2. **分析器（Analyzer）**
 
-   分析器对语法解析树进行语义分析，生成查询树（QueryTree）。
+   分析器对语法解析树进行语义分析，生成一颗查询树（query tree）。
 
 3. **重写器（Rewriter）**
 
-   重写器基于[规则](https://www.postgresql.org/docs/current/static/rules.html)系统中存在的规则，对查询树进程重写
+   重写器按照[规则系统](https://www.postgresql.org/docs/current/static/rules.html)中存在的规则，对查询树进行改写。
 
 4. **计划器（Planner）**
 
-   计划器基于查询树，生成执行最高效的计划树（PlanTree）；
+   计划器基于查询树，生成一颗执行最为高效的计划树（plan tree）；
 
 5. **执行器（Executor）**
 
-   执行器按照计划树中的顺序，访问表和索引，执行相应查询；
-
+   执行器按照计划树中的顺序访问表和索引，执行相应查询；
 
 **图3.1 查询处理**
 
-![QueryProcessing](img/fig-3-01.png)
+![QueryProcessing](/Users/vonng/Dev/pg-internal/fig-3-01.png)
 
 
 
-在本节中，概述了这些子系统。由于计划器和执行器很复杂，后面的章节会对这些函数的细节进行阐述。
+本节将概述这些子系统。由于计划器和执行器很复杂，后面的章节会对这些函数的细节进行阐述。
 
 > PostgreSQL的查询处理在[官方文档](http://www.postgresql.org/docs/current/static/overview.html)中有详细的描述
 
 ### 3.1.1 解析器（Parser）
 
-解析器基于SQL语句文本，产生了一个后续子系统可以理解的语法解析树。下面展示一个忽略细节的例子。
+解析器基于SQL语句的文本，生成一颗后续子系统可以理解的语法解析树。下面给出了一个例子。
 
-考虑下面这个查询。
+考虑以下查询。
 
 ```sql
 testdb=# SELECT id, data FROM tbl_a WHERE id < 300 ORDER BY data;
 ```
 
-语法解析树的根节点是一个`parsenodes.h`中定义的 `SelectStmt`类型。图3.2（b）展示了图3.2（a）对应的的语法解析树。
+语法解析树的根节点是一个定义在`parsenodes.h`中 `SelectStmt`数据结构。图3.2(a)展示了一个查询，而图3.2(b)则是该查询对应的语法解析树。
 
 ```c
 typedef struct SelectStmt
 {
         NodeTag         type;
 
-        /*
-         * These fields are used only in "leaf" SelectStmts.
-         */
-        List       *distinctClause;     /* NULL, list of DISTINCT ON exprs, or
+        /* 这些字段只会在SelectStmts“叶节点”中使用 */
+        List       *distinctClause;     /* NULL, DISTINCT ON表达式列表, or
                                          * lcons(NIL,NIL) for all (SELECT DISTINCT) */
-        IntoClause *intoClause;         /* target for SELECT INTO */
-        List       *targetList;         /* the target list (of ResTarget) */
-        List       *fromClause;         /* the FROM clause */
-        Node       *whereClause;        /* WHERE qualification */
-        List       *groupClause;        /* GROUP BY clauses */
-        Node       *havingClause;       /* HAVING conditional-expression */
+        IntoClause *intoClause;         /* SELECT INTO 的目标 */
+        List       *targetList;         /* 结果目标列表 (ResTarget) */
+        List       *fromClause;         /* FROM 子句 */
+        Node       *whereClause;        /* WHERE 限定条件 */
+        List       *groupClause;        /* GROUP BY 子句 */
+        Node       *havingClause;       /* HAVING 条件表达式 */
         List       *windowClause;       /* WINDOW window_name AS (...), ... */
 
-        /*
-         * In a "leaf" node representing a VALUES list, the above fields are all
-         * null, and instead this field is set.  Note that the elements of the
-         * sublists are just expressions, without ResTarget decoration. Also note
-         * that a list element can be DEFAULT (represented as a SetToDefault
-         * node), regardless of the context of the VALUES list. It's up to parse
-         * analysis to reject that where not valid.
-         */
-        List       *valuesLists;        /* untransformed list of expression lists */
+        /*  在一个表示值列表的叶节点中，上面的字段全都为空，而这个字段会被设置。
+         * 注意这个子列表中的元素仅仅是表达式，没有ResTarget的修饰，还需要注意列表元素可能为
+         * DEFAULT (表示一个 SetToDefault 节点)，而无论值列表的上下文。 
+         * 由分析阶段决定否合法并拒绝。      */
+        List       *valuesLists;        /* 未转换的表达式列表 */
+
+        /* 这些字段会同时在SelectStmts叶节点与SelectStmts上层节点中使用 */
+        List       *sortClause;         /* 排序子句 (排序依据的列表) */
+        Node       *limitOffset;        /* 需要跳过的元组数目 */
+        Node       *limitCount;         /* 需要返回的元组数目 */
+        List       *lockingClause;      /* FOR UPDATE (锁子句的列表) */
+        WithClause *withClause;         /* WITH 子句 */
 
         /*
-         * These fields are used in both "leaf" SelectStmts and upper-level
-         * SelectStmts.
+         * 这些字段只会在上层的 SelectStmts 中出现
          */
-        List       *sortClause;         /* sort clause (a list of SortBy's) */
-        Node       *limitOffset;        /* # of result tuples to skip */
-        Node       *limitCount;         /* # of result tuples to return */
-        List       *lockingClause;      /* FOR UPDATE (list of LockingClause's) */
-        WithClause *withClause;         /* WITH clause */
-
-        /*
-         * These fields are used only in upper-level SelectStmts.
-         */
-        SetOperation op;                /* type of set op */
-        bool            all;            /* ALL specified? */
-        struct SelectStmt *larg;        /* left child */
-        struct SelectStmt *rarg;        /* right child */
+        SetOperation op;                /* set 操作的类型 */
+        bool            all;            /* 是否指明了 ALL 选项? */
+        struct SelectStmt *larg;        /* 左子节点 */
+        struct SelectStmt *rarg;        /* 右子节点 */
         /* Eventually add fields for CORRESPONDING spec here */
 } SelectStmt;
 ```
 
 **图. 3.2. 语法解析树的例子**
 
-![ParseTree](img/fig-3-02.png)
+![ParseTree](/Users/vonng/Dev/pg-internal/fig-3-02.png)
 
-`SELECT`查询的元素和语法解析树的元素是相符的。比如，(1)是目标列表的一个元素，并且它是表的'id'列，(4)是一个`WHERE`语句，等等。
+`SELECT`查询中的元素和语法解析树中的元素有着对应关系。比如，(1)是目标列表中的一个元素，与目标表的*'id'*列相对应，(4)是一个`WHERE`子句，诸如此类。
 
-​	由于parser生成语法解析树的时候，只是检查语法，只有不符合语法的时候才会返回错误。
+当解析器生成语法分析树时只会检查语法，只有当查询中出现语法错误时才会返回错误。解析器并不会检查输入查询的语义，举个例子，如果查询中包含一个不存在的表名，解析器并不会报错，语义检查由分析器负责。
 
-​	parser不检查任何查询的语义。比如，即使查询中有一个不存在的表名，parser也不会返回错误。语义检查是analyzer做的；
+
 
 ### 3.1.2 分析器（Analyzer）
 
-Analyzer基于parser产出的语法解析树，进行语义分析，生成一颗查询树；
+分析器对解析器产出的语法解析树进行语义分析，生成一颗查询树。
+
+查询树的根是[`parsenode.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中定义的一个`Query`数据结构，这个结构包含了对应查询的元数据，比如命令的类型（`SELECT/INSERT`等），还包括了一些叶子节点，叶子节点由列表或树组成，包含了特定子句相应的数据。
 
 ```c
 /*
  * Query -
- *	  Parse analysis turns all statements into a Query tree
- *	  for further processing by the rewriter and planner.
- *
- *	  Utility statements (i.e. non-optimizable statements) have the
- *	  utilityStmt field set, and the Query itself is mostly dummy.
- *	  DECLARE CURSOR is a special case: it is represented like a SELECT,
- *	  but the original DeclareCursorStmt is stored in utilityStmt.
- *
- *	  Planning converts a Query tree into a Plan tree headed by a PlannedStmt
- *	  node --- the Query structure is not used by the executor.
+ *	  解析与分析过程会将所有的语句转换为一颗查询树，供重写器与计划器用于进一步的处理。
+ *    功能语句（即不可优化的语句）会设置utilityStmt字段，而Query结构本身基本上是空的。
+ *	  DECLARE CURSOR 是一个特例：它的形式与SELECT类似，但原始的DeclareCursorStmt会
+ *    被放在 utilityStmt 字段中。
+ *    计划过程会将查询树转换为一颗计划树，计划树的根节点是一个PlannedStmt结构
+ *    执行器不会用到查询树结构
  */
 typedef struct Query
 {
 	NodeTag		type;
 	CmdType		commandType;		/* select|insert|update|delete|utility */
-	QuerySource 	querySource;		/* where did I come from? */
-	uint32		queryId;		/* query identifier (can be set by plugins) */
+	QuerySource querySource;		/* 我来自哪里? */
+	uint32		queryId;		    /* 查询标识符 (可由插件配置) */
 
-	bool		canSetTag;		/* do I set the command result tag? */
-	Node	   	*utilityStmt;		/* non-null if this is DECLARE CURSOR or a non-optimizable statement */
-	int		resultRelation; 	/* rtable index of target relation for INSERT/UPDATE/DELETE; 0 for SELECT */
-	bool		hasAggs;		/* has aggregates in tlist or havingQual */
-	bool		hasWindowFuncs; 	/* has window functions in tlist */
-	bool		hasSubLinks;		/* has subquery SubLink */
-	bool		hasDistinctOn;		/* distinctClause is from DISTINCT ON */
-	bool		hasRecursive;		/* WITH RECURSIVE was specified */
-	bool		hasModifyingCTE;	/* has INSERT/UPDATE/DELETE in WITH */
-	bool		hasForUpdate;		/* FOR [KEY] UPDATE/SHARE was specified */
-	bool		hasRowSecurity; 	/* row security applied? */
-	List	   	*cteList;		/* WITH list (of CommonTableExpr's) */
-	List	   	*rtable;		/* list of range table entries */
-	FromExpr   	*jointree;		/* table join tree (FROM and WHERE clauses) */
-	List	   	*targetList;		/* target list (of TargetEntry) */
-	List	   	*withCheckOptions;	/* a list of WithCheckOption's */
-	OnConflictExpr 	*onConflict; 		/* ON CONFLICT DO [NOTHING | UPDATE] */
-	List	   	*returningList;		/* return-values list (of TargetEntry) */
-	List	   	*groupClause;		/* a list of SortGroupClause's */
-	List	   	*groupingSets;		/* a list of GroupingSet's if present */
-	Node	   	*havingQual;		/* qualifications applied to groups */
-	List	   	*windowClause;		/* a list of WindowClause's */
-	List	   	*distinctClause; 	/* a list of SortGroupClause's */
-	List	   	*sortClause;		/* a list of SortGroupClause's */
-	Node	   	*limitOffset;		/* # of result tuples to skip (int8 expr) */
-	Node	   	*limitCount;		/* # of result tuples to return (int8 expr) */
-	List	   	*rowMarks;		/* a list of RowMarkClause's */
-	Node	   	*setOperations;		/* set-operation tree if this is top level of a UNION/INTERSECT/EXCEPT query */
-	List	   	*constraintDeps; 	/* a list of pg_constraint OIDs that the query
- depends on to be semantically valid */
+	bool		canSetTag;		    /* 我设置了命令结果标签吗? */
+	Node	   	*utilityStmt;		/* 如果这是一条DECLARE CURSOR或不可优化的语句 */
+	int		resultRelation; 	    /* 对增删改语句而言是目标关系的索引; SELECT为0 */
+	bool		hasAggs;		    /* 是否在目标列表或having表达式中指定了聚合函数 */
+	bool		hasWindowFuncs; 	/* tlist是否包含窗口函数 */
+	bool		hasSubLinks;		/* 是否包含子查询SubLink */
+	bool		hasDistinctOn;		/* 是否包含来自DISTINCT ON的distinct子句 */
+	bool		hasRecursive;		/* 是否制定了WITH RECURSIVE */
+	bool		hasModifyingCTE;	/* 是否在WITH子句中包含了INSERT/UPDATE/DELETE */
+	bool		hasForUpdate;		/* 是否指定了FOR [KEY] UPDATE/SHARE*/
+	bool		hasRowSecurity; 	/* 是否应用了行安全策略 */
+	List	   	*cteList;		    /* CTE列表 */
+	List	   	*rtable;		    /* 范围表项目列表 */
+	FromExpr   	*jointree;		    /* 表连接树 (FROM 与 WHERE 子句) */
+	List	   	*targetList;		/* 目标列表 (TargetEntry的列表) */
+	List	   	*withCheckOptions;	/* WithCheckOption的列表 */
+	OnConflictExpr 	*onConflict; 	/* ON CONFLICT DO [NOTHING | UPDATE] */
+	List	   	*returningList;		/* 返回值列表(TargetEntry的列表) */
+	List	   	*groupClause;		/* SortGroupClause的列表 */
+	List	   	*groupingSets;		/* 如果有，GroupingSet的列表 */
+	Node	   	*havingQual;		/* 分组的Having条件列表 */
+	List	   	*windowClause;		/* 窗口子句列表 */
+	List	   	*distinctClause; 	/* SortGroupClause列表 */
+	List	   	*sortClause;		/* SortGroupClause列表 */
+	Node	   	*limitOffset;		/* Offset跳过元组数目 (int8 表达式) */
+	Node	   	*limitCount;		/* Limit返回元组数目 (int8 表达式) */
+	List	   	*rowMarks;          /* RowMarkClause列表 */
+	Node	   	*setOperations;		/* 如果是UNION/INTERSECT/EXCEPT的顶层查询，则为集合操作 列表 */
+	List	   	*constraintDeps; 	/* 确认查询语义是否合法时，所依赖约束对象的OID列表 */
 } Query;
 ```
 
-​	查询树的根是`parsenode.h`中定义的一个`Query`结构，这个结构包含了相应查询的元数据，比如命令的类型（SELECT/INSERT等），和一些叶子节点；每个叶子由一个列表或者树构成，包含了相应子句的数据。
+**图3.3 查询树一例**
 
-**图. 3.3 查询树的例子**
+![QueyTree](/Users/vonng/Dev/pg-internal/fig-3-03.png)
 
-![QueyTree](img/fig-3-03.png)
+简要介绍一下上图中的查询树：
 
++ *targetlist* 是查询结果中**列（Column）**的列表。在本例中该列表包含两列：*id* 和*data*。如果在输入的查询树中使用了`*`（星号），那么分析器会将其显式替换为所有具体的列。
++ 范围表*rtable*是该查询所用到关系的列表。本例中该变量包含了表*tbl_a*的信息，如该表的表名与*oid*。
++ 连接树*jointree*存储着`FROM`和`WHERE`子句的相关信息。
++ 排序子句*sortClause*是`SortGroupClause`结构体的列表。
 
-
-简要描述下上述查询树：
-
-+ targetlist就是查询的结果列的列表。在这个例子中，这个列表包含两个列：id和data。如果输入为`*`，那么Analyzer会将其明确替换为所有的列。
-+ RangeTable是该查询用到的关系表。在这个例子中，这个RangeTable维护了表'tbl_a'的信息，比如表的oid和表的名字。
-+ jointree保存了FROM和WHERE子句的信息
-+ sortClauze是SortGroupClause的列表
-
-QueryTree的细节在[官方文档](http://www.postgresql.org/docs/current/static/querytree.html)中有描述。
+[官方文档](http://www.postgresql.org/docs/current/static/querytree.html)描述了查询树的细节。
 
 ### 3.1.3 重写器（Rewriter）
 
-​	重写器是[规则系统](https://www.postgresql.org/docs/current/static/rules.html)的实现机制，必要的话，会根据存在`pg_rules`中的规则，转换查询树。规则系统本身就是一个很有趣的系统，但是本章中略去了关于规则系统和重写器的描述，否则的话内容太长了。
+PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules.html)正是依赖重写器实现的，当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，但本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
 
-> 视图
+> #### 视图
 >
-> 视图在PostgreSQL中是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/static/sql-createview.html)创建一个视图，就会在系统表中创建相应的规则。
+> 在PostgreSQL中，[视图](https://www.postgresql.org/docs/current/static/rules-views.html)是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/static/sql-createview.html)命令定义一个视图时，PostgreSQL就会创建相应的规则，并存储到系统目录中。
 >
-> 假设已经定义了下面的视图，并在`pg_rule`中存了相应规则；
+> 假设下面的视图已经被定义，而*pg_rule*中也存储了相应的规则。
 >
 > ```sql
 > sampledb=# CREATE VIEW employees_list 
-> sampledb-#      AS SELECT e.id, e.name, d.name AS department 
-> sampledb-#            FROM employees AS e, departments AS d WHERE e.department_id = d.id;
+> sampledb-#   AS SELECT e.id, e.name, d.name AS department 
+> sampledb-#      FROM employees AS e, departments AS d WHERE e.department_id = d.id;
 > ```
 >
-> 当发起了一个包含这个视图的查询，parser创建了一个如图. 3.4(a)的语法解析树。
+> 当执行一个包含该视图的查询，解析器会创建一颗如图3.4(a)所示的语法解析树。
 >
 > ```sql
 > sampledb=# SELECT * FROM employees_list;
 > ```
 >
-> 在这个阶段，rewriter会基于`pg_rules`存的视图规则，将rangetable节点重写成一个子查询的语法解析树；
+> 在该阶段，重写器会基于*pg_rules*中存储的视图规则，将*rangetable*节点重写为一颗子查询对应的语法解析树。
 >
-> **图3.4 重写阶段的一个例子**
+> **图3.4 重写阶段一例**
 >
-> ![rewriter](img/fig-3-04.png)
+> ![rewriter](/Users/vonng/Dev/pg-internal/fig-3-04.png)
 >
-> 由于PostgreSQL基于这种机制实现了视图，因此在9.2版本之前，视图不能更新。但是，从9.3版本后，视图可以更新；尽管如此，更新视图有很多限制，具体细节参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
+> 因为PostgreSQL使用这种机制来实现视图，因此直至9.2版本，视图都是不能更新的。从9.3版本后可以对视图进行更新；尽管如此，视图的更新仍然存在许多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
 
 ### 3.1.4 计划器与执行器
 
-**计划器（Planner）**从**重写器（Rewriter）**获取一个查询树，然后生成一个能被**执行器（Executor）**高效执行的（查询）计划树。	
+计划器从重写器获取一颗查询树，基于此生成一颗能被**执行器（Executor）**高效执行的（查询）计划树。	
 
-​	在PostgreSQL中，计划器是完全基于代价估计的；它不支持基于规则和基于**提示（hint）**的查询优化。计划器是RDBMS中最复杂的部分，因此，本章的后续章节会对计划树做一个概述。
+在PostgreSQL中，计划器是完全**基于代价估计（cost-based）**的；它不支持基于规则的优化与**提示（hint）**。计划器是RDBMS中最为复杂的部分，因此本章的后续内容会对计划器做一个概述。
 
-> pg_hint_plan
+> #### pg_hint_plan
 >
-> PostgreSQL不支持SQL中的提示，并且永远不会支持。如果你想在查询中使用hints，考虑使用`pg_hint_plan`扩展，详细内容参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
+> PostgreSQL不支持在SQL中的**提示（hint）**，并且永远也不会去支持。如果你想在查询中使用提示，可以考虑使用*pg_hint_plan*扩展，细节请参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
 
-​	和其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令，展示了自己的计划树。如下例所示：
+与其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令会显示命令的计划树。下面给出了一个具体的例子。
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
@@ -256,41 +239,41 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 (4 rows)
 ```
 
-这个`EXPLAIN`结果相应的计划树，如图3.5。
+图3.5展示了结果相应的计划树。
 
 **图3.5 一个简单的计划树以及其与EXPLAIN命令的关系**
 
-![planTree](img/fig-3-05.png)
+![planTree](/Users/vonng/Dev/pg-internal/fig-3-05.png)
 
 
 
-​	每个计划树包括多个计划节点（plan node），就是*PlannedStmt*结构中的plantree列表，其在定[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，在3.3.3节（3.5.4.2节）阐述相关细节。
+计划树由许多称为**计划节点（plan node）**的元素组成，这些节点挂在*PlannedStmt*结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
 
-​	每个计划节点包含所有执行器需要的执行信息，在单表查询中，执行器就可以从下往上执行这个计划树。
+每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会从终端节点往根节点，依次处理这些节点。
 
-​	比如，在图3.5中的计划树就是一个Sort节点和SeqScan节点的列表；因此，执行器首先会基于SeqScan方式扫描表，然后对得到的结果进行排序。
+比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表*tbl_a*执行顺序扫描，并对获取的结果进行排序。
 
-​	执行器通过第8章阐述的缓存管理器（BufferManager），来访问数据库集簇的表和索引。当处理一个查询时，执行器使用预先分配好的内存空间，比如*temp_buffers*和*work_mem*，必要的话还会创建临时文件。
-
-​	另外，当访问元组的时候，PostgreSQL基于并发控制机制来维护运行中事务的一致性和隔离性。关于并发控制机制参考第5章。
+执行器会通过[第8章](ch8.md)将阐述的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如*temp_buffers*和*work_mem*，必要时还会创建临时文件。
 
 **图3.6 执行器，缓冲管理器，临时文件之间的关系**
 
-![dd](img/fig-3-06.png)
+![dd](/Users/vonng/Dev/pg-internal/fig-3-06.png)
+
+除此之外，当访问元组的时候，PostgreSQL还会使用并发控制机制来维护运行中事务的一致性和隔离性。[第五章](ch5.md)介绍了并发控制机制。
 
 ## 3.2 单表查询的代价估计
 
-​	PostgreSQL是基于代价的查询优化。代价是一个无法准确定义的值，并且没有一个绝对的性能指示方法，但是可以比较操作之间的相对性能差异。
+PostgreSQL的查询优化是基于**代价（Cost）**的。代价是一个无量纲的值，它并不是一种绝对的性能指标，但可以作为比较各种操作开销时的相对性能指标。
 
-​	代价是通过*costsize.c*中的函数来估计的。所有的执行器执行的操作都有相应的代价函数。比如顺序扫描和索引扫描分别通过`cost_seqscan()` 和 `cost_index()`做代价估计。
+[*costsize.c*](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/path/costsize.c)中的函数用于估算各种操作的代价。所有被执行器执行的操作都有着相应的代价函数。例如，函数`cost_seqscan()` 和 `cost_index()`分别用于估算顺序扫描和索引扫描的代价。
 
-​	在PostgreSQL中，有三种代价：**启动代价（start_up）** ， **运行代价（run）**和**总代价（total）**。**总代价**是**启动代价**和**运行代价**的和；因此，只有启动代价和运行代价是单独估计的。
+在PostgreSQL中有三种代价：**启动（start-up）** ， **运行（run）**和**总和（total）**。**总代价**是**启动代价**和**运行代价**的和；因此只有启动代价和运行代价是单独估计的。
 
-1. **启动代价（start_up）**：在取到第一个元组之前的代价，比如索引扫描节点的**启动代价**就是读取目标表的索引页，取到第一个元组的代价
-2. **运行代价（run）**： 获取全部的元组的代价
-3. **总代价（total）**：前两者的和
+1. **启动代价（start-up）**：在读取到第一条元组前花费的代价，比如索引扫描节点的**启动代价**就是读取目标表的索引页，取到第一个元组的代价
+2. **运行代价（run）**： 获取全部元组的代价
+3. **总代价（total）**：前两者之和
 
-EXPLAIN命令展示了每个操作的启动代价和总代价，下面有个简单的例子：
+[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令显示了每个操作的启动代价和总代价，下面是一个简单的例子：
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl;
@@ -300,11 +283,11 @@ testdb=# EXPLAIN SELECT * FROM tbl;
 (1 row)
 ```
 
-​	在第4行中，这个命令展示了顺序扫描的信息。在代价部分，有两个值：0.00和145.00。这个例子中，启动代价和总代价分别是0.00和145.00。
+在第4行显示了顺序扫描的相关信息。代价部分包含了两个值：0.00和145.00。在本例中，启动代价和总代价分别为0.00和145.00。
 
-​	本节中，我们将探究顺序扫描，索引扫描和排序操作如何做代价估计的细节。
+在本节中，我们将详细介绍顺序扫描，索引扫描和排序操作的代价是如何估算的。
 
-​	在接下来的叙述中，我们使用如下说明的特定的表和索引：
+在接下来的内容中，我们使用下面这个表及其索引作为例子。
 
 ```sql
 testdb=# CREATE TABLE tbl (id int PRIMARY KEY, data int);
@@ -324,21 +307,21 @@ Indexes:
 
 ### 3.2.1 顺序扫描
 
-通过`cost_seqscan()`函数，估计顺序扫描的代价。在这个部分，我们探究下面的查询如何估计顺序扫描的代价。
+顺序扫描的代价是通过函数`cost_seqscan()`估计的。本节将研究顺序扫描代价是如何估计的，以下列查询为例。
 
 ```sql
 testdb=# SELECT * FROM tbl WHERE id < 8000;
 ```
 
-在顺序扫描中，启动代价代价等于0，而运行代价基于如下公式定义：
+在顺序扫描中，启动代价等于0，而运行代价由以下公式定义：
 $$
 \begin{align}
-  \verb|‘run cost’| 
-  &= \verb|‘cpu run cost’| + \verb|‘disk run cost’| \\
-  &= (\verb|cpu_tuple_cost| + \verb|cpu_operator_cost|) \times N_{tuple} + \verb|seq_page_cost| \times N_{page},
+  \verb|run_cost| 
+  &= \verb|cpu_run_cost| + \verb|disk_run_cost | \\
+  &= (\verb|cpu_tuple_cost| + \verb|cpu_operator_cost|) × N_{\verb|tuple|} + \verb|seq_page_cost| × N_{\verb|page|},
 \end{align}
 $$
-其中`seq_page_cost`，`cpu_tuple_cost`和`cpu_operator_cost`在*postgresql.conf*配置，默认值分别是1.0，0.01和0.0025。$N_{tuple}$ 和$N_{page}$ 分别是表的所有元组和所有页，并且这些数字能够通过下面的查询获得:
+其中[*seq_page_cost*](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)，[*cpu_tuple_cost*](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-TUPLE-COST)和[*cpu_operator_cost*](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-OPERATOR-COST)是在*postgresql.conf* 中配置的参数，默认值分别为1.0，0.01和0.0025。$N_{tuple}$ 和$N_{page}$ 分别是表中的元组总数和页面总数，这两个值可以使用下列查询获得。
 
 ```sql
 testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl';
@@ -349,31 +332,32 @@ testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl';
 ```
 
 $$
-\begin{equation}
-N_{tuple}=10000
- \tag{1}
+\begin{equation}\tag{1}
+	N_{\verb|tuple|}=10000
 \end{equation}
 $$
 
 $$
-\begin{equation}
-N_{page}=45
- \tag{2}
+\begin{equation}\tag{2}
+	N_{\verb|page|}=45
 \end{equation}
 $$
 
 因此：
 $$
 \begin{align}
- \verb|‘run cost’| 
- 	    &= (0.01 + 0.0025) \times 10000 + 1.0 \times 45 = 170.0.
+ \verb|run_cost| 
+ 	    &= (0.01 + 0.0025) × 10000 + 1.0 × 45 = 170.0.
 \end{align}
 $$
 
+最终：
+$$
+\verb|total_cost| = 0.0 + 170.0 = 170.0
+$$
 
-最终：$total = 0.0 + 170.0 = 170.0$
 
-下面是上面查询的EXPLAIN命令的结果，我们验证一下：
+作为验证，下面是该查询的`EXPLAIN`结果：
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl WHERE id < 8000;
@@ -384,23 +368,25 @@ testdb=# EXPLAIN SELECT * FROM tbl WHERE id < 8000;
 (2 rows)
 ```
 
-在第4行中，我们发现启动代价和总代价分别是0.00和170.0，并且它估计通过全表扫描会得到8000行（元组）。
+在第4行中可以看到，启动代价和总代价分别是0.00和170.0，且预计全表扫描返回行数为8000条（元组）。
 
-在第5行，展示了一个顺序扫描的过滤器'Filter:(id < 8000)'。更精确的是，它称为是一个*表级过滤器谓词*。注意这种类型的过滤器用在读取所有元组的时候，它不会减少表物理页的扫描范围。
+在第5行显示了一个顺序扫描的过滤器`Filter:(id < 8000)`。更精确地说，它是一个**表级过滤谓词（table level filter predicate）**。注意这种类型的过滤器只会在读取所有元组的时候使用，它并不会减少需要扫描的表页面数量。
 
-> ​	为了理解运行代价估计，PostgreSQL假设所有的物理页都是从存储介质中拿到的；意味着，PostgreSQL不考虑扫描的page是不是会从shard buffer中取得。
+> 从优化运行代价的角度来看，PostgreSQL假设所有的物理页都是从存储介质中获取的；即，PostgreSQL不会考虑扫 描的页面是否来自共享缓冲区。
 
 ### 3.2.2 索引扫描
 
-​	尽管PostgreSQL支持很多索引方法，比如Btree，GiST，BIN和BRIN，但是索引扫描的代价估计都是使用公共的代价函数：`cost_index()`。
+尽管PostgreSQL支持很多[索引方法](https://www.postgresql.org/docs/current/static/indexes-types.html)，比如B树，[GiST](https://www.postgresql.org/docs/current/static/gist.html)，[GIN](https://www.postgresql.org/docs/current/static/gin.html)和[BRIN](https://www.postgresql.org/docs/current/static/brin.html)，不过索引扫描的代价估计都使用一个共用的代价函数：`cost_index()`。
 
-​	在这一节中，我们基于下面的查询，探究索引扫描的代价估计：
+在这一节中，我们基于下面的查询，探究索引扫描的代价估计：
+
+本节将研究索引扫描的代价是如何估计的，以下列查询为例。
 
 ```sql
 testdb=# SELECT id, data FROM tbl WHERE data < 240;
 ```
 
-​	在估计这个代价之前，下面显示了$N_{index,page}$和$N_{index,tuple}$的数量：
+在估计该代价之前，下面的查询能获取$N_{\verb|index|,\verb|page|}$和$N_{\verb|index|,\verb|tuple|}$的值：
 
 ```sql
 testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl_data_idx';
@@ -411,70 +397,69 @@ testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl_data_idx'
 ```
 
 $$
-\begin{equation}
-N_{index,tuple} = 10000
- \tag{3}
+\begin{equation}\tag{3}
+	N_{\verb|index|,\verb|tuple|} = 10000
 \end{equation}
 $$
 
 $$
-\begin{equation}
-N_{index,page} = 30
- \tag{4}
+\begin{equation}\tag{4}
+	N_{\verb|index|,\verb|page|} = 30
 \end{equation}
 $$
 
 #### 3.2.2.1 启动代价
 
-索引扫描的启动代价就是读取索引页，访问目标表的第一个元组的代价，基于下面的公式定义：
+索引扫描的启动代价就是读取索引页以访问目标表的第一条元组的代价，由下面的公式定义：
 $$
-\begin{align}
-\verb|‘start-up cost’| = \{\mathrm{ceil}(\log_2 (N_{index,tuple}))
-		 + (H_{index} + 1) \times 50\} \times \verb|cpu_operator_cost|,
-\end{align}
+\begin{equation}
+\verb| start-up_cost| = \{\mathrm{ceil}(\log_2 (N_{\verb|index|,\verb|tuple|}))
+		 + (H_{\verb|index|} + 1) × 50\} × \verb|cpu_operator_cost|
+\end{equation}
 $$
 其中$H_{index}$是索引树的高度。
 
-在这个情况下，按照公式(3)，$N_{index,tuple}$是10000；$H_{index}$是1；*cpu_operator_cost*是0.0025（默认值）。因此
+在本例中，套用公式(3)，$N_{index,tuple}$是10000；$H_{index}$是1；$\verb|cpu_operator_cost|$是0.0025（默认值）。因此
 $$
-\begin{align}
- \verb|‘start-up cost’| = \{\mathrm{ceil}(\log_2(10000)) + (1 + 1) \times 50\} \times 0.0025 = 0.285. \tag{5}
-\end{align}
+\begin{equation}\tag{5}
+ \verb|start-up_cost| = \{\mathrm{ceil}(\log_2(10000)) + (1 + 1) × 50\} × 0.0025 = 0.285
+\end{equation}
 $$
 #### 3.2.2.2 运行代价
 
 索引扫描的运行代价是表和索引的CPU代价与IO代价之和。
 $$
 \begin{align}
- \verb|‘run cost’| &= (\verb|‘index cpu cost’| + \verb|‘table cpu cost’|) 
- 	    	  + (\verb|‘index IO cost’| + \verb|‘table IO cost’|).
+ \verb|run_cost| &= (\verb|index_cpu_cost| + \verb|table_cpu_cost|) 
+ 	    	  + (\verb|index_io_cost| + \verb|table_io_cost|).
 \end{align}
 $$
 
-> 如果使用的是第7章中描述的仅索引扫描，则不会估计表的CPU代价与表的IO代价。
+> 如果使用[仅索引扫描](https://www.postgresql.org/docs/10/static/indexes-index-only-scans.html)，则不会估计`table_cpu_cost`与`table_io_cost`，仅索引扫描将在[第七章](ch7.md)中介绍。
 
-前三个代价（如，index cpu cost，table cpu cost和index IO cost）如下所示：
+前三个代价（即`index_cpu_cost`，`table_cpu_cost`和`index_io_cost`）如下所示：
 
 $$
 \begin{align}
- \verb|index_cpu_cost| &= \verb|Selectivity| \times N_{index,tuple} \times (\verb|cpu_index_tuple_cost| + \verb|qual_op_cost|) \\
- \verb|table_cpu_cost| &= \verb|Selectivity| \times N_{tuple}  \times \verb|cpu_tuple_cost| \\
- \verb|index_io_cost|   &= \mathrm{ceil}(\verb| Selectivity | \times N_{index,page}) \times \verb|random_page_cost|\\
- \verb|table_io_cost| &=  \verb|max_io_cost| +  \verb|indexCorerelation|^2 \times ( \verb|min_io_cost|-  \verb|max_io_cost|)
+ \verb|index_cpu_cost| &= \verb|Selectivity| × N_{\verb|index|,\verb|tuple|} × (\verb|cpu_index_tuple_cost| + \verb|qual_op_cost|) \\
+ \verb|table_cpu_cost| &= \verb|Selectivity| × N_{\verb|tuple|}× \verb|cpu_tuple_cost| \\
+ \verb|index_io_cost|   &= \mathrm{ceil}(\verb|Selectivity| × N_{\verb|index|,\verb|page|}) ×\verb|random_page_cost|
 \end{align}
 $$
-以上的*cpu_index_tuple_cost*和*random_page_cost*在postgresql.conf配置（默认分别是0.005和4.0）；粗略来讲，*qual_op_cost*就是index比较计算的代价，这里就不多展开了，默认值是0.0025。*Selectivity*是通过where子句得出的索引查找范围的比；是一个**[0.1]**的浮点数，如下所述；比如，$Selectivity \times N_{tuple}$ 就是需要读的表元组数量，$Selectivity \times N_{index,tuple}$就是需要读的索引元组数量等等。
 
-> ##### 选择率（Selectivity）
+
+以上公式中的[`cpu_index_tuple_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-INDEX-TUPLE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)在*postgresql.conf*中配置（默认值分别为0.005和4.0）。$\verb|qual_op_cost|$粗略来说就是索引求值的代价，默认值是0.0025，这里不再展开。**选择率（Selectivity）**是一个0到1之间的浮点数，代表查询指定的`WHERE`子句在索引中搜索范围的比例。举个例子，$(\verb|Selectivity| × N_{\verb|tuple|})$就是需要读取的表元组数量，$(\verb|Selectivity| × N_{\verb|index|,\verb|tuple|})$就是需要读取的索引元组数量，诸如此类。
+
+> #### 选择率（Selectivity）
 >
-> ​	查询谓词的选择率是通过柱状图和**众数（Most Common Value, MCV）**估计的，这些信息都存储于 *pg_stats* 中。这里基于特例，阐述一下选择率计算，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
+> 查询谓词的选择率是通过**直方图界值（histogram_bounds）**和**众数（Most Common Value, MCV）**估计的，这些信息都存储在*pg_stats* 中。这里通过一个特定的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
 >
-> 表中每列的MCV存储在*pg_stats*视图的 *most_common_vals* 和 *most_common_freqs* 对中
+> 表中每一列的MCV都在*pg_stats*视图的*most_common_vals* 和 *most_common_freqs*中成对存储。
 >
-> + *most_common_vals*：该列上的MCV列表
-> + *most_common_freqs*：MCV列表相应的频率列表
+> + **众数（most_common_vals）**：该列上的MCV列表
+> + **众数频率（most_common_freqs）**：MCV相应的频率列表
 >
-> 下面是一个简单的例子。表*countries*有两个列：一个存储国家名的*country*列和一个存储该国所属洲的*continent*列；
+> 下面是一个简单的例子。表*countries*有两列：一列*country*存储国家名，一列`continent`存储该国所属大洲。
 >
 > ```sql
 > testdb=# \d countries
@@ -500,15 +485,16 @@ $$
 > (6 rows)
 > ```
 >
-> 考虑下面的带有WHERE条件`continent = 'Asia'`的查询：
+> 考虑下面的查询，该查询带有`WHERE`条件`continent = 'Asia'`。
 >
 > ```sql
 > testdb=# SELECT * FROM countries WHERE continent = 'Asia';
 > ```
 >
-> 这时候，planner使用continent列的MCV来估计索引扫描的代价，列的*most_common_vals* and *most_common_freqs* 如下所示：
+> 这时候，计划器使用*continent*列上的MCV来估计索引扫描的代价，列上的*most_common_vals*与 *most_common_freqs* 如下所示：
 >
 > ```sql
+> testdb=# \x
 > Expanded display is on.
 > testdb=# SELECT most_common_vals, most_common_freqs FROM pg_stats 
 > testdb-#                  WHERE tablename = 'countries' AND attname='continent';
@@ -517,18 +503,18 @@ $$
 > most_common_freqs | {0.274611,0.243523,0.227979,0.119171,0.0725389,0.0621762}
 > ```
 >
-> 和*most_common_vals* ： *Asia*值是对应的*most_common_freqs*是0.227979。因此，0.227979就是选择率的估计。
+> 与*most_common_vals*中*Asia*值对应的*most_common_freqs*为0.227979。因此，0.227979会在估算中被用作选择率。
 >
-> 如果MCV不可用，就会使用目标列的*histogram_bounds*来估计代价。
+> 如果MCV不可用，就会使用目标列上的直方图界值来估计代价。
 >
-> + **histogram_bounds**是一系列值，这些值将列划分为数量大致相同的若干组。
+> + **直方图值（histogram_bounds）**是一系列值，这些值将列上的取值划分为数量大致相同的若干个组。
 >
-> 如下一个特定的例子。这是表'tbl'中data列上的*histogram_bounds*值；
+> 下面是一个具体的例子。这是表*tbl*中*data*列上的直方图界值；
 >
 > ```sql
 > testdb=# SELECT histogram_bounds FROM pg_stats WHERE tablename = 'tbl' AND attname = 'data';
 >         			     	      histogram_bounds
-> ---------------------------------------------------------------------------------------------------
+> ------------------------------------------------------------------------------------
 >  {1,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,
 > 2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,
 > 4200,4300,4400,4500,4600,4700,4800,4900,5000,5100,5200,5300,5400,5500,5600,5700,5800,5900,6000,6100,
@@ -537,62 +523,98 @@ $$
 > (1 row)
 > ```
 >
-> 默认地，histogram_bounds划分为100个桶。图 3.7阐明了本例中的桶和相应的histogram_bounds。桶从0开始，每个桶保存了相同数量（大致相同）的元组。histogram_bounds的值就是相应桶的边界。比如，histogram_bounds的第0个值是1，意思是这是*bucket_0*中的最小值。第1个值是100，意思是bucket_1中的最小值是100，等等。
+> 默认情况下，直方图界值会将列上的取值划分入100个桶。图3.7展示了这些桶及其对应的直方图界值。桶从0开始编号，每个桶保存了（大致）相同数量的元组。直方图界值就是相应桶的边界。比如，直方图界值的第0个值是1，意即这是*bucket_0*中的最小值。第1个值是100，意即*bucket_1*中的最小值是100，等等。
 >
-> 图3.7 桶和**histogram_bounds**
+> **图3.7 桶和直方图界值**
 >
-> ![](img/fig-3-07.png)
+> ![](/Users/vonng/Dev/pg-internal/fig-3-07.png)
 >
-> 接下来，本节例子中的选择率计算如下所示。查询有WHERE子句`data < 240`，并且值240在第二个bucket中。在这个例子中，可以利用*线性插值法*，得出选择性；因此，查询中data列的选择性使用下面的公式计算：
+> 然后本节例子中选择率计算如下所示。假设查询带有`WHERE`子句`data < 240`，而值240落在第二个桶中。在本例中可以通过线性插值推算出相应的选择率。因此查询中*data*列的选择率可以套用下面的公式计算：
 > $$
-> Selectivity = \frac{2+(240-hb[2])/(hb[3]-hb[2])}{100}=\frac{2+(240-200)/(300-200)}{100}=\frac{2+40/100}{100}=0.024    \ (6)
+> \verb|Selectivity| = \frac{2+(240-hb[2])/(hb[3]-hb[2])}{100}=\frac{2+(240-200)/(300-200)}{100}=\frac{2+40/100}{100}=0.024    \ (6)
 > $$
 >
 
-因此，根据(1),(3),(4)和(6)，有
+因此，根据公式(1)，(3)，(4)和(6)，有
 $$
-'index\ cpu\ cost' = 0.024\times 10000 \times (0.005+0.0025)=1.8 \ (7) \\
-'table\ cpu\ cost' = 0.024 \times 10000 \times 0.01 = 2.4 \ (8) \\
-'index\ IO\ cost' = ceil(0.024 \times 30) \times 4.0 = 4.0 \ (9)
+\begin{equation}\tag{7}
+	\verb|index_cpu_cost| = 0.024× 10000 × (0.005+0.0025)=1.8
+\end{equation}
 $$
-基于以下公式，得$'table\ IO\ cost '$定义：
 $$
-'table\ IO\ cost' = max\_IO\_cost + indexCorerelation^2 \times (min\_IO\_cost-max\_IO\_cost)
+\begin{equation}\tag{8}
+\verb|table_cpu_cost| = 0.024 × 10000 × 0.01 = 2.4
+\end{equation}
 $$
-$max\_IO\_cost$是最差的IO代价，即，随机扫描所有数据页的代价；这个代价定义如下公式：
+
 $$
-max\_IO\_cost = N_{page}\times random\_page\_cost
+\begin{equation}\tag{9}
+\verb|index_io_cost| = ceil(0.024 × 30) × 4.0 = 4.0
+\end{equation}
 $$
-在本例中，由（2），$N_{page}=45$，得
+
+
+
+$\verb|table_io_cost|$ 由下面的公式定义：
 $$
-max\_IO\_cost = 45\times 4.0 = 180.0 \ (10)
+\begin{equation}
+\verb|table_io_cost| = \verb|max_io_cost| + \verb|indexCorerelation|^2 × (\verb|min_io_cost|-\verb|max_io_cost|)
+\end{equation}
 $$
-$min\_IO\_cost$是最优的IO代价，即，顺序扫描选定的数据页；这个代价定义如下公式：
+
+$\verb|max_io_cost_io_cost|$ 是最差情况下的I/O代价，即，随机扫描所有数据页的代价；这个代价由以下公式定义：
 $$
-min\_IO\_cost = 1\times random\_page\_cost + (ceil(Selectivity\times N_{page})-1)\times seq\_page\_cost
+\begin{equation}
+\verb|max_io_cost| = N_{\verb|page|} × \verb|random_page_cost|
+\end{equation}
 $$
-这个例子中，
+
+在本例中，由(2)，$N_{\verb|page|}=45$，得
 $$
-min\_IO\_cost \ = 1\times 4.0 + (ceil(0.024\times 45)-1)\times 1.0 \ (11)
+\begin{equation}\tag{10}
+\verb|max_io_cost| = 45 × 4.0 = 180.0
+\end{equation}
 $$
-下文详细介绍$indexCorrelation$，在这个例子中，
+
+$\verb|min_io_cost|$是最优情况下的I/O代价，即，顺序扫描选定的数据页；这个代价由以下公式定义：
 $$
-indexCorrelation = 1.0 \ (12)
+\begin{equation}
+\verb|min_io_cost| = 1 × \verb|random_page_cost| + (\mathrm{ceil}(\verb|Selectivity| × N_{\verb|page|})-1) × \verb|seq_page_cost|
+\end{equation}
 $$
-由（10），（11）和（12），得
+在本例中，
 $$
-’table\ IO\ cost‘ = 180.0+1.0^2\times (5.0-180.0)=5.0 \ (13)
+\begin{equation} \tag{11}
+\verb|min_io_cost| \ = 1 × 4.0 + (\mathrm{ceil}(0.024 × 45)-1) × 1.0
+\end{equation}
 $$
-综上，由（7），（8），（9）和（13）得
+
+下文详细介绍$\verb|indexCorrelation|$，在本例中，
 $$
-’run\ cost‘ = (1.8+2.4)+(4.0+5.0)=13.2 \ (14)
+\begin{equation} \tag{12}
+	\verb|indexCorrelation| = 1.0
+\end{equation}
+$$
+
+由(10)，(11)和(12)，得
+$$
+\begin{equation} \tag{13}
+\verb|table_io_cost| = 180.0+1.0^2 × (5.0-180.0)=5.0
+\end{equation}
+$$
+
+综上，由(7)，(8)，(9)和(13)得
+$$
+\begin{equation}\tag{14}
+\verb|run_cost| = (1.8+2.4)+(4.0+5.0)=13.2
+\end{equation}
 $$
 
 > ##### 索引相关性（index correlation）
 >
-> 索引相关性是列值在物理上的顺序和逻辑上的顺序的统计相关性（引自官方文档）。范围从-1到+1。为了帮助理解索引扫描和索引相关性的关系，请看如下示例。
+> 索引相关性是列值在物理上的顺序和逻辑上的顺序的统计相关性（引自官方文档）。索引相关性的取值范围从$-1$到$+1$。下面的例子有助于理解索引扫描和索引相关性的关系。
 >
-> 表*tbl_corr*有5个列：两个列式文本类型，三个列是整数类型。这三个整数列保存从1到12的数字。物理上，表*tbl_corr*包含三个页，每个页有4个元组。每个数字列有一个名如*index_col_asc*的索引。
+> 表*tbl_corr*有5个列：两个列为文本类型，三个列为整数类型。这三个整数列保存着从1到12的数字。物理上，表*tbl_corr*包含三个页，每个页有4个元组。每个数字列有一个名如*index_col_asc*的索引。
 >
 > ```sql
 > testdb=# \d tbl_corr
@@ -658,17 +680,18 @@ $$
 >
 > **图. 3.8 索引相关性**
 >
-> ![indexcor](img/fig-3-08.png)
+> ![indexcor](/Users/vonng/Dev/pg-internal/fig-3-08.png)
 
 #### 3.2.2.3 整体代价
 
-由（3）和（14），得
+由(3)和(14)，可得
 $$
-\begin{align}
- \verb|‘total cost’| = 0.285 + 13.2 = 13.485. \tag{15}
-\end{align}
+\begin{equation}\tag{15}
+	\verb|total_cost| = 0.285 + 13.2 = 13.485
+\end{equation}
 $$
-上述SELECT查询的EXPLAIN结果如下所示，我们确认一下：
+
+上述`SELECT`查询的`EXPLAIN`结果如下所示，我们确认一下：
 
 ```sql
 testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
@@ -683,7 +706,7 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 
 在第5行，指出了一个索引条件`Index Cond:(data < 240)`。准确的说，这个条件是*访问谓词*，表示索引扫描的开始和结束条件。
 
-> 根据[这篇文章](https://use-the-index-luke.com/sql/explain-plan/postgresql/filter-predicates)，PostgreSQL的EXPLAIN命令不区分**访问谓词（access predicate）**和**索引过滤谓词（index filter predicate）**。因此，如果分析EXPLAIN的输出，除了注意索引条件，也要注意估计的行数。
+> 根据[这篇文章](https://use-the-index-luke.com/sql/explain-plan/postgresql/filter-predicates)，PostgreSQL的`EXPLAIN`命令不区分**访问谓词（access predicate）**和**索引过滤谓词（index filter predicate）**。因此，如果分析`EXPLAIN`的输出，除了注意索引条件，也要注意估计的行数。
 
 > ##### seq_page_cost和random_page_cost
 >
@@ -695,13 +718,13 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 
 ### 3.2.3 排序
 
-排序路径是在排序操作中使用的，比如ORDER BY，归并连接的预处理操作等其他函数。排序的代价估计使用`cost_sort()`函数。
+排序路径是在排序操作中使用的，比如`ORDER BY`，归并连接的预处理操作等其他函数。函数`cost_sort()`用于估计排序操作的代价。
 
-在排序操作中，如果能在`work_mem`中放下所有元组，那么就是用快速排序算法。否则，创建一个临时文件，使用外部归并排序。
+在排序操作中，如果能在*work_mem*中放下所有元组，那么就是用快速排序算法。否则，创建一个临时文件，使用外部归并排序。
 
-排序路径的启动代价就是对目标表的排序代价，因此代价就是$O(N_{sort}\times log_2(N_{sort})$，这里$N_{sort}$就是需要排序的元组数。排序路径的运行代价就是读取已经排好序的元组的代价，因此代价就是$O(N_{sort})$。
+排序路径的启动代价就是对目标表的排序代价，因此代价就是$O(N_{\verb|sort|}× \log_2(N_{\verb|sort|})$，这里$N_{\verb|sort|}$就是需要排序的元组数。排序路径的运行代价就是读取已经排好序的元组的代价，因此代价就是$O(N_{sort})$。
 
-在本小节中，我们探究如下查询的排序代价估计。假设这个查询只使用work_mem，不使用临时文件。
+在本小节中，我们探究如下查询的排序代价估计。假设这个查询只使用工作内存，不使用临时文件。
 
 ```sql
 testdb=# SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
@@ -709,21 +732,34 @@ testdb=# SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 
 这个例子中，启动代价基于如下公式定义：
 $$
-‘start-up\  cost’ = C+comparison\_cost\times N_{sort} \times log_2(N_{sort})，
+\begin{equation}
+\verb|start-up_cost| = \verb|C|+ \verb|comparison_cost| × N_{\verb|sort|} × \log_2(N_{\verb|sort|})
+\end{equation}
 $$
-这里$C$就是上一次扫描的总代价，即，索引扫描的代价；由（15）得，等于13.485；$N_{sort}=240$；*comparison_cost*定义为$2\times cpu\_operator\_cost$。因此，
+
+这里$C$就是上一次扫描的总代价，即，索引扫描的代价；由(15)得，等于13.485；$N_{\verb|sort|}=240$；$\verb|comparison_cost|$ 定义为$2 × \verb|cpu_operator_cost|$。因此，
+
 $$
-‘start-up\ cost’ = 13.485+(2\times 0.0025)\times240.0\times log_2(240.0)=22.973
+\begin{equation}
+\verb|start-up_cost| = 13.485+(2×0.0025)×240.0×\log_2(240.0)=22.973
+\end{equation}
 $$
+
 运行代价是内存中读取排好序的元组的代价，即：
 $$
-‘run\ cost’=cpu\_operator\_cost\times N_{sort} = 0.0025\times 240 = 0.6
+\begin{equation}
+\verb|run_cost| = \verb|cpu_operator_cost| × N_{\verb|sort|} = 0.0025 × 240 = 0.6
+\end{equation}
 $$
 综上：
 $$
-'total\ cost'=22.973+0.6=23.573
+\begin{equation}
+\verb|total_cost|=22.973+0.6=23.573
+\end{equation}
 $$
-以上SELECT查询的EXPLAIN命令结果如下，确认一下：
+作为确认，以上`SELECT`查询的`EXPLAIN`命令结果如下。
+
+在第4行可以看到启动代价和运行代价分别为22.97和23.57。
 
 ```sql
 testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
@@ -736,7 +772,7 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 (4 rows)
 ```
 
-在第4行，我们发现启动代价和运行代价分别是22.97和23.57。
+
 
 
 
