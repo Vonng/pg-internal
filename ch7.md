@@ -8,7 +8,7 @@
 
 ​	在8.3版本中实现的HOT特性，使得更新行的时候可以将新行放在和老行同一个数据页中，从而高效地利用索引和表的数据页；HOT特性减少了没有必要的清理过程。
 
-​	在源码的[README.HOT](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)中有关于HOT的详细介绍，本章只是简短的介绍HOT。首先7.1.1节描述了在没有HOT特性的时候，更新一行会是怎么样的，以此阐明要解决的问题。接下来在7.1.2中介绍了HOT做了什么。
+​	在源码的[README.HOT](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)中有关于HOT的详细介绍，本章只是简短的介绍HOT。首先7.1.1节描述了在没有HOT特性的时候，更新一行会是怎么样的，以此阐明要解决的问题。接下来在7.1.2中介绍HOT做了什么。
 
 ### 7.1.1 没有HOT时的行更新
 
@@ -30,13 +30,13 @@ Indexes:
 
 ![update](img/fig-7-01.png)
 
-我们考虑一下，没有HOT时，最后一个元组是如何更新的。
+我们考虑一下，没有HOT特性时，最后一个元组是如何更新的。
 
 ```sql
 testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 ```
 
-​	在这个场景中，PostgreSQL不仅插入了一个新的表元组，也在索引页中插入了新的索引元组，参考图7.1(b)。索引元组的插入消耗了索引页的空间，并且索引元组的插入和清理都是高开销的操作。HOT的目的是降低这种影响。
+​	在这个场景中，PostgreSQL不仅插入了一个新的表元组，也在索引页中插入了新的索引元组，参考图7.1(b)。索引元组的插入消耗了索引页的空间，并且索引元组的插入和清理都是高开销的操作。而HOT的目的就是降低这种影响。
 
 ### 7.1.2 HOT如何工作
 ​	当使用HOT特性更新行时，如果被更新的元组存储在老元组所在的页面中，PostgreSQL就不会再插入相应的索引元组，而是分别设置新元组的`HEAP_ONLY_TUPLE`标记位与老元组的`HEAP_HOT_UPDATED`标记位，两个标记位都保存在元组的`t_informask2`字段中。如图7.2和7.3所示；
@@ -48,7 +48,7 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 ​	比如在这个例子中，`Tuple_1`和`Tuple_2`分别被设置成`HEAP_HOT_UPDATED`和`HEAP_ONLY_TUPLE`。
 
-​	另外，不管是否进行了**修剪（pruning）**和**碎片整理（defragmentation）**，都会使用下面介绍的`HEAP_HOT_UPDATED`和`HEAP_ONLY_TUPLE`标记位。
+​	另外，在**修剪（pruning）**和**碎片整理（defragmentation）**处理过程中，都会使用下面介绍的`HEAP_HOT_UPDATED`和`HEAP_ONLY_TUPLE`标记位。
 
 ​	接下来会介绍，当基于HOT更新一个元组后，PostgreSQL是如何在索引扫描中访问这些被HOT更新的元组的，如图7.4(a)所示。
 
@@ -168,7 +168,7 @@ testdb=# SELECT id, name FROM tbl WHERE id BETWEEN 18 and 19;
 
 
 
-## 7.3 README.HOT
+## 7.3 README.HOT[译者注]
 
 这是PostgreSQL官方文档中关于HOT的介绍。
 
