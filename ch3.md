@@ -664,34 +664,34 @@ $$
 > (3 rows)
 > ```
 >
-> 当执行下面的查询时，由于所有的目标元组只在第一个页中，PostgreSQL只会读取第一个页中，如图. 3.8(a)。
+> 当执行下列查询时，由于所有的目标元组都在第一页中，PostgreSQL只会读取第一页，如图3.8(a)所示。
 >
 > ```sql
 > testdb=# SELECT * FROM tbl_corr WHERE col_asc BETWEEN 2 AND 4;
 > ```
 >
-> 另一方面，当执行下面的查询，PostgreSQL需要读所有的页，如图3.8(b)。
+> 而执行下列查询时则不然，PostgreSQL需要读所有的页，如图3.8(b)所示。
 >
 > ```sql
-> testdb=# SELECT * FROM tbl_corr WHERE col_asc BETWEEN 2 AND 4;
+> testdb=# SELECT * FROM tbl_corr WHERE col_rand BETWEEN 2 AND 4;
 > ```
 >
-> 如此可知，索引相关性是一种统计上的相关性，反映了在索引扫描代价估计中，由于索引顺序和物理元组顺序扭曲程度，这会影响的随机访问的性能。
+> 如此可知，索引相关性是一种统计上的相关性。在索引扫描代价估计中，索引相关性体现了索引顺序和物理元组顺序扭曲程度给随机访问性能造成的影响大小。
 >
-> **图. 3.8 索引相关性**
+> **图3.8 索引相关性**
 >
 > ![indexcor](img/fig-3-08.png)
 
 #### 3.2.2.3 整体代价
 
-由(3)和(14)，可得
+由(3)和(14)可得
 $$
 \begin{equation}\tag{15}
 	\verb|total_cost| = 0.285 + 13.2 = 13.485
 \end{equation}
 $$
 
-上述`SELECT`查询的`EXPLAIN`结果如下所示，我们确认一下：
+作为确认，上述`SELECT`查询的`EXPLAIN`结果如下所示：
 
 ```sql
 testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
@@ -702,42 +702,42 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 (2 rows)
 ```
 
-在第4行，我们发现启动代价总代价分别是0.29和13.49，并且估计有240行（元组）被扫描。
+在第4行可以看到启动代价和总代价分别是0.29和13.49，预估有240条元组被扫描。
 
-在第5行，指出了一个索引条件`Index Cond:(data < 240)`。准确的说，这个条件是*访问谓词*，表示索引扫描的开始和结束条件。
+在第5行显示了一个索引条件`Index Cond:(data < 240)`。更准确地说，这个条件叫做**访问谓词（access predicate）**，它表达了索引扫描的开始条件与结束条件。
 
-> 根据[这篇文章](https://use-the-index-luke.com/sql/explain-plan/postgresql/filter-predicates)，PostgreSQL的`EXPLAIN`命令不区分**访问谓词（access predicate）**和**索引过滤谓词（index filter predicate）**。因此，如果分析`EXPLAIN`的输出，除了注意索引条件，也要注意估计的行数。
+> 根据[这篇文章](https://use-the-index-luke.com/sql/explain-plan/postgresql/filter-predicates)，PostgreSQL中的`EXPLAIN`命令不会区分**访问谓词（access predicate）**和**索引过滤谓词（index filter predicate）**。因此当分析`EXPLAIN`的输出时，即使看到了“IndexCond”，也应当注意一下预估返回行数。
 
 > ##### seq_page_cost和random_page_cost
 >
-> [seq_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[random_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别是1.0和4.0。这意味着PostgreSQL假设随机扫描是顺序扫描的4倍；很明显PostgreSQL的默认值是基于HDD设置的。
+> [seq_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[random_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别为1.0和4.0。这意味着PostgreSQL假设随机扫描比顺序扫描慢4倍；显然，PostgreSQL的默认值是基于HDD（普通硬盘）设置的。
 >
-> 另一方面，近年来SSD得到了广泛地使用，`random_page_cost`的默认值相对有点大。如果在SSD上使用`random_page_cost`的默认值，计划器会选择低效的的计划。因此，当使用SSD，最好将`random_page_cost`设置为1.0。
+> 另一方面，近年来SSD得到了广泛的应用，`random_page_cost`的默认值就显得太大了。使用SSD时如果仍然采用`random_page_cost`的默认值，则计划器有可能会选择低效的计划。因此当使用SSD时最好将`random_page_cost`的值设为1.0。
 >
-> [这篇文章](https://amplitude.engineering/how-a-single-postgresql-config-change-improved-slow-query-performance-by-50x-85593b8991b0)阐述了`random_page_cost`使用默认设置时的问题。
+> [这篇文章](https://amplitude.engineering/how-a-single-postgresql-config-change-improved-slow-query-performance-by-50x-85593b8991b0)报告了使用`random_page_cost`默认值导致的问题。
 
 ### 3.2.3 排序
 
-排序路径是在排序操作中使用的，比如`ORDER BY`，归并连接的预处理操作等其他函数。函数`cost_sort()`用于估计排序操作的代价。
+**排序路径（sort path）** 会在排序操作中被使用。排序操作包括`ORDER BY`，归并连接的预处理操作，以及其他函数。函数`cost_sort()`用于估计排序操作的代价。
 
-在排序操作中，如果能在*work_mem*中放下所有元组，那么就是用快速排序算法。否则，创建一个临时文件，使用外部归并排序。
+如果能在工作内存中放下所有元组，那么排序操作会选用快速排序算法。否则的话则会创建临时文件，使用文件归并排序算法。
 
-排序路径的启动代价就是对目标表的排序代价，因此代价就是$O(N_{\verb|sort|}× \log_2(N_{\verb|sort|})$，这里$N_{\verb|sort|}$就是需要排序的元组数。排序路径的运行代价就是读取已经排好序的元组的代价，因此代价就是$O(N_{sort})$。
+排序路径的启动代价就是对目标表的排序代价，因此代价就是$O(N_{\verb|sort|}× \log_2(N_{\verb|sort|})$，这里$N_{\verb|sort|}$就是待排序的元组数。排序路径的运行代价就是读取已经排好序的元组的代价，因而代价就是$O(N_{sort})$。
 
-在本小节中，我们探究如下查询的排序代价估计。假设这个查询只使用工作内存，不使用临时文件。
+本节将研究以下查询排序代价的估计过程。假设该查询只使用工作内存，不使用临时文件。
 
 ```sql
 testdb=# SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 ```
 
-这个例子中，启动代价基于如下公式定义：
+在本例中，启动代价由以下公式定义：
 $$
 \begin{equation}
 \verb|start-up_cost| = \verb|C|+ \verb|comparison_cost| × N_{\verb|sort|} × \log_2(N_{\verb|sort|})
 \end{equation}
 $$
 
-这里$C$就是上一次扫描的总代价，即，索引扫描的代价；由(15)得，等于13.485；$N_{\verb|sort|}=240$；$\verb|comparison_cost|$ 定义为$2 × \verb|cpu_operator_cost|$。因此，
+这里$C$就是上一次扫描的总代价，即上次索引扫描的总代价；由(15)可得C等于13.485；$N_{\verb|sort|}=240$；$\verb|comparison_cost|$ 定义为$2 × \verb|cpu_operator_cost|$。因此有
 
 $$
 \begin{equation}
@@ -745,7 +745,7 @@ $$
 \end{equation}
 $$
 
-运行代价是内存中读取排好序的元组的代价，即：
+运行代价是在内存中读取排好序的元组的代价，即：
 $$
 \begin{equation}
 \verb|run_cost| = \verb|cpu_operator_cost| × N_{\verb|sort|} = 0.0025 × 240 = 0.6
@@ -757,9 +757,7 @@ $$
 \verb|total_cost|=22.973+0.6=23.573
 \end{equation}
 $$
-作为确认，以上`SELECT`查询的`EXPLAIN`命令结果如下。
-
-在第4行可以看到启动代价和运行代价分别为22.97和23.57。
+作为确认，以上`SELECT`查询的`EXPLAIN`命令结果如下：
 
 ```sql
 testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
@@ -772,107 +770,106 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 (4 rows)
 ```
 
+在第4行可以看到启动代价和运行代价分别为22.97和23.57。
 
 
 
 
 ## 3.3 创建单表查询的计划树
 
-由于计划器特别复杂，本节描述最简单的情况，即，单表上的查询计划树的创建。更复杂的查询，换句话说就是多表上的查询计划树的创建在3.6节中阐述。
+计划器非常复杂，故本节仅描述最简单的情况，即单表查询的计划树创建过程。更复杂的查询，换而言之即多表查询，其计划树创建过程将在第3.6节中阐述。
 
-PostgreSQL中的计划器有三个步骤，如下所示：
+PostgreSQL中的计划器会执行三个处理步骤：
 
-1. 进行预处理
-2. 在所有可能的访问路径中，找出最小代价的路径
-3. 按最小代价的路径创建查询计划树
+1. 执行预处理
+2. 在所有可能的访问路径中，找出代价最小的访问路径
+3. 按照代价最小的路径，创建计划树
 
-一个访问路径是处理代价估计的一部分；比如，顺序扫描，索引扫描，排序以及多种连接操作都有其相应的路径。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是[relation.h](https://github.com/postgres/postgres/blob/master/src/include/nodes/relation.h)中定义的*Path*结构。它就相当于是顺序扫描。所有访问路径都是基于这个结构实现。后文会详细介绍其中的细节。
+**访问路径（access path）**是估算代价时的处理单元；比如，顺序扫描，索引扫描，排序以及各种连接操作都有其对应的**路径**。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是[relation.h](https://github.com/postgres/postgres/blob/master/src/include/nodes/relation.h)中定义的*Path*结构体。它就相当于是顺序扫描。所有其他的访问路径都基于该结构，下面会介绍细节。
 
-```sql
+计划器为了处理上述步骤，会在内部创建一个`PlannerInfo`数据结构。在该数据结构中包含着查询树，查询所涉及关系信息，访问路径等等。
+
+```c
 typedef struct PathKey
 {
-        NodeTag         type;
-
-        EquivalenceClass *pk_eclass;    /* the value that is ordered */
-        Oid             pk_opfamily;    /* btree opfamily defining the ordering */
-        int             pk_strategy;    /* sort direction (ASC or DESC) */
-        bool            pk_nulls_first; /* do NULLs come before normal values? */
+    NodeTag type;
+    EquivalenceClass *pk_eclass; /* 值是否有序 */
+    Oid pk_opfamily;             /* 用于定义顺序的B树操作符族 */
+    int pk_strategy;             /* 排序方向(ASC or DESC) */
+    bool pk_nulls_first;         /* NULL是否排序在常规值之前？ */
 } PathKey;
 
 typedef struct Path
 {
-	NodeTag		type;
-	NodeTag		pathtype;	/* tag identifying scan/join method */
-	RelOptInfo	*parent;	/* the relation this path can build */
-	PathTarget 	*pathtarget;	/* list of Vars/Exprs, cost, width */
-	ParamPathInfo   *param_info;	/* parameterization info, or NULL if none */
-	bool		parallel_aware; /* engage parallel-aware logic? */
-	bool		parallel_safe;	/* OK to use as part of parallel plan? */
-	int		parallel_workers;/* desired # of workers; 0 = not parallel */
-	/* estimated size/costs for path (see costsize.c for more info) */
-	double		rows;		/* estimated number of result tuples */
-	Cost		startup_cost;	/* cost expended before fetching any tuples */
-	Cost		total_cost;	/* total cost (assuming all tuples fetched) */
-	List	   	*pathkeys;	/* sort ordering of path's output */
-	/* pathkeys is a List of PathKey nodes; see above */
+    NodeTag type;
+    NodeTag pathtype;          /* 标识 scan/join 方法的标签 */
+    RelOptInfo *parent;        /* 路径所基于的关系 */
+    PathTarget *pathtarget;    /* Vars/Exprs的列表, 代价, 宽度 */
+    ParamPathInfo *param_info; /* 参数化信息, 如果没有则为NULL */
+    bool parallel_aware;       /* 涉及到并行相关的逻辑？ */
+    bool parallel_safe;        /* 是否能作为并行执行计划的一部分? */
+    int parallel_workers;      /* 期待的并行工作进程数量； 0表示没有并行 */
+
+    /* 估计路径的尺寸或代价 (更多详情参考costsize.c) */
+    double rows;       /* 预估结果元组数目 */
+    Cost startup_cost; /* 获取任何元组前需要花费的代价 */
+    Cost total_cost;   /* 总代价 (假设获取所有元组所需代价) */
+    List *pathkeys;    /* 路径输出的排序顺序 */
+    /* pathkeys 是PathKey节点的列表，PathKey定义见上面 */
 } Path;
-```
 
-计划器为了处理以上的步骤，内部创建一个`PlannerInfo`结构，维护查询树，查询中的关系表的相关信息，以及访问路径等等。
-
-```c
 typedef struct PlannerInfo
 {
-	NodeTag		type;
-	Query	   	*parse;			/* 被计划的查询 */
-	PlannerGlobal 	*glob;			/* 当前计划器运行时的全局信息 */
-	Index		query_level;		/* 最外层查询为1 */
-	struct PlannerInfo *parent_root;	/* 最外层查询为NULL */
+    NodeTag type;
+    Query *parse;                    /* 被计划的查询 */
+    PlannerGlobal *glob;             /* 当前计划器运行时的全局信息 */
+    Index query_level;               /* 最外层查询为1 */
+    struct PlannerInfo *parent_root; /* 最外层查询为NULL */
 
-	/*
+    /*
 	 * plan_params contains the expressions that this query level needs to
 	 * make available to a lower query level that is currently being planned.
 	 * outer_params contains the paramIds of PARAM_EXEC Params that outer
 	 * query levels will make available to this query level.
 	 */
-	List		*plan_params;	/* list of PlannerParamItems, see below */
-	Bitmapset  	*outer_params;
+    List *plan_params; /* PlannerParamItems的列表, 见下 */
+    Bitmapset *outer_params;
 
-	/*
+    /*
 	 * simple_rel_array holds pointers to "base rels" and "other rels" (see
 	 * comments for RelOptInfo for more info).  It is indexed by rangetable
 	 * index (so entry 0 is always wasted).  Entries can be NULL when an RTE
 	 * does not correspond to a base relation, such as a join RTE or an
 	 * unreferenced view RTE; or if the RelOptInfo hasn't been made yet.
 	 */
-	struct RelOptInfo **simple_rel_array;	/* All 1-rel RelOptInfos */
-	int		simple_rel_array_size;	/* allocated size of array */
+    struct RelOptInfo **simple_rel_array; /* All 1-rel RelOptInfos */
+    int simple_rel_array_size;            /* allocated size of array */
 
-	/*
+    /*
 	 * simple_rte_array is the same length as simple_rel_array and holds
 	 * pointers to the associated rangetable entries.  This lets us avoid
 	 * rt_fetch(), which can be a bit slow once large inheritance sets have
 	 * been expanded.
 	 */
-	RangeTblEntry **simple_rte_array;	/* rangetable as an array */
+    RangeTblEntry **simple_rte_array; /* rangetable as an array */
 
-	/*
+    /*
 	 * all_baserels is a Relids set of all base relids (but not "other"
 	 * relids) in the query; that is, the Relids identifier of the final join
 	 * we need to form.  This is computed in make_one_rel, just before we
 	 * start making Paths.
 	 */
-	Relids		all_baserels;
+    Relids all_baserels;
 
-	/*
+    /*
 	 * nullable_baserels is a Relids set of base relids that are nullable by
 	 * some outer join in the jointree; these are rels that are potentially
 	 * nullable below the WHERE clause, SELECT targetlist, etc.  This is
 	 * computed in deconstruct_jointree.
 	 */
-	Relids		nullable_baserels;
+    Relids nullable_baserels;
 
-	/*
+    /*
 	 * join_rel_list is a list of all join-relation RelOptInfos we have
 	 * considered in this planning run.  For small problems we just scan the
 	 * list to do lookups, but when there are many join relations we build a
@@ -881,110 +878,113 @@ typedef struct PlannerInfo
 	 * even when using the hash table for lookups; this simplifies life for
 	 * GEQO.
 	 */
-	List		*join_rel_list;	/* list of join-relation RelOptInfos */
-	struct HTAB 	*join_rel_hash; /* optional hashtable for join relations */
+    List *join_rel_list;        /* list of join-relation RelOptInfos */
+    struct HTAB *join_rel_hash; /* optional hashtable for join relations */
 
-	/*
+    /*
 	 * When doing a dynamic-programming-style join search, join_rel_level[k]
 	 * is a list of all join-relation RelOptInfos of level k, and
 	 * join_cur_level is the current level.  New join-relation RelOptInfos are
 	 * automatically added to the join_rel_level[join_cur_level] list.
 	 * join_rel_level is NULL if not in use.
 	 */
-	List	**join_rel_level;	/* lists of join-relation RelOptInfos */
-	int	join_cur_level; 	/* index of list being extended */
-	List	*init_plans;		/* init SubPlans for query */
-	List	*cte_plan_ids;		/* per-CTE-item list of subplan IDs */
-	List	*multiexpr_params;	/* List of Lists of Params for MULTIEXPR subquery outputs */
-	List	*eq_classes;		/* list of active EquivalenceClasses */
-	List	*canon_pathkeys; 	/* list of "canonical" PathKeys */
-	List	*left_join_clauses;	/* list of RestrictInfos for
+    List **join_rel_level;    /* lists of join-relation RelOptInfos */
+    int join_cur_level;       /* index of list being extended */
+    List *init_plans;         /* init SubPlans for query */
+    List *cte_plan_ids;       /* per-CTE-item list of subplan IDs */
+    List *multiexpr_params;   /* List of Lists of Params for MULTIEXPR subquery outputs */
+    List *eq_classes;         /* list of active EquivalenceClasses */
+    List *canon_pathkeys;     /* list of "canonical" PathKeys */
+    List *left_join_clauses;  /* list of RestrictInfos for
 					 * mergejoinable outer join clauses w/nonnullable var on left */
-	List	*right_join_clauses;	/* list of RestrictInfos for
+    List *right_join_clauses; /* list of RestrictInfos for
 					 * mergejoinable outer join clauses w/nonnullable var on right */
-	List	*full_join_clauses;	/* list of RestrictInfos for mergejoinable full join clauses */
-	List	*join_info_list; 	/* list of SpecialJoinInfos */
-	List	*append_rel_list;	/* list of AppendRelInfos */
-	List	*rowMarks;		/* list of PlanRowMarks */
-	List	*placeholder_list;	/* list of PlaceHolderInfos */
-	List	*fkey_list;		/* list of ForeignKeyOptInfos */
-	List	*query_pathkeys; 	/* desired pathkeys for query_planner() */
-	List	*group_pathkeys; 	/* groupClause pathkeys, if any */
-	List	*window_pathkeys;	/* pathkeys of bottom window, if any */
-	List	*distinct_pathkeys;	/* distinctClause pathkeys, if any */
-	List	*sort_pathkeys;		/* sortClause pathkeys, if any */
-	List	*initial_rels;		/* RelOptInfos we are now trying to join */
+    List *full_join_clauses;  /* list of RestrictInfos for mergejoinable full join clauses */
+    List *join_info_list;     /* list of SpecialJoinInfos */
+    List *append_rel_list;    /* list of AppendRelInfos */
+    List *rowMarks;           /* list of PlanRowMarks */
+    List *placeholder_list;   /* list of PlaceHolderInfos */
+    List *fkey_list;          /* list of ForeignKeyOptInfos */
+    List *query_pathkeys;     /* desired pathkeys for query_planner() */
+    List *group_pathkeys;     /* groupClause pathkeys, if any */
+    List *window_pathkeys;    /* pathkeys of bottom window, if any */
+    List *distinct_pathkeys;  /* distinctClause pathkeys, if any */
+    List *sort_pathkeys;      /* sortClause pathkeys, if any */
+    List *initial_rels;       /* RelOptInfos we are now trying to join */
 
-	/* Use fetch_upper_rel() to get any particular upper rel */
-	List	*upper_rels[UPPERREL_FINAL + 1]; /* upper-rel RelOptInfos */
+    /* Use fetch_upper_rel() to get any particular upper rel */
+    List *upper_rels[UPPERREL_FINAL + 1]; /* upper-rel RelOptInfos */
 
-	/* Result tlists chosen by grouping_planner for upper-stage processing */
-	struct PathTarget *upper_targets[UPPERREL_FINAL + 1];
+    /* Result tlists chosen by grouping_planner for upper-stage processing */
+    struct PathTarget *upper_targets[UPPERREL_FINAL + 1];
 
-	/*
+    /*
 	 * grouping_planner passes back its final processed targetlist here, for
 	 * use in relabeling the topmost tlist of the finished Plan.
 	 */
-	List    *processed_tlist;
+    List *processed_tlist;
 
-	/* Fields filled during create_plan() for use in setrefs.c */
-	AttrNumber *grouping_map;	/* for GroupingFunc fixup */
-	List	   *minmax_aggs;	/* List of MinMaxAggInfos */
-	MemoryContext planner_cxt;	/* context holding PlannerInfo */
-	double	   total_table_pages;	/* # of pages in all tables of query */
-	double	   tuple_fraction; 	/* tuple_fraction passed to query_planner */
-	double	   limit_tuples;	/* limit_tuples passed to query_planner */
-	bool	   hasInheritedTarget;	/* true if parse->resultRelation is an inheritance child rel */
-	bool	   hasJoinRTEs;		/* true if any RTEs are RTE_JOIN kind */
-	bool	   hasLateralRTEs; 	/* true if any RTEs are marked LATERAL */
-	bool	   hasDeletedRTEs; 	/* true if any RTE was deleted from jointree */
-	bool	   hasHavingQual;	/* true if havingQual was non-null */
-	bool	   hasPseudoConstantQuals; /* true if any RestrictInfo has pseudoconstant = true */
-	bool	   hasRecursion;	/* true if planning a recursive WITH item */
+    /* Fields filled during create_plan() for use in setrefs.c */
+    AttrNumber *grouping_map;    /* for GroupingFunc fixup */
+    List *minmax_aggs;           /* List of MinMaxAggInfos */
+    MemoryContext planner_cxt;   /* context holding PlannerInfo */
+    double total_table_pages;    /* # of pages in all tables of query */
+    double tuple_fraction;       /* tuple_fraction passed to query_planner */
+    double limit_tuples;         /* limit_tuples passed to query_planner */
+    bool hasInheritedTarget;     /* true if parse->resultRelation is an inheritance child rel */
+    bool hasJoinRTEs;            /* true if any RTEs are RTE_JOIN kind */
+    bool hasLateralRTEs;         /* true if any RTEs are marked LATERAL */
+    bool hasDeletedRTEs;         /* true if any RTE was deleted from jointree */
+    bool hasHavingQual;          /* true if havingQual was non-null */
+    bool hasPseudoConstantQuals; /* true if any RestrictInfo has pseudoconstant = true */
+    bool hasRecursion;           /* true if planning a recursive WITH item */
 
-	/* These fields are used only when hasRecursion is true: */
-	int	   wt_param_id;	        /* PARAM_EXEC ID for the work table */
-	struct Path *non_recursive_path;/* a path for non-recursive term */
+    /* These fields are used only when hasRecursion is true: */
+    int wt_param_id;                 /* PARAM_EXEC ID for the work table */
+    struct Path *non_recursive_path; /* a path for non-recursive term */
 
-	/* These fields are workspace for createplan.c */
-	Relids	   curOuterRels;	/* outer rels above current node */
-	List	   *curOuterParams; 	/* not-yet-assigned NestLoopParams */
+    /* These fields are workspace for createplan.c */
+    Relids curOuterRels;  /* outer rels above current node */
+    List *curOuterParams; /* not-yet-assigned NestLoopParams */
 
-	/* optional private data for join_search_hook, e.g., GEQO */
-	void	   *join_search_private;
+    /* optional private data for join_search_hook, e.g., GEQO */
+    void *join_search_private;
 } PlannerInfo;
 ```
 
-本节使用一个具体的例子描述如何从查询树中创建计划树。
+本节会通过一个具体的例子，来描述如何基于查询树创建计划树。
 
 ### 3.3.1 预处理
 
-在创建一个计划树之前，计划器对`PlannerInfo`中的查询树进行一些预处理。
+在创建计划树之前，计划器对先`PlannerInfo`中的查询树进行一些预处理。
 
-尽管预处理有很多步，本小节中，我们只讨论和单表查询处理相关的主要步骤。其他的预处理操作在3.6节中描述。
+预处理有很多步骤，本节只讨论和单表查询处理相关的主要步骤。其他预处理操作将在3.6节中描述。
 
-1. 目标列表（target list）和limit子句等的简单化；
+1. 简化**目标列表（target list）**，`LIMIT`子句等；
 
-   比如，通过[`clauses.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/util/clauses.c)中的`eval_const_expressions()`，将`2+2`重写为`4`。
+   例如，表达式`2+2`会被重写为`4`，这是由[`clauses.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/util/clauses.c)中`eval_const_expressions()`函数负责的。
 
-2. 布尔操作的标准化
+2. 布尔表达式的规范化
 
-   比如，`NOT(NOT a)`重写为`a`
+   例如，`NOT(NOT a)`会被重写为`a`
 
-3. 离散逻辑`AND/OR`的扁平化
+3. 压平与/或表达式
 
-   SQL标准中的AND/OR是二元操作符；但是，在PostgreSQL内部，它们是多元操作符，并且在计划器中，总是假设所有的嵌套AND/OR应该扁平化。举个特殊的例子。考虑一个布尔表达式`(id = 1) OR (id = 2) OR (id = 3)`，如图3.9(a) 展示了使用二元表达式的查询树，并通过使用三元表达式将这个查询树扁平化，如图3.9(b)。
+   SQL标准中的AND/OR是二元操作符；但在PostgreSQL内部它们是多元操作符。而计划器总是会假设所有的嵌套AND/OR都应当被压平。
 
-   **图3.9. 扁平布尔表达式的例子**
+   这里有一个具体的例子。考虑这样一个布尔表达式`(id = 1) OR (id = 2) OR (id = 3)`，图3.9(a) 展示了使用二元表达式时的查询树，预处理会将这些二元算子简化压平为一个三元算子，如图3.9(b)所示。
+
+   **图3.9. 压平布尔表达式的例子**
 
    ![扁平化](img/fig-3-09.png)
 
-### 3.3.2 得到最小代价估计的访问路径
+### 3.3.2 找出代价最小的访问路径
 
-计划器对所有可能的访问路径，进行代价估计，然后选择代价最小的那个。具体来说，计划器执行下面几个步骤：
+计划器对所有可能的访问路径进行代价估计，然后选择代价最小的那个。具体来说，计划器会执行以下几个步骤：
 
-1. 创建一个RelOptInfo结构，存储访问路径和相应的代价。
-   通过make_one_rel()创建一个RelOptInfo结构体，放在PlannerInfo结构体的*simple_rel_array*中；如图3.10，在初始过程中，RelOptInfo维护了*baserestrictinfo*，如果存在相应索引，还有*indexlist*信息。baserestrictinfo就是查询的WHERE子句，indexlist存储目标表的相关索引。
+1. 创建一个`RelOptInfo`数据结构，存储访问路径及其代价。
+
+   `RelOptInfo`结构体是通过`make_one_rel()`函数创建的，并存储于`PlannerInfo`结构体的`simple_rel_array`字段中，如图3.10所示。在初始状态时`RelOptInfo`持有着`baserestrictinfo`变量，如果存在相应索引，还会持有`indexlist`变量。`baserestrictinfo`存储着查询的`WHERE子`句，而`indexlist`存储着目标表上相关的索引。
 
    ```c
    typedef enum RelOptKind
@@ -1001,7 +1001,7 @@ typedef struct PlannerInfo
    	NodeTag		type;
    	RelOptKind	reloptkind;
    
-   	/* all relations included in this RelOptInfo */
+   	/* 本RelOptInfo包含的所有关系 */
    	Relids		relids;			/* set of base relids (rangetable indexes) */
    
    	/* size estimates generated by planner */
@@ -1055,31 +1055,31 @@ typedef struct PlannerInfo
    	struct FdwRoutine *fdwroutine;
    	void	   	*fdw_private;
    
-   	/* used by various scans and joins: */
-   	List	   	*baserestrictinfo;	/* RestrictInfo structures (if base rel) */
-   	QualCost	baserestrictcost;	/* cost of evaluating the above */
-   	List	   	*joininfo;		/* RestrictInfo structures for join clauses involving this rel */
-   	bool		has_eclass_joins;	/* T means joininfo is incomplete */
+   	/* 被各种扫描与连接所使用 */
+   	List	   	*baserestrictinfo;	/* RestrictInfo结构体列表 (如果存在基础关系) */
+   	QualCost	baserestrictcost;	/* 求值上述限制条件的代价 */
+   	List	   	*joininfo;		/* RestrictInfo 结构体列表，涉及到本表的连接会用到 */
+   	bool		has_eclass_joins;	/* T 意味着joininfo不完整 */
    } RelOptInfo;
    ```
 
-2. 估计所有可能访问路径的代价，在RelOptInfo中添加访问路径。
+2. 估计所有可能访问路径的代价，并将访问路径添加至`RelOptInfo`结构中。
 
    这一处理过程的细节如下：
 
-   1.  创建一个路径，估计这个路径的顺序扫描的代价并写入到路径中，将该路径添加到RelOptInfo->pathlist中。
-   2. 如果目标表存在相关的索引，创建一个索引访问路径。估计所有的索引扫描的代价并写入到路径中。然后将索引访问路径添加到pathlist中。
-   3. 如果可以进行[位图扫描](https://wiki.postgresql.org/wiki/Bitmap_Indexes)，创建一个位图扫描访问路径。估计所有的位图扫描的代价并写入到路径中。然后，将位图扫描路径添加到pathlist中。
+   1.  创建一条路径，估计该路径中顺序扫描的代价，并将其写入路径中。将该路径添加到`RelOptInfo`结构的`pathlist`变量中。
+   2. 如果目标表上存在相关的索引，则为每个索引创建相应的索引访问路径。估计所有索引扫描的代价，并将代价写入相应路径中。然后将索引访问路径添加到`pathlist`变量中。
+   3. 如果可以进行[位图扫描](https://wiki.postgresql.org/wiki/Bitmap_Indexes)，则创建一条位图扫描访问路径。估计所有的位图扫描的代价，并将代价写入到路径中。然后将位图扫描路径添加到`pathlist`变量中。
 
-3. 从RelOptInfo的pathlist中，找到最小代价的访问路径。
+3. 从`RelOptInfo`的`pathlist`中，找出代价最小的访问路径。
 
-4. 需要的话，估计`LIMIT`，`ORDER BY`和`AGGREGATE`操作的代价。
+4. 如有必要，估计`LIMIT`，`ORDER BY`和`AGGREGATE`操作的代价。
 
-为了更加清晰的理解计划器的工作，下面给出了两个具体的例子。
+为了更加清晰的理解计划器的执行过程，下面给出了两个具体的例子。
 
 #### 3.3.2.1 例1
 
-首先我们考察一个不带索引的简单单表查询；这个查询包含`WHERE`和`ORDER BY`子句。
+首先来研究一个不带索引的简单单表查询；该查询同时包含`WHERE`和`ORDER BY`子句。
 
 ```sql
 testdb=# \d tbl_1
@@ -1092,52 +1092,54 @@ testdb=# \d tbl_1
 testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 ```
 
-图3.10和图3.11描述了本例中计划器的处理。
+图3.10和图3.11展示了本例中计划器的处理过程。
 
-**图3.10 例1中如何得到最小代价路径**
+**图3.10 如何得到例1中代价最小的路径**
 
 ![](img/fig-3-10.png)
 
-1. 创建一个`RelOptInfo`结构，将其存在`PlannerInfo->simple_rel_array`中。
+1. 创建一个`RelOptInfo`结构，将其保存在`PlannerInfo`结构的`simple_rel_array`字段中。
 
-2. 在`RelOptInfo->baserestrictinfo`中，添加一个WHERE子句。
+2. 在`RelOptInfo`结构的`baserestrictinfo`字段中，添加一条`WHERE`子句。
 
-   通过initsplan.c中定义的`distribute_restrictinfo_to_rels()`，将`id<300`这个WHERE子句添加到`baserestrictinfo`中。另外，由于目标表没有相关索引，`RelOptInfo->indexlist`是NULL。
+   `WHERE`子句`id<300`会经由[`initsplan.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/plan/initsplan.c)中定义的`distribute_restrictinfo_to_rels()`函数，添加至列表变量`baserestrictinfo`中。另外由于目标表上没有相关索引，`RelOptInfo`的`indexlist`字段为空。
 
-3. 为了排序需要，通过planner.c中的standard_qp_callback()函数，在PlannerInfo->sor_pathkeys中添加一个pathkey。
+3. 为了满足排序要求，[`planner.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/plan/planner.c)中的`standard_qp_callback()`函数会在`PlannerInfo`的`sor_pathkeys`字段中添加一个`pathkey`。
 
-   *Pathkey*代表路径的排序键。本例中，因为*order by*的列是data，将data列添加到sort_pathkeys中，做为pathkey；
+   `Pathkey`是表示路径排序顺序的数据结构。本例因为查询包含一条`ORDER BY`子句，且该子句中的列为`data`，故`data`会被包装为`pathkey`，放入列表变量`sort_pathkeys`中。
 
-4. 创建一个path结构，并通过*cost_seqscan*函数估计顺序扫描的代价并写入到path中。然后，利用pathnode.c定义的`add_path()`函数，将这个path添加到RelOptInfo中。
+4. 创建一个`Path`结构，并使用`cost_seqscan`函数估计顺序扫描的代价，并将代价写入`Path`中。然后使用[`pathnode.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/util/pathnode.c)中定义的`add_path()`函数，将该路径添加至`RelOptInfo`中。
 
-   如上所述，Path包含`cost_seqscan`函数估计的启动代价和总代价，等等。
+   如之前所提到过的，`Path`中同时包含启动代价和总代价，都是由`cost_seqscan`函数所估计的。
 
-   在本例中，目标表上没有索引，计划器只估计了顺序扫描的代价；因此，最小代价自然而然确定了。
+在本例中，因为目标表上没有索引，计划器只估计了顺序扫描的代价，因此最小代价是自动确定的。
 
-   **图3.11 如何得到例1中最小代价（接上图3.10）**
+**图3.11 如何得到例1中代价最小的路径（接图3.10）**
 
-   ![](img/fig-3-11.png)
+![](img/fig-3-11.png)
 
-5. 创建一个处理ORDER BY子句的新RelOptInfo结构
+5. 创建一个新的`RelOptInfo`结构，用于处理`ORDER BY`子句。
 
-   注意新的RelOptInfo没有`baserestrictinfo`，这个结构是WHERE子句的信息。
+   注意新的`RelOptInfo`没有`baserestrictinfo`字段，该信息已经被`WHERE`子句所持有。
 
-6. 创建一个排序路径，并添加到新的RelOptInfo中；然后，将`SortPath->subpath`指向顺序扫描路径。
+6. 创建一个排序路径，并添加到新的`RelOptInfo`中；然后让`SortPath`的`subpath`字段指向顺序扫描的路径。
 
-   ```c
-   typedef struct SortPath
-   {
-   	Path	path;
-   	Path	*subpath;		/* path representing input source */
-   } SortPath;
-   ```
-SortPath结构包括两个path结构：path和subpath；path存储sort操作符本身的信息，subpath存储最小代价路径。注意顺序扫描的path->parent的指向，其中在baserestrictinfo中存储WHERE子句信息的老RelOptInfo。因此，下一步，即创建计划树中，尽管新的RelOptInfo没有baserestrictinfo， planner可以创建一个包含WHERE条件作为Filter的顺序扫描节点；
+    ```c
+    typedef struct SortPath
+    {
+        Path	path;
+        Path	*subpath;		/* 代表输入来源的子路径 */
+    } SortPath;
+    ```
+    `SortPath`结构包含两个`Path`结构：`path`与`subpath`；`path`中存储了排序算子本身的相关信息，而`subpath`则指向之前得到的代价最小的路径。
 
-   基于这里获得的最小代价访问路径，生成一个查询计划树。在3.3.3节中描述了相关细节。
+    注意顺序扫描路径中`parent`字段，该字段指向之前的`RelOptInfo`结构体（也就是在`baserestrictinfo`中存储着`WHERE`子句的那个RelOptInfo）。因此在下一步创建计划树的过程中，尽管新的`RelOptInfo`结构并未包含`baserestrictinfo`，但计划器可以创建一个包含`Filter`的顺序扫描节点，将`WHERE`子句作为过滤条件。
+
+这里已经获得了代价最小的访问路径，然后就可以基于此生成一颗计划树。3.3.3节描述了相关的细节。
 
 #### 3.3.2.2 例2
 
-下面探究一个包含两个索引的单表查询；这个查询包括两个WHERE子句。
+下面我们将研究另一个单表查询的例子，这一次表上有两个索引，而查询带有一个`WHERE`子句。
 
 ```sql
 testdb=# \d tbl_2
@@ -1153,234 +1155,224 @@ Indexes:
 testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 ```
 
-图3.12到3.14描述了这些例子中的计划器处理。
+图3.12到3.14展示了本例中计划器的处理过程。
 
-**图. 3.12. 例2中得到最小代价的路径**
+1. 创建一个`RelOptInfo`结构体
+
+2. 在`baserestrictinfo`中添加一个`WHERE`子句；并将目标表上的索引（们）添加到`indexlist`中。
+
+   在本例中，`WHERE`子句`'id <240'`会被添加至`baserestrictinfo`中，而两个索引：`tbl_2_pkey`和`tbl_2_data_idx`会被添加至`RelOptInfo`的列表变量`indexlist`中。
+
+3. 创建一条路径，估计其顺序扫描代价，并添加到`RelOptInfo`的`pathlist`中。
+
+**图3.12 如何得到例2中代价最小的路径**
 
 ![](img/fig-3-12.png)
 
-**图. 3.13. 例2中得到最小代价的路径（接图. 3.12）**
+```c
+typedef struct IndexPath
+{
+	Path		path;
+	IndexOptInfo 	*indexinfo;
+	List	   	*indexclauses;
+	List	   	*indexquals;
+	List	   	*indexqualcols;
+	List	   	*indexorderbys;
+	List	   	*indexorderbycols;
+	ScanDirection 	indexscandir;
+	Cost		indextotalcost;
+	Selectivity 	indexselectivity;
+} IndexPath;
+
+/*
+ * IndexOptInfo
+ *		Per-index information for planning/optimization
+ *
+ *		indexkeys[], indexcollations[], opfamily[], and opcintype[]
+ *		each have ncolumns entries.
+ *
+ *		sortopfamily[], reverse_sort[], and nulls_first[] likewise have
+ *		ncolumns entries, if the index is ordered; but if it is unordered,
+ *		those pointers are NULL.
+ *
+ *		Zeroes in the indexkeys[] array indicate index columns that are
+ *		expressions; there is one element in indexprs for each such column.
+ *
+ *		For an ordered index, reverse_sort[] and nulls_first[] describe the
+ *		sort ordering of a forward indexscan; we can also consider a backward
+ *		indexscan, which will generate the reverse ordering.
+ *
+ *		The indexprs and indpred expressions have been run through
+ *		prepqual.c and eval_const_expressions() for ease of matching to
+ *		WHERE clauses. indpred is in implicit-AND form.
+ *
+ *		indextlist is a TargetEntry list representing the index columns.
+ *		It provides an equivalent base-relation Var for each simple column,
+ *		and links to the matching indexprs element for each expression column.
+ *
+ *		While most of these fields are filled when the IndexOptInfo is created
+ *		(by plancat.c), indrestrictinfo and predOK are set later, in
+ *		check_index_predicates().
+ */
+typedef struct IndexOptInfo
+{
+	NodeTag		type;
+	Oid		indexoid;		/* OID of the index relation */
+	Oid		reltablespace;		/* tablespace of index (not table) */
+	RelOptInfo 	*rel;			/* back-link to index's table */
+
+	/* index-size statistics (from pg_class and elsewhere) */
+	BlockNumber     pages;			/* number of disk pages in index */
+	double		tuples;			/* number of index tuples in index */
+	int		tree_height;		/* index tree height, or -1 if unknown */
+
+	/* index descriptor information */
+	int		ncolumns;		/* number of columns in index */
+	int		*indexkeys;		/* column numbers of index's keys, or 0 */
+	Oid		*indexcollations;	/* OIDs of collations of index columns */
+	Oid		*opfamily;		/* OIDs of operator families for columns */
+	Oid		*opcintype;		/* OIDs of opclass declared input data types */
+	Oid		*sortopfamily;		/* OIDs of btree opfamilies, if orderable */
+	bool	   	*reverse_sort;		/* is sort order descending? */
+	bool	   	*nulls_first;		/* do NULLs come first in the sort order? */
+	bool	   	*canreturn;		/* which index cols can be returned in an index-only scan? */
+	Oid		relam;			/* OID of the access method (in pg_am) */
+
+	List	   	*indexprs;		/* expressions for non-simple index columns */
+	List	   	*indpred;		/* predicate if a partial index, else NIL */
+
+	List	   	*indextlist;		/* targetlist representing index columns */
+
+	List	   	*indrestrictinfo;	/* parent relation's baserestrictinfo list,
+						 * less any conditions implied by the index's
+						 * predicate (unless it's a target rel, see
+						 * comments in check_index_predicates()) */
+
+	bool		predOK;			/* true if index predicate matches query */
+	bool		unique;			/* true if a unique index */
+	bool		immediate;		/* is uniqueness enforced immediately? */
+	bool		hypothetical;		/* true if index doesn't really exist */
+
+	/* Remaining fields are copied from the index AM's API struct: */
+	bool		amcanorderbyop;     	/* does AM support order by operator result? */
+	bool		amoptionalkey;		/* can query omit key for the first column? */
+	bool		amsearcharray;		/* can AM handle ScalarArrayOpExpr quals? */
+	bool		amsearchnulls;		/* can AM search for NULL/NOT NULL entries? */
+	bool		amhasgettuple;		/* does AM have amgettuple interface? */
+	bool		amhasgetbitmap; 	/* does AM have amgetbitmap interface? */
+	/* Rather than include amapi.h here, we declare amcostestimate like this */
+	void		(*amcostestimate) ();	/* AM's cost estimator */
+} IndexOptInfo;
+```
+
+4. 创建一个`IndexPath`，估计索引扫描的代价，并通过`add_path()`函数将`IndexPath`添加到`RelOptInfo`的`pathlist`中。
+
+   在本例中有两个索引：`tbl_2_pkey`与`tbl_2_data_index`，这些索引会按先后顺序依次处理。
+
+   一条针对`tbl_2_pkey`的`IndexPath`会先被创建出来，并进行启动代价与总代价的评估。在本例中，`tbl_2_pkey`是`id`列上的索引，而`WHERE`子句也包含该`id`列；因此`WHERE`子句会被存储在`IndexPath`的`indexclauses`字段中。
+
+5. 创建另一个`IndexPath`，估计另一种索引扫描的代价，并将该`IndexPath`添加到`RelOptInfo`的`pathlist`中。
+
+   接下来，与`tbl_2_data_idx`相应的`IndexPath`会被创建出来，并进行代价估计。本例中`tbl_2_data_idx`并没有相关的`WHERE`子句；因此其`indexclauses`为空。
+
+> 注意`add_path()`函数并不总是真的会将路径添加到路径列表中。这一操作相当复杂，故这里就省去了具体描述。详细细节可以参考`add_path()`函数的注释。
+
+**图3.13 如何得到例2中代价最小的路径（接图3.12）**
 
 ![](img/fig-3-13.png)
 
-**图. 3.14. 例2中得到最小代价路径（接图. 3.13）**
+6. 创建一个新的`RelOptInfo`结构
+
+7. 将代价最小的路径，添加到新`RelOptInfo`的`pathlist`中。
+
+   本例中代价最小的路径是使用`tbl_2_pkey`的索引路径；故将该路径添加到新的`RelOptInfo`中。
+
+**图3.14 如何得到例2中代价最小的路径（接图3.13）**
 
 ![](img/fig-3-14.png)
 
-1. 创建一个RelOptInfo结构体
+### 3.3.3 创建计划树
 
-2. 在baserestrictinfo中，添加一个WHERE子句；并将目标表的索引添加到indexlist中。
+在最后一步中，计划器按照代价最小的路径生成一颗计划树。 
 
-   在本例中，在baserestrictinfo中，添加一个WHERE子句'id <240'，在RelOptInfo->indexlist中添加两个索引，*tbl_2_pkey*和*tbl_2_data_idx*；
+计划树的根节点是定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h)中的`PlannedStmt`结构，包含19个字段，其中有4个代表性字段：
 
-3. 创建一个Path结构，估计该路径的顺序扫描的代价并添加到RelOptInfo-pathlist中。
-
-4. 创建一个IndexPath，估计索引扫描的代价，并使用add_path()函数，将IndexPath添加到RelOptInfo->pathlist中。
-
-   ```sql
-   typedef struct IndexPath
-   {
-   	Path		path;
-   	IndexOptInfo 	*indexinfo;
-   	List	   	*indexclauses;
-   	List	   	*indexquals;
-   	List	   	*indexqualcols;
-   	List	   	*indexorderbys;
-   	List	   	*indexorderbycols;
-   	ScanDirection 	indexscandir;
-   	Cost		indextotalcost;
-   	Selectivity 	indexselectivity;
-   } IndexPath;
-
-   /*
-    * IndexOptInfo
-    *		Per-index information for planning/optimization
-    *
-    *		indexkeys[], indexcollations[], opfamily[], and opcintype[]
-    *		each have ncolumns entries.
-    *
-    *		sortopfamily[], reverse_sort[], and nulls_first[] likewise have
-    *		ncolumns entries, if the index is ordered; but if it is unordered,
-    *		those pointers are NULL.
-    *
-    *		Zeroes in the indexkeys[] array indicate index columns that are
-    *		expressions; there is one element in indexprs for each such column.
-    *
-    *		For an ordered index, reverse_sort[] and nulls_first[] describe the
-    *		sort ordering of a forward indexscan; we can also consider a backward
-    *		indexscan, which will generate the reverse ordering.
-    *
-    *		The indexprs and indpred expressions have been run through
-    *		prepqual.c and eval_const_expressions() for ease of matching to
-    *		WHERE clauses. indpred is in implicit-AND form.
-    *
-    *		indextlist is a TargetEntry list representing the index columns.
-    *		It provides an equivalent base-relation Var for each simple column,
-    *		and links to the matching indexprs element for each expression column.
-    *
-    *		While most of these fields are filled when the IndexOptInfo is created
-    *		(by plancat.c), indrestrictinfo and predOK are set later, in
-    *		check_index_predicates().
-    */
-   typedef struct IndexOptInfo
-   {
-   	NodeTag		type;
-   	Oid		indexoid;		/* OID of the index relation */
-   	Oid		reltablespace;		/* tablespace of index (not table) */
-   	RelOptInfo 	*rel;			/* back-link to index's table */
-
-   	/* index-size statistics (from pg_class and elsewhere) */
-   	BlockNumber     pages;			/* number of disk pages in index */
-   	double		tuples;			/* number of index tuples in index */
-   	int		tree_height;		/* index tree height, or -1 if unknown */
-
-   	/* index descriptor information */
-   	int		ncolumns;		/* number of columns in index */
-   	int		*indexkeys;		/* column numbers of index's keys, or 0 */
-   	Oid		*indexcollations;	/* OIDs of collations of index columns */
-   	Oid		*opfamily;		/* OIDs of operator families for columns */
-   	Oid		*opcintype;		/* OIDs of opclass declared input data types */
-   	Oid		*sortopfamily;		/* OIDs of btree opfamilies, if orderable */
-   	bool	   	*reverse_sort;		/* is sort order descending? */
-   	bool	   	*nulls_first;		/* do NULLs come first in the sort order? */
-   	bool	   	*canreturn;		/* which index cols can be returned in an index-only scan? */
-   	Oid		relam;			/* OID of the access method (in pg_am) */
-
-   	List	   	*indexprs;		/* expressions for non-simple index columns */
-   	List	   	*indpred;		/* predicate if a partial index, else NIL */
-
-   	List	   	*indextlist;		/* targetlist representing index columns */
-
-   	List	   	*indrestrictinfo;	/* parent relation's baserestrictinfo list,
-   						 * less any conditions implied by the index's
-   						 * predicate (unless it's a target rel, see
-   						 * comments in check_index_predicates()) */
-
-   	bool		predOK;			/* true if index predicate matches query */
-   	bool		unique;			/* true if a unique index */
-   	bool		immediate;		/* is uniqueness enforced immediately? */
-   	bool		hypothetical;		/* true if index doesn't really exist */
-
-   	/* Remaining fields are copied from the index AM's API struct: */
-   	bool		amcanorderbyop;     	/* does AM support order by operator result? */
-   	bool		amoptionalkey;		/* can query omit key for the first column? */
-   	bool		amsearcharray;		/* can AM handle ScalarArrayOpExpr quals? */
-   	bool		amsearchnulls;		/* can AM search for NULL/NOT NULL entries? */
-   	bool		amhasgettuple;		/* does AM have amgettuple interface? */
-   	bool		amhasgetbitmap; 	/* does AM have amgetbitmap interface? */
-   	/* Rather than include amapi.h here, we declare amcostestimate like this */
-   	void		(*amcostestimate) ();	/* AM's cost estimator */
-   } IndexOptInfo;
-   ```
-
-   在本例中，有两个索引，`tbl_2_pkey`和`tbl_2_data_index`，这些索引是按顺序处理的。`tbl_2_pkey`首先处理。创建一个tbl_2_pkey的IndexPath，并估计启动代价和总代价。在这个例子中，tbl_2_pkey是id列相应的索引，并且WHERE包含这个id列；因此，`WHERE`子句存储在IndexPath的indexclauses中。
-
-5. 创建另一个IndexPath，估计索引扫描的代价，将IndexPath添加到RelOptInfo->pathlist中。
-
-   下一步，创建一个*tbl_2_data_idx*的IndexPath，估计这个IndexPath的代价，并加入到pathlist中。本例中，*tbl_2_data_idx*没有相关的WHERE子句；因此indexclauses是NULL。
-
-   > 注意，`add_path()`函数不总是会添加一个路径。该操作过于复杂，这里就省去了细节。详细细节可以参考`add_path()`函数的注释。
-
-6. 创建一个RelOptInfo结构
-
-7. 将最小代价的路径，添加到新的RelOptInfo的pathlist中。
-
-   本例中，indexpath的最小代价路径是使用*tbl_2_pkey*；因此，将该路径添加到新的RelOptInfo中。
-
-### 3.3.3 创建查询计划树
-
-在最后一步中，planner基于最小代价的路径，生成一个计划树。 
-
-计划树的根是定义在plannodes.h中的PlannedStmt结构，包含19个字段，如下是4个代表性字段：
-
-+ **commandType**存储操作的类型，比如`SELECT`，`UPDATE`和`INSERT`。
-+ **rtable**存储RangeTblEntry。
-+ **relationOids**存储 查询相关表的oid。
-+ **plantree**存储包含计划节点的计划树，每个计划节点对应一个特定操作，比如顺序扫描，排序和索引扫描。
++ **`commandType`**存储操作的类型，诸如`SELECT`，`UPDATE`和`INSERT`。
++ **`rtable`**存储范围表的列表（`RangeTblEntry`的列表）。
++ **`relationOids`**存储与查询相关表的`oid`。
++ **`plantree`**存储着一颗由计划节点组成的计划树，每个计划节点对应着一种特定操作，诸如顺序扫描，排序和索引扫描。
 
 ```c
 /* ----------------
- *		PlannedStmt node
- *
- * The output of the planner is a Plan tree headed by a PlannedStmt node.
- * PlannedStmt holds the "one time" information needed by the executor.
- * ----------------
- */
+ *		PlannedStmt 节点
+ * 计划器的输出是一颗计划树，PlannedStmt是计划树的根节点。
+ * PlannedStmt存储着执行器所需的“一次性”信息。
+ * ----------------*/
 typedef struct PlannedStmt
 {
 	NodeTag		type;
-	CmdType		commandType;		/* select|insert|update|delete */
-	uint32		queryId;		/* query identifier (copied from Query) */
-	bool		hasReturning;		/* is it insert|update|delete RETURNING? */
-	bool		hasModifyingCTE;	/* has insert|update|delete in WITH? */
-	bool		canSetTag;		/* do I set the command result tag? */
-	bool		transientPlan;		/* redo plan when TransactionXmin changes? */
-	bool		dependsOnRole;		/* is plan specific to current role? */
-	bool		parallelModeNeeded;	/* parallel mode required to execute? */
-	struct Plan 	*planTree;		/* tree of Plan nodes */
-	List	   	*rtable;		/* list of RangeTblEntry nodes */
-	/* rtable indexes of target relations for INSERT/UPDATE/DELETE */
-	List	   	*resultRelations;       /* integer list of RT indexes, or NIL */
-	Node	   	*utilityStmt;		/* non-null if this is DECLARE CURSOR */
-	List	   	*subplans;		/* Plan trees for SubPlan expressions */
+	CmdType		commandType;		/* 增|删|改|查 */
+	uint32		queryId;			/* 查询标识符 (复制自Query) */
+	bool		hasReturning;		/* 增|删|改是否带有RETURNING? */
+	bool		hasModifyingCTE;	/* WITH子句中是否出现了增|删|改？ */
+	bool		canSetTag;			/* 我是否设置了命令结果标记？ */
+	bool		transientPlan;		/* 当TransactionXmin变化时重新进行计划? */
+	bool		dependsOnRole;		/* 执行计划是否特定于当前的角色？ */
+	bool		parallelModeNeeded;	/* 需要并行模式才能执行？ */
+	struct Plan *planTree;			/* 计划节点树 */
+	List	   	*rtable;			/* RangeTblEntry节点的列表 */
+	
+    /* 目标关系上用于增|删|改的范围表索引 */
+	List	   	*resultRelations;   /* RT索引的整数列表, 或NIL */
+	Node	   	*utilityStmt;		/* 如为DECLARE CURSOR则非空 */
+	List	   	*subplans;			/* SubPlan表达式的计划树 expressions */
 	Bitmapset  	*rewindPlanIDs;		/* indices of subplans that require REWIND */
-	List	   	*rowMarks;		/* a list of PlanRowMark's */
-	List	   	*relationOids;		/* OIDs of relations the plan depends on */
-	List	   	*invalItems;		/* other dependencies, as PlanInvalItems */
-	int		nParamExec;		/* number of PARAM_EXEC Params used */
+	List	   	*rowMarks;			/* PlanRowMark列表 */
+	List	   	*relationOids;		/* 计划所依赖的关系OID列表 */
+	List	   	*invalItems;		/* 其他依赖，诸如PlanInvalItems */
+	int			nParamExec;			/* 使用的PARAM_EXEC参数数量 */
 } PlannedStmt;
 ```
 
- 如上所述，计划树包含多种计划节点。PlanNode是基本的节点，其他节点都包含PlanNode。比如顺序扫描SeqScanNode，包含一个PlanNode和一个整形变量‘*scanrelid*’。PlanNode包含14个字段。下面是7个代表性字段：
+ 如上所述，计划树包含各式各样的计划节点。`PlanNode`是所有计划节点的基类，其他计划节点都会包含`PlanNode`结构。比如顺序扫描节点`SeqScanNode`，包含一个`PlanNode`和一个整型变量`scanrelid`。`PlanNode`包含14个字段。下面是7个代表性字段：
 
-+ startup_cost和total_cost是该节点对应操作的估计代价。
-+ rows是计划器估计的需要扫描的行数。
-+ targetlist保存包含在这个查询树中的目标项列表。
-+ qual存储判断条件的列表。
-+ lefttree和righttree是用来添加子节点的节点。
++ `startup_cost`和`total_cost`是该节点对应操作的预估代价。
++ `rows`是计划器预计扫描的行数。
++ `targetlist`保存了该查询树中目标项的列表。
++ `qual`储存了限定条件的列表。
++ `lefttree`和`righttree`用于添加子节点。
 
 ```c
 /* ----------------
- *		Plan node
+ * 计划节点(Plan Node)
  *
- * All plan nodes "derive" from the Plan structure by having the
- * Plan structure as the first field.  This ensures that everything works
- * when nodes are cast to Plan's.  (node pointers are frequently cast to Plan*
- * when passed around generically in the executor)
+ * 所有的计划节点都"派生"自Plan结构，将其作为自己的第一个字段。这样确保了当其强制转换为Plan
+ * 结构时所有东西都能正常工作。(当作为通用参数传入执行器时，节点指针会很频繁地转换为Plan*)
  *
- * We never actually instantiate any Plan nodes; this is just the common
- * abstract superclass for all Plan-type nodes.
+ * 我们从来不会真的去实例化任何Plan节点，它只是所有Plan类型节点的公共抽象父类。
  * ----------------
  */
 typedef struct Plan
 {
 	NodeTag		type;
-	/*
-	 * estimated execution costs for plan (see costsize.c for more info)
-	 */
-	Cost		startup_cost;	/* cost expended before fetching any tuples */
-	Cost		total_cost;	/* total cost (assuming all tuples fetched) */
+	/* 计划的预估执行开销 ( 详情见 costsize.c )	 */
+	Cost		startup_cost;	/* 获取第一条元组前的代价 */
+	Cost		total_cost;		/* 获取所有元组的代价 */
 
-	/*
-	 * planner's estimate of result size of this plan step
-	 */
-	double		plan_rows;	/* number of rows plan is expected to emit */
-	int		plan_width;	/* average row width in bytes */
+	/* 计划器对该计划步骤返回结果大小的估计 */
+	double		plan_rows;		/* 计划预期产出的行数 */
+	int			plan_width;		/* 以字节计的行宽 */
 
-	/*
-	 * information needed for parallel query
-	 */
-	bool		parallel_aware; /* engage parallel-aware logic? */
+	/* 并行查询所需的信息 */
+	bool		parallel_aware; /* 是否涉及到并行逻辑？ */
 
-	/*
-	 * Common structural data for all Plan types.
-	 */
-	int		plan_node_id;	/* unique across entire final plan tree */
-	List	   	*targetlist;	/* target list to be computed at this node */
-	List	   	*qual;		/* implicitly-ANDed qual conditions */
-	struct Plan 	*lefttree;	/* input plan tree(s) */
-	struct Plan 	*righttree;
-	List	   	*initPlan;	/* Init Plan nodes (un-correlated expr subselects) */
+	/* 所有计划类型的公有结构化数据 */
+	int			plan_node_id;	/* 在整个计划树范围内唯一的标识 */
+	List	   	*targetlist;	/* 该节点需要计算的目标列表 */
+	List	   	*qual;			/* 隐式合取化处理的 限制条件 列表 */
+	struct Plan *lefttree;		/* 输入的查询树 */
+	struct Plan *righttree;
+	List	   	*initPlan;	/* Init Plan 节点 (无关子查询表达式) */
 	/*
 	 * Information for management of parameter-change-driven rescanning
 	 *
@@ -1395,44 +1387,43 @@ typedef struct Plan
 	Bitmapset	*extParam;
 	Bitmapset  	*allParam;
 } Plan;
-```
 
-```c
-/*
- * ==========
- * Scan nodes
- * ==========
- */
+/* ------------
+ * 扫描节点(Scan nodes)
+ * ----------- */
 typedef unsigned int Index;
 
 typedef struct Scan
 {
 	Plan		plan;
-	Index		scanrelid;		/* relid is index into the range table */
+	Index		scanrelid;		/* relid 是访问范围表的索引 */
 } Scan;
 
 /* ----------------
- *		sequential scan node
- * ----------------
- */
+ *	顺序扫描节点
+ * ---------------- */
 typedef Scan SeqScan;
 ```
 
-下文阐述了，基于前小节的例子的最小代价路径，生成的两个计划树。
+下面是两颗计划树，分别与前一小节中的两个例子对应。
 
 #### 3.3.3.1. 例1
 
-第一个例子是3.3.2.1节的例子的计划树。图.3.11中展示的最小代价路径是排序路径和顺序扫描路径的结合；根节点是排序路径，子路径是顺序扫描路径。尽管忽略了细节的解释，但是很容易理解如何从最小代价路径中简单地生成计划树。本例中，将SortNode添加到PlannedStmt结构中，并将SeqScanNode添加到SortNode的左子树中，如图.3.15(a)。
+第一个例子是3.3.2.1节例1对应的计划树。图3.11所示的代价最小的路径，是由一个排序路径和一个顺序扫描路径组合而成。根路径是排序路径，而其子路径为顺序扫描路径。尽管这里忽略了大量细节，但是从代价最小的路径中生成计划树的过程是显而易见的。在本例中，一个 `SortNode`被添加到`PlannedStmt`结构中，而`SortNode`的左子树上则挂载了一个`SeqScanNode`，如图3.15(a)所示。
+
+在`SortNode`中，左子树`lefttree`指向`SeqScanNode`。
+
+在`SeqScanNode`中，`qual`保存了`WHERE`子句：`'id<300'`。
 
 ```c
 typedef struct Sort
 {
 	Plan		plan;
-	int		numCols;		/* number of sort-key columns */
-	AttrNumber 	*sortColIdx;		/* their indexes in the target list */
-	Oid		*sortOperators;		/* OIDs of operators to sort them by */
-	Oid		*collations;		/* OIDs of collations */
-	bool	   	*nullsFirst;		/* NULLS FIRST/LAST directions */
+	int			numCols;			/* 排序键 列的数目 */
+	AttrNumber 	*sortColIdx;		/* 它们在目标列表中的位置序号 */
+	Oid			*sortOperators;		/* 排序所赖运算符的OID  */
+	Oid			*collations;		/* collation的OID  */
+	bool	   	*nullsFirst;		/* NULLS FIRST/LAST 方向 */
 } Sort;
 ```
 
@@ -1440,15 +1431,17 @@ typedef struct Sort
 
 ![](img/fig-3-15.png)
 
-在SortNode中，左子树指向SeqScanNode。在SeqScanNode中，qual保存WHERE子句：'id<300'。
+
 
 #### 3.3.3.2 例2
 
-第二个例子是3.3.2.2节的例子的计划树。图.3.14中展示的最小代价路径是索引扫描路径；因此，计划树只有IndexScanNode自己组成，如图3.15(b)。
+第二个例子是3.3.2.2节例2对应的计划树。其代价最小的路径为索引扫描路径，如图3.14所示。因此计划树由单个`IndexScanNode`独立组成，如图3.15(b)所示。
+
+在本例中，`WHERE`子句`id < 240`是一个访问谓词，它储存在`IndexScanNode`的`indexqual`字段中。
 
 ```c
 /* ----------------
- *		index scan node
+ *		索引扫描节点
  *
  * indexqualorig is an implicitly-ANDed list of index qual expressions, each
  * in the same form it appeared in the query WHERE condition.  Each should
@@ -1503,7 +1496,8 @@ typedef struct IndexScan
 } IndexScan;
 ```
 
-在这个例子中，`WHERE`子句`id < 240`是一个访问谓词；因此，其存储在IndexScanNode的indexqual中。
+
+
 
 
 
@@ -2295,13 +2289,13 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 
 #### 3.6.2.2 第二层预处理
 
-​	在第二层中，创建RelOptInfo结构并将其添加到PlannerInfo的join_rel_list。 然后，估计所有可能的连接路径的成本，并且选择其总成本最便宜的最佳访问路径。 RelOptInfo将最佳访问路径存储为最便宜的总成本路径。 参见图3.33。
+在第二层中，创建RelOptInfo结构并将其添加到PlannerInfo的join_rel_list。 然后，估计所有可能的连接路径的成本，并且选择其总成本最便宜的最佳访问路径。 RelOptInfo将最佳访问路径存储为最便宜的总成本路径。 参见图3.33。
 
 **图3.33 在Level 2中处理后的PlannerInfo和RelOptInfo**
 
 ![](img/fig-3-33.png)
 
-​	表3.1显示了此示例中的连接访问路径的所有组合。 该示例的查询是等值连接类型; 因此，估计了三种连接算法。 为方便起见，引入了一些访问路径的符号：
+表3.1显示了此示例中的连接访问路径的所有组合。 该示例的查询是等值连接类型; 因此，估计了三种连接算法。 为方便起见，引入了一些访问路径的符号：
 
 - `SeqScanPath（table）`表示表的顺序扫描路径。
 - `Materialized-> SeqScanPath（table）`表示表的物化顺序扫描路径。
