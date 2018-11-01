@@ -24,15 +24,15 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
 ## 3.1 概览
 
-在PostgreSQL中，尽管在9.6版本后有了基于多个后台工作进程的并行查询，但基本上还是每个连接对应一个后端进程，后端进程由五个子系统组成，如下所示：
+尽管PostgreSQL在9.6版本后有了基于多个后台工作进程的并行查询，但大体上来讲，还是每个连接对应一个后端进程。后端进程由五个子系统组成，如下所示：
 
 1. **解析器（Parser）**
 
-   解析器根据SQL语句生成一颗语法解析树（parse tree） 。
+   解析器根据SQL语句生成一颗**语法解析树（parse tree）** 。
 
 2. **分析器（Analyzer）**
 
-   分析器对语法解析树进行语义分析，生成一颗查询树（query tree）。
+   分析器对语法解析树进行语义分析，生成一颗**查询树（query tree）**。
 
 3. **重写器（Rewriter）**
 
@@ -40,11 +40,11 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
 4. **计划器（Planner）**
 
-   计划器基于查询树，生成一颗执行最为高效的计划树（plan tree）；
+   计划器基于查询树，生成一颗执行最为高效的**计划树（plan tree）**。
 
 5. **执行器（Executor）**
 
-   执行器按照计划树中的顺序访问表和索引，执行相应查询；
+   执行器按照计划树中的顺序访问表和索引，执行相应查询。
 
 **图3.1 查询处理**
 
@@ -179,16 +179,16 @@ typedef struct Query
 
 简要介绍一下上图中的查询树：
 
-+ *targetlist* 是查询结果中**列（Column）**的列表。在本例中该列表包含两列：*id* 和*data*。如果在输入的查询树中使用了`*`（星号），那么分析器会将其显式替换为所有具体的列。
-+ 范围表*rtable*是该查询所用到关系的列表。本例中该变量包含了表*tbl_a*的信息，如该表的表名与*oid*。
-+ 连接树*jointree*存储着`FROM`和`WHERE`子句的相关信息。
-+ 排序子句*sortClause*是`SortGroupClause`结构体的列表。
++ `targetlist` 是查询结果中**列（Column）**的列表。在本例中该列表包含两列：`id` 和`data`。如果在输入的查询树中使用了`*`（星号），那么分析器会将其显式替换为所有具体的列。
++ 范围表`rtable`是该查询所用到关系的列表。本例中该变量包含了表`tbl_a`的信息，如该表的表名与`oid`。
++ 连接树`jointree`存储着`FROM`和`WHERE`子句的相关信息。
++ 排序子句`sortClause`是`SortGroupClause`结构体的列表。
 
 [官方文档](http://www.postgresql.org/docs/current/static/querytree.html)描述了查询树的细节。
 
 ### 3.1.3 重写器（Rewriter）
 
-PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules.html)正是依赖重写器实现的，当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，但本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
+PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules.html)正是依赖重写器而实现的，当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，不过本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
 
 > #### 视图
 >
@@ -214,7 +214,7 @@ PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules
 >
 > ![rewriter](img/fig-3-04.png)
 >
-> 因为PostgreSQL使用这种机制来实现视图，因此直至9.2版本，视图都是不能更新的。从9.3版本后可以对视图进行更新；尽管如此，视图的更新仍然存在许多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
+> 因为PostgreSQL使用这种机制实现视图，直到9.2版本视图都是不能更新的。9.3版本后可以对视图进行更新；尽管如此，对视图的更新仍然有很多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
 
 ### 3.1.4 计划器与执行器
 
@@ -224,7 +224,7 @@ PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules
 
 > #### pg_hint_plan
 >
-> PostgreSQL不支持在SQL中的**提示（hint）**，并且永远也不会去支持。如果你想在查询中使用提示，可以考虑使用*pg_hint_plan*扩展，细节请参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
+> PostgreSQL不支持在SQL中的**提示（hint）**，并且永远也不会去支持。如果你想在查询中使用提示，可以考虑使用`pg_hint_plan`扩展，细节请参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
 
 与其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令会显示命令的计划树。下面给出了一个具体的例子。
 
@@ -247,13 +247,13 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 
 
-计划树由许多称为**计划节点（plan node）**的元素组成，这些节点挂在*PlannedStmt*结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
+计划树由许多称为**计划节点（plan node）**的元素组成，这些节点挂在`PlannedStmt`结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
 
 每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会从终端节点往根节点，依次处理这些节点。
 
 比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表*tbl_a*执行顺序扫描，并对获取的结果进行排序。
 
-执行器会通过[第8章](ch8.md)将阐述的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如*temp_buffers*和*work_mem*，必要时还会创建临时文件。
+执行器会通过[第8章](ch8.md)将阐述的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
 
 **图3.6 执行器，缓冲管理器，临时文件之间的关系**
 
@@ -452,14 +452,14 @@ $$
 
 > #### 选择率（Selectivity）
 >
-> 查询谓词的选择率是通过**直方图界值（histogram_bounds）**和**众数（Most Common Value, MCV）**估计的，这些信息都存储在*pg_stats* 中。这里通过一个特定的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
+> 查询谓词的选择率是通过**直方图界值（histogram_bounds）**和**众数（Most Common Value, MCV）**估计的，这些信息都存储在`pg_stats` 中。这里通过一个特定的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
 >
-> 表中每一列的MCV都在*pg_stats*视图的*most_common_vals* 和 *most_common_freqs*中成对存储。
+> 表中每一列的MCV都在`pg_stats`视图的`most_common_vals`和`most_common_freqs`中成对存储。
 >
 > + **众数（most_common_vals）**：该列上的众数列表
 > + **众数频率（most_common_freqs）**：MCV相应的频率列表
 >
-> 下面是一个简单的例子。表*countries*有两列：一列*country*存储国家名，一列`continent`存储该国所属大洲。
+> 下面是一个简单的例子。表`countries`有两列：一列`country`存储国家名，一列`continent`存储该国所属大洲。
 >
 > ```sql
 > testdb=# \d countries
@@ -491,7 +491,7 @@ $$
 > testdb=# SELECT * FROM countries WHERE continent = 'Asia';
 > ```
 >
-> 这时候，计划器使用*continent*列上的MCV来估计索引扫描的代价，列上的*most_common_vals*与 *most_common_freqs* 如下所示：
+> 这时候，计划器使用`continent`列上的MCV来估计索引扫描的代价，列上的`most_common_vals`与 `most_common_freqs`如下所示：
 >
 > ```sql
 > testdb=# \x
@@ -503,13 +503,13 @@ $$
 > most_common_freqs | {0.274611,0.243523,0.227979,0.119171,0.0725389,0.0621762}
 > ```
 >
-> 与*most_common_vals*中*Asia*值对应的*most_common_freqs*为0.227979。因此，0.227979会在估算中被用作选择率。
+> 与`most_common_vals`中`Asia`值对应的`most_common_freqs`为0.227979。因此0.227979会在估算中被用作选择率。
 >
 > 如果MCV不可用，就会使用目标列上的直方图界值来估计代价。
 >
 > + **直方图值（histogram_bounds）**是一系列值，这些值将列上的取值划分为数量大致相同的若干个组。
 >
-> 下面是一个具体的例子。这是表*tbl*中*data*列上的直方图界值；
+> 下面是一个具体的例子。这是表`tbl`中`data`列上的直方图界值；
 >
 > ```sql
 > testdb=# SELECT histogram_bounds FROM pg_stats WHERE tablename = 'tbl' AND attname = 'data';
@@ -523,13 +523,13 @@ $$
 > (1 row)
 > ```
 >
-> 默认情况下，直方图界值会将列上的取值划分入100个桶。图3.7展示了这些桶及其对应的直方图界值。桶从0开始编号，每个桶保存了（大致）相同数量的元组。直方图界值就是相应桶的边界。比如，直方图界值的第0个值是1，意即这是*bucket_0*中的最小值。第1个值是100，意即*bucket_1*中的最小值是100，等等。
+> 默认情况下，直方图界值会将列上的取值划分入100个桶。图3.7展示了这些桶及其对应的直方图界值。桶从0开始编号，每个桶保存了（大致）相同数量的元组。直方图界值就是相应桶的边界。比如，直方图界值的第0个值是1，意即这是`bucket_0`中的最小值。第1个值是100，意即`bucket_1`中的最小值是100，等等。
 >
 > **图3.7 桶和直方图界值**
 >
 > ![](img/fig-3-07.png)
 >
-> 然后本节例子中选择率计算如下所示。假设查询带有`WHERE`子句`data < 240`，而值240落在第二个桶中。在本例中可以通过线性插值推算出相应的选择率。因此查询中*data*列的选择率可以套用下面的公式计算：
+> 然后本节例子中选择率计算如下所示。假设查询带有`WHERE`子句`data < 240`，而值240落在第二个桶中。在本例中可以通过线性插值推算出相应的选择率。因此查询中`data`列的选择率可以套用下面的公式计算：
 > $$
 > \verb|Selectivity| = \frac{2+(240-hb[2])/(hb[3]-hb[2])}{100}=\frac{2+(240-200)/(300-200)}{100}=\frac{2+40/100}{100}=0.024    \ (6)
 > $$
@@ -614,7 +614,7 @@ $$
 >
 > 索引相关性是列值在物理上的顺序和逻辑上的顺序的统计相关性（引自官方文档）。索引相关性的取值范围从$-1$到$+1$。下面的例子有助于理解索引扫描和索引相关性的关系。
 >
-> 表*tbl_corr*有5个列：两个列为文本类型，三个列为整数类型。这三个整数列保存着从1到12的数字。物理上，表*tbl_corr*包含三个页，每个页有4个元组。每个数字列有一个名如*index_col_asc*的索引。
+> 表`tbl_corr`有5个列：两个列为文本类型，三个列为整数类型。这三个整数列保存着从1到12的数字。在物理上表`tbl_corr`包含三个页，每页有4条元组。每个数字列有一个名如`index_col_asc`的索引。
 >
 > ```sql
 > testdb=# \d tbl_corr
@@ -708,9 +708,9 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 
 > 根据[这篇文章](https://use-the-index-luke.com/sql/explain-plan/postgresql/filter-predicates)，PostgreSQL中的`EXPLAIN`命令不会区分**访问谓词（access predicate）**和**索引过滤谓词（index filter predicate）**。因此当分析`EXPLAIN`的输出时，即使看到了“IndexCond”，也应当注意一下预估返回行数。
 
-> ##### seq_page_cost和random_page_cost
+> ##### `seq_page_cost`和`random_page_cost`
 >
-> [seq_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[random_page_cost](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别为1.0和4.0。这意味着PostgreSQL假设随机扫描比顺序扫描慢4倍；显然，PostgreSQL的默认值是基于HDD（普通硬盘）设置的。
+> [`seq_page_cost`](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别为1.0和4.0。这意味着PostgreSQL假设随机扫描比顺序扫描慢4倍；显然，PostgreSQL的默认值是基于HDD（普通硬盘）设置的。
 >
 > 另一方面，近年来SSD得到了广泛的应用，`random_page_cost`的默认值就显得太大了。使用SSD时如果仍然采用`random_page_cost`的默认值，则计划器有可能会选择低效的计划。因此当使用SSD时最好将`random_page_cost`的值设为1.0。
 >
@@ -1133,7 +1133,7 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
     ```
     `SortPath`结构包含两个`Path`结构：`path`与`subpath`；`path`中存储了排序算子本身的相关信息，而`subpath`则指向之前得到的代价最小的路径。
 
-    注意顺序扫描路径中`parent`字段，该字段指向之前的`RelOptInfo`结构体（也就是在`baserestrictinfo`中存储着`WHERE`子句的那个RelOptInfo）。因此在下一步创建计划树的过程中，尽管新的`RelOptInfo`结构并未包含`baserestrictinfo`，但计划器可以创建一个包含`Filter`的顺序扫描节点，将`WHERE`子句作为过滤条件。
+    注意顺序扫描路径中`parent`字段，该字段指向之前的`RelOptInfo`结构体（也就是在`baserestrictinfo`中存储着`WHERE`子句的那个`RelOptInfo`）。因此在下一步创建计划树的过程中，尽管新的`RelOptInfo`结构并未包含`baserestrictinfo`，但计划器可以创建一个包含`Filter`的顺序扫描节点，将`WHERE`子句作为过滤条件。
 
 这里已经获得了代价最小的访问路径，然后就可以基于此生成一颗计划树。3.3.3节描述了相关的细节。
 
@@ -1172,15 +1172,15 @@ testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 ```c
 typedef struct IndexPath
 {
-	Path		path;
+	Path			path;
 	IndexOptInfo 	*indexinfo;
-	List	   	*indexclauses;
-	List	   	*indexquals;
-	List	   	*indexqualcols;
-	List	   	*indexorderbys;
-	List	   	*indexorderbycols;
+	List	   		*indexclauses;
+	List	   		*indexquals;
+	List	   		*indexqualcols;
+	List	   		*indexorderbys;
+	List	   		*indexorderbycols;
 	ScanDirection 	indexscandir;
-	Cost		indextotalcost;
+	Cost			indextotalcost;
 	Selectivity 	indexselectivity;
 } IndexPath;
 
@@ -2248,70 +2248,68 @@ typedef struct HashJoin
 ```
 
 
+## 3.6 创建多表查询计划树
 
-## 3.6 创建多表查询的计划树
-
-在本节中，将解释创建多表查询的计划树的过程。
+本节将说明多表查询计划树的创建过程。
 
 ### 3.6.1 预处理
 
-`planner.c`中定义的`subquery_planner()`函数执行预处理。第3.3.1节已经描述了单表查询的预处理。在该子部分中，将描述多表查询的预处理；然而，虽然有很多，但只描述了一些部分。
+预处理由[`planner.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/plan/planner.c)中定义的`subquery_planner()`函数执行。第3.3.1节已经描述了单表查询的预处理。本节将描述多表查询的预处理；尽管这块内容很多，但这里只会挑其中一部分来讲。
 
-1. 规划和转换CTE
+1. 对CTE进行计划与转换
 
-   如果存在WITH列表，则planner通过`SS_process_ctes()`函数处理每个WITH查询。
+   如果存在`WITH`列表，计划器就会通过`SS_process_ctes()`函数对每个`WITH`查询进行处理。
 
 2. 上拉子查询
 
-   如果FROM子句具有子查询并且它没有`GROUP BY`，`HAVING`，`ORDER BY`，`LIMIT`和`DISTINCT`子句，并且它也不使用INTERSECT或EXCEPT，则planner将通过`pull_up_subqueries()`函数转换为连接形式。
-
-   例如，下面显示的包含FROM子句中的子查询的查询可以转换为自然连接查询。不用说，这种转换是在查询树中完成的。
+   如果`FROM`子句带有一个子查询，且该子查询没用用到`GROUP BY`，`HAVING`，`ORDER BY`，`LIMIT`和`DISTINCT`，`INTERSECT`或`EXCEPT`，那么计划器会使用`pull_up_subqueries()`函数将其转换为连接形式。例如下面一个`FROM`子句含子查询的查询就可以被转换为自然连接查询。自不必说，这种转换是在查询树上进行的。
 
    ```sql
-   testdb=# SELECT * FROM tbl_a AS a, (SELECT * FROM tbl_b) as b WHERE a.id = b.id;
+   # SELECT * FROM tbl_a AS a, (SELECT * FROM tbl_b) as b WHERE a.id = b.id;
    	 	       	     ↓
-   testdb=# SELECT * FROM tbl_a AS a, tbl_b as b WHERE a.id = b.id;
+   # SELECT * FROM tbl_a AS a, tbl_b as b WHERE a.id = b.id;
    ```
 
-1. 将Outer Join转换为Inner Join
+3. 将外连接转为内连接
 
-   如果可能，planner将Outer Join查询转换为Inner Join查询。
+   如果可能的话，计划器会将`OUTER JOIN`查询转换为`INNER JOIN`查询。
 
-### 3.6.2 得到最小代价路径
+### 3.6.2 获取代价最小的路径
 
-​	为了获得最佳计划树，planner必须考虑所有索引的组合和连接方法的可能性。 这是一个非常昂贵的过程，如果表的数量超过一定水平，由于组合爆炸，这将是不可行的。 幸运的是，如果表的数量小于12，那么planner可以通过应用动态规划来获得最佳计划。 否则，计划器使用遗传算法。如下
+为了获取最佳计划树，计划器必须考虑各个索引与各种连接方法之间的所有可能组合。 如果表的数量超过某个水平，该过程的代价就会因为组合爆炸而变得非常昂贵，以至于根本不可行。
+
+幸运的是，如果表的数量小于12张，计划器可以使用动态规划来获取最佳计划； 否则计划器会使用遗传算法。详情如下：
 
 > #### 基因查询优化器
 >
-> 当执行连接多个表的查询时，将需要大量时间来优化查询计划。 为了解决这种情况，PostgreSQL实现了一个有趣的功能：基因查询优化器。 这是一种在合理时间内确定合理计划的近似算法。 因此，在查询优化阶段，如果连接表的数量高于参数geqo_threshold指定的阈值（默认值为12），PostgreSQL将使用遗传算法生成查询计划。
+> 当执行一个多表连接查询时，大量时间耗费在了优化查询计划上。 为了应对这种情况，PostgreSQL实现了一个有趣的功能：[基因查询优化器](https://www.postgresql.org/docs/current/static/geqo.html)。 这种近似算法能在合理时间内确定一个合理的计划。 因此在查询优化阶段，如果参与连接的表数量超过参数[`geqo_threshold`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-GEQO-THRESHOLD)指定的阈值（默认值为12），PostgreSQL将使用遗传算法来生成查询计划。
 
-通过动态规划确定最佳计划树可以通过以下步骤解释：
+使用动态规划确定最佳计划树的过程，其步骤如下：
 
-- 第一层
+* 第一层
 
-  获得每张表最便宜的路径; 最便宜的路径存储在相应的RelOptInfo中。
+  获得每张表上代价最小的路径，代价最小的路径存储在表相应的`RelOptInfo`结构中。
 
-- 第二层
+* 第二层
 
-  获取从所有表中选择两个的每个组合的最便宜路径。
+  从所有表中选择两个表，为每种组合找出代价最低的路径。
 
-  例如，如果有两个表A和B，则获得表A和B中最便宜的连接路径，这是最终答案。
+  举个例子，如果总共有两张表，表`A`与表`B`，则表`A`和`B`表连接的各种路径中，代价最小的那条即为最终想要的答案。在下文中，两个表的`RelOptInfo`记做$\{A,B\}$。
 
-  在下文中，两个表的RelOptInfo由{A，B}表示。
+  如果有三个表，则需要获取$\{A,B\}, \{A,C\},\{B,C\}$三种组合里各自代价最小的路径。
 
-  如果有三个表，则为{A，B}，{A，C}和{B，C}中的每一个获取最便宜的路径。
+* 第三层及其后
 
-- 第三层之后
+  继续进行同样的处理，直到层级等于表数量。
 
-  继续进行相同的处理，直到层级等于表数量。
 
-  这样，在每个级别获得最便宜的部分问题路径，并用于获得上层的计算结果。 这使得有效地计算最便宜的计划树成为可能。
+通过这种方式，在每个层级都能解决最小代价问题的一部分，且其结果能被更高层级的计算复用，从而使代价最小的计划树能够被高效地计算出来。
 
-**图3.31 如何使用动态规划获得最便宜的访问路径**
+**图3.31 如何使用动态规划获取代价最小的访问路径**
 
 ![](img/fig-3-31.png)
 
-在下文中，描述了planner如何获得以下查询的最便宜的计划的过程。
+接下来会针对下面的查询，解释计划器是如何获取代价最小的计划的。
 
 ```sql
 testdb=# \d tbl_a
@@ -2333,71 +2331,71 @@ testdb=# \d tbl_b
 testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400;
 ```
 
-#### 3.6.2.1 第一层预处理
+#### 3.6.2.1 第一层的处理
 
-​	在第一层中，planner创建RelOptInfo结构并估计查询中每个关系的最便宜成本。 在那里，RelOptInfo结构被添加到此查询的PlannerInfo的simple_rel_arrey中。
+在第一层中，计划器会为查询中涉及的关系创建相应的`RelOptInfo`结构，并估计每个关系上的最小代价。 在这一步中，`RelOptInfo`结构会被添加至该查询对应`PlannerInfo`的`simple_rel_arrey`数组字段中。
 
-**图3.32 在Level 1中处理后的PlannerInfo和RelOptInfo**
+**图3.32 第一层处理后的`PlannerInfo`与`RelOptInfo`**
 
 ![](img/fig-3-32.png)
 
-​	tbl_a的RelOptInfo有三个访问路径，它们被添加到RelOptInfo的路径列表中，它们链接到三个最便宜的成本路径，即最便宜的启动（成本）路径，最便宜的总（成本）路径， 和最便宜的参数化（成本）路径。 由于最便宜的启动和总成本路径是显而易见的，因此将描述最便宜的参数化索引扫描路径的成本。
+表`tbl_a`的`RelOptInfo`有三条访问路径，它们被添加至`RelOptInfo`的路径列表中。这三条路径分别被三个指针所链接，即三个指向代价最小路径的指针：启动代价最小的路径，总代价最小的路径，参数化代价最小的路径。 启动代价最小的路径与总代价最小的路径涵义显而易见，因此，这里只会说一下**参数化索引扫描代价最小的路径（cheapest parameterized index scan path）**。
 
-​	如3.5.1.3节所述，planner考虑使用索引嵌套循环连接的参数化路径（并且很少使用外部索引扫描进行索引归并连接）。 最便宜的参数化成本是估计的参数化路径的最便宜的成本。
+如3.5.1.3节所述，计划器会考虑为索引嵌套循环连接使用**参数化路径（parameterized path）**（极少数情况下也会用于带外表索引扫描的索引化归并连接）。参数化索引扫描代价最小的路径，就是所有参数化路径中代价最小的那个。
 
-​	tbl_b的RelOptInfo仅具有顺序扫描访问路径，因为tbl_b没有相关索引。
+表`tbl_b`的`RelOptInfo`仅有顺序扫描访问路径，因为`tbl_b`上没有相关索引。
 
-#### 3.6.2.2 第二层预处理
+#### 3.6.2.2 第二层的处理
 
-在第二层中，创建RelOptInfo结构并将其添加到PlannerInfo的join_rel_list。 然后，估计所有可能的连接路径的成本，并且选择其总成本最便宜的最佳访问路径。 RelOptInfo将最佳访问路径存储为最便宜的总成本路径。 参见图3.33。
+在第二层中，计划器会在`PlannerInfo`的`join_rel_list`字段中创建一个`RelOptInfo`结构。 然后估计所有可能连接路径的代价，并且选择代价最小的那条访问路径。 `RelOptInfo`会将最佳访问路径作为总代价最小的路径， 如图3.33所示。
 
-**图3.33 在Level 2中处理后的PlannerInfo和RelOptInfo**
+**图3.33 第二层处理后的`PlannerInfo`和`RelOptInfo`**
 
 ![](img/fig-3-33.png)
 
-表3.1显示了此示例中的连接访问路径的所有组合。 该示例的查询是等值连接类型; 因此，估计了三种连接算法。 为方便起见，引入了一些访问路径的符号：
+表3.1展示了本例中连接访问路径的所有组合。本例中查询的连接类型为**等值连接（equi-join）**，因而对全部三种连接算法进行评估。 为方便起见，这里引入了一些有关访问路径的符号：
 
-- `SeqScanPath（table）`表示表的顺序扫描路径。
-- `Materialized-> SeqScanPath（table）`表示表的物化顺序扫描路径。
-- `IndexScanPath（table，attribute）`表示按表的属性的索引扫描路径。
-- `ParameterizedIndexScanPath（table，attribute1，attribute2）`表示表的attribute1的参数化索引路径，并由外表的attribute2参数化。
+- `SeqScanPath(table)`表示表`table`上的顺序扫描路径。
+- `Materialized -> SeqScanPath(table)`表示表`table`上的物化顺序扫描路径。
+- `IndexScanPath(table,attribute)`表示按表`table`中属性`attribute`上的索引扫描路径。
+- `ParameterizedIndexScanPath(table,attribute1,attribute2)`表示表`table`中属性`attribute1`上的参数化索引路径，并使用外表上的属性`attribute2`参数化。
 
 **表 3.1 此示例中的所有连接访问路径组合**
 
 **嵌套循环连接**
 
-| 序号 | 外表路径                | 内表路径                                        | 备注                         |
-| ---- | ----------------------- | ----------------------------------------------- | ---------------------------- |
-| 1    | SeqScanPath(tbl_a)      | SeqScanPath(tbl_b)                              |                              |
-| 2    | SeqScanPath(tbl_a)      | Materialized->SeqScanPath(tbl_b)                | 物化嵌套循环链接             |
-| 3    | IndexScanPath(tbl_a,id) | SeqScanPath(tbl_b)                              | 嵌套循环连接，走外表索引     |
-| 4    | IndexScanPath(tbl_a,id) | Materialized->SeqScanPath(tbl_b)                | 物化嵌套循环连接，走外表索引 |
-| 5    | SeqScanPath(tbl_b)      | SeqScanPath(tbl_a)                              |                              |
-| 6    | SeqScanPath(tbl_b)      | Materialized->SeqScanPath(tbl_a)                | 物化嵌套循环连接             |
-| 7    | SeqScanPath(tbl_b)      | ParametalizedIndexScanPath(tbl_a, id, tbl_b.id) | 索引嵌套循环连接             |
+| 外表路径                  | 内表路径                                          | 备注                         |
+| ------------------------- | ------------------------------------------------- | ---------------------------- |
+| `SeqScanPath(tbl_a)`      | `SeqScanPath(tbl_b)`                              |                              |
+| `SeqScanPath(tbl_a)`      | `Materialized -> SeqScanPath(tbl_b)`              | 物化嵌套循环链接             |
+| `IndexScanPath(tbl_a,id)` | `SeqScanPath(tbl_b)`                              | 嵌套循环连接，走外表索引     |
+| `IndexScanPath(tbl_a,id)` | `Materialized -> SeqScanPath(tbl_b)`              | 物化嵌套循环连接，走外表索引 |
+| `SeqScanPath(tbl_b)`      | `SeqScanPath(tbl_a)`                              |                              |
+| `SeqScanPath(tbl_b)`      | `Materialized -> SeqScanPath(tbl_a)`              | 物化嵌套循环连接             |
+| `SeqScanPath(tbl_b)`      | `ParametalizedIndexScanPath(tbl_a, id, tbl_b.id)` | 索引嵌套循环连接             |
 
 **归并连接**
 
-| 序号 | 外表路径                | 内表路径           | 备注                 |
-| ---- | ----------------------- | ------------------ | -------------------- |
-| 1    | SeqScanPath(tbl_a)      | SeqScanPath(tbl_b) |                      |
-| 2    | IndexScanPath(tbl_a,id) | SeqScanPath(tbl_b) | 用外表索引做归并连接 |
-| 3    | SeqScanPath(tbl_b)      | SeqScanPath(tbl_a) |                      |
+| 外表路径                  | 内表路径             | 备注                 |
+| ------------------------- | -------------------- | -------------------- |
+| `SeqScanPath(tbl_a)`      | `SeqScanPath(tbl_b)` |                      |
+| `IndexScanPath(tbl_a,id)` | `SeqScanPath(tbl_b)` | 用外表索引做归并连接 |
+| `SeqScanPath(tbl_b)`      | `SeqScanPath(tbl_a)` |                      |
 
 **哈希连接**
 
-| 序号 | 外表路径           | 内表路径           | 备注 |
-| ---- | ------------------ | ------------------ | ---- |
-| 1    | SeqScanPath(tbl_a) | SeqScanPath(tbl_b) |      |
-| 2    | SeqScanPath(tbl_b) | SeqScanPath(tbl_a) |      |
+| 外表路径             | 内表路径             | 备注 |
+| -------------------- | -------------------- | ---- |
+| `SeqScanPath(tbl_a)` | `SeqScanPath(tbl_b)` |      |
+| `SeqScanPath(tbl_b)` | `SeqScanPath(tbl_a)` |      |
 
-例如，在嵌套循环连接中，估计了七个连接路径。 第一个表示外部和内部路径分别是$\verb|tbl_a|$和$\verb|tbl_b|$的顺序扫描路径; 第二个表示外部路径是$\verb|tbl_a|$的顺序扫描路径，内部路径是$\verb|tbl_b|$的物化顺序扫描路径，诸如此类。
+例如在嵌套循环连接的部分总共评估了七条连接路径。 第一条表示在外表`tbl_a`和内表`tbl_b`上都使用顺序扫描路径；第二条表示在外表`tbl_a`上使用路径顺序扫描路径，而在内表`tbl_b`上使用物化顺序扫描路径，诸如此类。
 
-计划器最终从估计的连接路径中选择最便宜的访问路径，并且将最便宜的路径添加到$\verb|RelOptInfo{tbl_a,tbl_b}|$的路径列表中，参见图3.33。
+计划器最终从估计的连接访问路径中选择代价最小的那条，并且将其添加至`RelOptInfo{tbl_a,tbl_b}`的路径列表中，如图3.33所示。
 
-在此示例中，如下面EXPLAIN的结果所示，计划器选择内部和外部表为tbl_b和tbl_c的散列连接。
+在本例中，如下面`EXPLAIN`的结果所示，计划器选择了在内表`tbl_b`和外表`tbl_c`上进行散列连接。
 
-```
+```sql
 testdb=# EXPLAIN  SELECT * FROM tbl_b AS b, tbl_c AS c WHERE c.id = b.id AND b.data < 400;
                               QUERY PLAN                              
 ----------------------------------------------------------------------
@@ -2410,9 +2408,9 @@ testdb=# EXPLAIN  SELECT * FROM tbl_b AS b, tbl_c AS c WHERE c.id = b.id AND b.d
 (6 rows)
 ```
 
-### 3.6.3 得到三表查询上最小代价路径
+### 3.6.3 获取三表查询代价最小的路径
 
-获取涉及三个表的查询的最小开销路径如下：
+涉及三个表的查询，其代价最小的路径的获取过程如下所示：
 
 ```sql
 testdb=# \d tbl_a
@@ -2444,32 +2442,34 @@ testdb-#                WHERE a.id = b.id AND b.id = c.id AND a.data < 40;
 
 - 第一层：
 
-  计划器估计所有表中开销最小的路径，并将该信息存储在相应的*RelOptInfos*结构中：$\verb|{tbl_a}|$，$\verb|{tbl_b}|$，$\verb|{tbl_c}|$中。
+  计划器估计所有表上各自开销最小的路径，并将该信息存储在表相应的`RelOptInfos`结构`{tbl_a}`，`{tbl_b}`，`{tbl_c}`中。
 
 - 第二层：
 
-  计划器选择三对表的所有组合并估计每种组合最便宜的路径;然后，规划器将信息存储在相应的*RelOptInfos*结构中：$\verb|{tbl_a,tbl_b}|$，$\verb|{tbl_b,tbl_c}|$和$\verb|{tbl_a,tbl_c}|$中。
+  计划器从三个表中选出两个，列出所有组合，分别评估每种组合里代价最小的路径。然后，规划器将信息存储在组合相应的`RelOptInfos`结构中：`{tbl_a,tbl_b}`，`{tbl_b,tbl_c}`和`{tbl_a,tbl_c}`中。
 
 - 第三层：
 
-计划器最终使用已经获得的RelOptInfos获得最便宜的路径。更确切地说，计划器考虑RelOptInfos的三种组合：$\verb|{tbl_a,{tbl_b,tbl_c}}|$，$\verb|{tbl_b,{tbl_a,tbl_c}}|$和$\verb|{tbl_c,{tbl_a,tbl_b}}|$，因而$\verb|{tbl_a,tbl_b,tbl_c}|$如下所示：
+  计划器根据所有已获取的`RelOptInfos`，选择代价最小的路径。更确切地说，计划器会考虑三种`RelOptInfos`组合：`{tbl_a,{tbl_b,tbl_c}}`，`{tbl_b,{tbl_a,tbl_c}}`和`{tbl_c,{tbl_a,tbl_b}}`，而`{tbl_a,tbl_b,tbl_c}`如下所示：
+
 $$
 \begin{equation}
-  \{\verb|tbl_a|,\verb|tbl_b|,\verb|tbl_c|\} = \\ min (\{\verb|tbl_a|,\{\verb|tbl_b|,\verb|tbl_c|\}\}, \{\verb|tbl_b|,\{\verb|tbl_a|,\verb|tbl_c|\}\}, \{\verb|tbl_c|,\{\verb|tbl_a|,\verb|tbl_b|\}\}).
-  \end{equation}
+  \{\verb|tbl_a|,\verb|tbl_b|,\verb|tbl_c|\} = \\ \mathrm{min}(\{\verb|tbl_a|,\{\verb|tbl_b|,\verb|tbl_c|\}\}, \{\verb|tbl_b|,\{\verb|tbl_a|,\verb|tbl_c|\}\}, \{\verb|tbl_c|,\{\verb|tbl_a|,\verb|tbl_b|\}\}).
+\end{equation}
 $$
 
-然后，计划器估算其中所有可能的连接路径的成本。
+​	计划器会估算这里面所有可能连接路径的代价。
 
-在$\verb|RelOptInfo{tbl_c,{tbl_a,tbl_b}}|$中，计划器估计$\verb|tbl_c|$和$\verb|{tbl_a,tbl_b}|$最便宜路径的所有组合，它是内部和外部表分别为$\verb|tbl_a|$和$\verb|tbl_b|$的散列连接。这个例子。估计的连接路径将包含三种连接路径及其变体，如前一小节所示，即嵌套循环连接及其变体，归并连接及其变体以及散列连接。
+在处理`{tbl_c,{tbl_a,tbl_b}}`对应的`RelOptInfo`时，计划器会估计`tbl_c`和`{tbl_a,tbl_b}`连接代价最小的路径。本例中`{tbl_a,tbl_b}`已经选定为内表为`tbl_a`且外表为`tbl_b`的散列连接。如先前小节所述，在估计时三种连接算法及其变体都会被评估，即嵌套循环连接及其变体，归并连接及其变体，散列连接及其变体。
 
-计划器以相同的方式处理$\verb|RelOptInfos{tbl_a,{tbl_b,tbl_c}}|$和$\verb|{tbl_b,{tbl_a,tbl_c}}|$，并最终从所有估计的路径中选择开销最小的访问路径。
+计划器以同样的方式处理`{tbl_a,{tbl_b,tbl_c}}`与`{tbl_b,{tbl_a,tbl_c}}`对应的`RelOptInfo`，并最终从所有估好的路径中选择代价最小的访问路径。
 
-此查询的`EXPLAIN`命令的结果如下所示：
+该查询的`EXPLAIN`命令结果如下所示：
 
   ![](img/fig-3-34.png)
 
-最外层的连接是索引的嵌套循环连接（第5行）; 内部参数化索引扫描显示在第13行中，外部关系是散列连接的结果，其内表和外表分别为$\verb|tbl_b|$和$\verb|tbl_a|$（第7-12行）。 因此，执行程序首先执行$\verb|tbl_a|$和$\verb|tbl_b|$的散列连接，然后执行索引嵌套循环连接。
+最外层的连接是索引嵌套循环连接（第5行），第13行显示了内表上的参数化索引扫描，外表则是一个散列连接的结果该散列连接的内表是`tbl_a`，外表是`tbl_b`（第7-12行）。 因此，执行程序首先执行`tbl_a`和`tbl_b`上的散列连接，再执行索引嵌套循环连接。
+
 
 ## 参考文献
 
