@@ -1503,11 +1503,11 @@ typedef struct IndexScan
 
 ## 3.4 执行器如何工作
 
-在单表查询中，执行器从下至上执行计划节点，并调用相应节点的处理函数。
+在单表查询的例子中，执行器从计划树中取出计划节点，按照自底向上的顺序进行处理，并调用节点相应的处理函数。
 
-每个计划节点有执行相应操作的函数，这些函数在src/backend/executor目录中。比如，执行顺序扫描的的函数（SeqScan）在[nodeSeqscan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；执行索引扫描的函数（IndexScanNode）定义在[nodeIndexScan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；SortNode节点的排序函数定义在[nodeSort.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中等等。
+每个计划节点都有相应的函数，用于执行节点对应的操作。这些函数在[`src/backend/executor`](https://github.com/postgres/postgres/blob/master/src/backend/executor/)目录中。例如，执行顺序扫描的的函数（`SeqScan`）定义于[`nodeSeqscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；执行索引扫描的函数（`IndexScanNode`）定义在[`nodeIndexScan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；`SortNode`节点对应的排序函数定义在[`nodeSort.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中，诸如此类。
 
-当然，理解执行器的最好方式就是阅读EXPLAIN命令的输出，因为PostgreSQL的EXPLAIN命令几乎就表示一棵计划树。下文基于3.3.3节的例1对此作出解释。
+当然，理解执行器如何工作的最好方式，就是阅读`EXPLAIN`命令的输出。因为PostgreSQL的`EXPLAIN`命令几乎就是照着计划树输出的。下面以3.3.3节的例1为例。
 
 ```c
 testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
@@ -1520,22 +1520,22 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 (4 rows)
 ```
 
-我们从下往上查看EXPLAIN的结果，探究执行器是如何执行的：
+我们可以自底向上阅读`EXPLAIN`的结果，来看一看执行器是如何工作的。
 
-**第六行**: 首先，执行器执行[nodeSeqscan.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSeqscan.c)中定义的顺序扫描操作。
+**第6行**：首先，执行器通过[`nodeSeqscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSeqscan.c)中定义的函数执行顺序扫描操作。
 
-**第四行**：接下来，执行器使用[nodeSort.c](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中定义的函数，对顺序扫描的结果进行排序。
+**第4行**：然后，执行器通过[`nodeSort.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中定义的函数，对顺序扫描的结果进行排序。
 
 > ### 临时文件
 >
-> 执行器使用内存中分配的`work_mem`和`temp_buffers`，但是如果某查询的处理中内存不够，就会使用临时文件。
+> 执行器在处理查询时会使用工作内存（`work_mem`）和临时缓冲区（`temp_buffers`），两者都于内存中分配。如果查询无法在内存中完成，就会用到临时文件。
 >
-> 使用`Analyze`选项，`EXPLAIN`会真正执行这个查询并展示实际的行数，实际执行时间和实际内存使用。如下例所示：
+> 使用带有`Analyze`选项的`EXPLAIN`，待解释的命令会真正执行，并显示实际结果行数，实际执行时间和实际内存用量。下面是一个具体的例子：
 >
 > ```c
 > testdb=# EXPLAIN ANALYZE SELECT id, data FROM tbl_25m ORDER BY id;
->                                                         QUERY PLAN                                                        
-> --------------------------------------------------------------------------------------------------------------------------
+>                           QUERY PLAN                                                        
+> ----------------------------------------------------------------------
 >  Sort  (cost=3944070.01..3945895.01 rows=730000 width=4104) (actual time=885.648..1033.746 rows=730000 loops=1)
 >    Sort Key: id
 >    Sort Method: external sort  Disk: 10000kB
@@ -1545,29 +1545,32 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 > (6 rows)
 > ```
 >
-> 在第6行，EXPLAIN命令显示了执行器使用了10000KB的临时文件。
+> 在第6行，`EXPLAIN`命令显示出执行器使用了10000KB的临时文件。
 >
-> 临时文件临时创建在base/pg_tmp子目录中，遵循如下命名规则
+> 临时文件会被临时创建于`base/pg_tmp`子目录中，并遵循如下命名规则
 >
 > ```bash
 > {"pgsql_tmp"} + {创建本文件的Postgres进程PID} . {从0开始的序列号}
 > ```
 >
-> 比如，临时文件`pgsql_tmp8903.5`是pid为`8903`的postgres进程创建的第6个临时文件
+> 比如，临时文件`pgsql_tmp8903.5`是`pid`为`8903`的`postgres`进程创建的第6个临时文件
+
+
+
 
 
 
 ## 3.5 连接
 
-​	PostgreSQL 中支持三种**连接（JOIN）**算法：：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。在PostgreSQL中有一些变体。
+​	PostgreSQL 中支持三种**连接（JOIN）**操作：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。在PostgreSQL中，嵌套循环连接与归并连接有几种变体。
 
-​	下面，我们假设读者对这三个算法的基本行为有了解。如果你对这些概念不熟悉，请参阅[[1](https://www.amazon.com/dp/0073523321), [2](https://www.amazon.com/dp/0321523067)]。但由于没有太多关于支持数据倾斜的hybrid hash join介绍，这里对该算法细节详细描述。
+​	在下文中，我们会假设读者已经对这三种操作的基本行为有了解。如果读者对这些概念不熟悉，可以参阅[[1](https://www.amazon.com/dp/0073523321), [2](https://www.amazon.com/dp/0321523067)]。PostgreSQL支持一种针对数据倾斜的**混合散列连接（hybrid hash join）**，关于这方面的资料不多，因此这里会详细描述该操作。
 
-​	注意，这三种算法支持PostgreSQL中所有的连接操作，不仅仅是`INNER JOIN`，也有`LEFT/RIGHT OUTER JOIN`，`FULL OUTER JOIN`等；但是为了简化描述，本章只关注`NATURAL INNER JOIN`。
+​	需要注意的是，这三种**连接方法（join method）**都支持PostgreSQL中所有的连接操作，诸如`INNER JOIN`，`LEFT/RIGHT OUTER JOIN`，`FULL OUTER JOIN`等；但是为了简单起见，这里只关注`NATURAL INNER JOIN`。
 
 ### 3.5.1 嵌套循环连接（Nested Loop Join）
 
-**嵌套循环连接**是最基础的连接，可以在任何条件下使用。PostgreSQL中支持原生的还有5中变种。
+**嵌套循环连接**是最为基础的连接操作，任何**连接条件（join condition）**都可以使用这种连接方式。PostgreSQL支持嵌套循环连接及其五种变体。
 
 #### 3.5.1.1 嵌套循环连接
 
@@ -1575,37 +1578,37 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 $$
 \verb|start-up_cost| = 0
 $$
-运行时代价与内外表大小的乘积成比例；即，runcost是$O(N_{\verb|outer|}× N_{\verb|inner|})$，这里$N_{\verb|outer|}$和$N_{\verb|inner|}$分别是外表和内表的元组数。$\verb|run_cost|$更准确的定义如下：
+运行代价与内外表尺寸的乘积成比例；即$\verb|runcost|$是$O(N_{\verb|outer|}× N_{\verb|inner|})$，这里$N_{\verb|outer|}$和$N_{\verb|inner|}$分别是外表和内表的元组条数。更准确的说，$\verb|run_cost|$的定义如下：
 $$
 \begin{equation}
 \verb|run_cost|=(\verb|cpu_operator_cost|+ \verb|cpu_tuple_cost|)× N_{\verb|outer|}× N_{\verb|inner|} + C_{\verb|inner|}× N_{\verb|outer|}+C_{\verb|outer|}
 \end{equation}
 $$
-这里$C_{\verb|outer|}$和$C_{\verb|inner|}$分别是内表和外表的顺序扫描的代价；
+这里$C_{\verb|outer|}$和$C_{\verb|inner|}$分别是内表和外表顺序扫描的代价；
 
 **图3.16 嵌套循环连接**
 
 ![](img/fig-3-16.png)
 
-总是会估计嵌套循环连接的代价，但是因为经常用到下面描述的高效变体，所以这个join操作符很少用到。
+嵌套循环连接的代价总是会被估计，但实际中很少会使用这种连接操作，因为它有几种更高效的变体，下面将会讲到。
 
 #### 3.5.1.2 物化嵌套循环连接
 
-​	在上面描述的嵌套循环连接中，对于外表的每个元组，都需要扫描内表的所有元组。由于每个外表的元组都需要扫描整个内表，这个处理代价太高，PostgreSQL支持**物化嵌套循环连接（materialized nested loop join）** ，可以减少完整扫描内表的代价。
+在上面描述的嵌套循环连接中，每当读取一条外表中的元组时，都需要扫描内表中的所有元组。为每条外表元组对内表做全表扫描，这一过程代价高昂，PostgreSQL支持一种**物化嵌套循环连接（materialized nested loop join）** ，可以减少内表全表扫描的代价。
 
-在运行嵌套循环连接之前，执行使用*temporary tuple storage*组件进行一次扫描，将内表的元组加载到work_mem或者临时文件中。临时元组存储比缓冲区管理器处理内部表元组更加高效，特别是当所有的元组都能装载到`work_mem`中时。
+在运行嵌套循环连接之前，执行器会使用**临时元组存储（temporary tuple storage）**模块对内表进行一次扫描，将内表元组加载到工作内存或临时文件中。在处理内表元组时，临时元组存储比缓冲区管理器更为高效，特别是当所有的元组都能放入工作内存中时。
 
-图 3.17展示了物化嵌套循环连接的处理过程。扫描物化元组在内部称为**rescan**。
+图 3.17说明了物化嵌套循环连接的处理过程。扫描物化元组在内部被称为**重扫描（rescan）**。
 
 **图3.17 物化嵌套循环连接**
 
 ![](img/fig-3-17.png)
 
-> ##### 临时元组存储
+> #### 临时元组存储
 >
-> PostgreSQL内部提供了临时元组存储的模块，可以用在物化表，创建混合散列连接的batch等处理中。这个模块的函数在tuplestore.c中，这些函数从work_mem或者临时文件中，读取或写入一串元组。是否用到work_mem或者临时文件取决于出处的元组大小。
+> PostgreSQL内部提供了临时元组存储的模块，可用于各种操作：物化表，创建混合散列连接的批次，等等。该模块包含一系列函数，都在[`tuplestore.c`](https://github.com/postgres/postgres/blob/master/src/backend/utils/sort/tuplestore.c)中。这些函数用于从工作内存或临时文件读写元组。使用工作内存还是临时文件取决于待存储元组的总数。
 
-基于以下的例子，我们探究一下执行器如何处理计划树中的materialized nested loop join，以及如何估计这个操作的代价。
+下面给出一个具体的例子，让我们来研究一下，执行器是如何处理物化嵌套循环连接的计划树并估计其代价的。
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
@@ -1619,31 +1622,31 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 (5 rows)
 ```
 
-首先，展示了执行器的操作符。执行器对上描述的计划树的处理如下：
+上面显示了执行器要进行的操作，执行器对这些计划节点的处理过程如下：
 
-Line 7：执行器通过顺序扫描将内部表tbl_b进行物化
+第7行：执行器使用顺序扫描，物化内部表`tbl_b`。
 
-Line 4：执行器执行了嵌套循环连接操作；外表是`tbl_a`，内表是物化的`tbl_b`
+第4行：执行器执行嵌套循环连接操作，外表是`tbl_a`，内表是物化的`tbl_b`。
 
-下面，估计‘Materialize’（Line 7）和‘Nested Loop’（Line 4）的代价。假设物化的内部表元组都在work_mem中。
+下面来估算“物化”操作（第七行）与“嵌套循环”（第4行）的代价。假设物化的内部表元组都在工作内存中。
 
-**Materialize**:
+**物化（Materialize）**:
 
-没有启动代价；因此，
+物化操作没有启动代价；因此，
 $$
 \begin{equation}
       \verb|start-up_cost| = 0
 \end{equation}
 $$
-运行代价如下定义：
+其运行代价定义如下：
 $$
 \verb|run_cost| = 2 × \verb|cpu_operator_cost| × N_{\verb|inner|};
 $$
-得
+因此：
 $$
 \verb|run_cost|=2× 0.0025× 5000=25.0
 $$
-另外，
+此外，
 $$
 \verb|total_cost| = (\verb|start-up_cost|+ \verb|total_cost_of_seq_scan|)+ \verb|run_cost|
 $$
@@ -1651,39 +1654,39 @@ $$
 $$
 \verb|total_cost| = (0.0+73.0)+25.0=98.0
 $$
-**(Materialized) Nested Loop**:
+**(物化)嵌套循环**:
 
-没有启动代价；因此
+嵌套循环没有启动代价，因此：
 $$
 \verb|start-up_cost|=0
 $$
-在估计运行代价之前，先考虑一下rescan的代价。代价定义为如下公式：
+在估计运行代价之前，先来看一下重扫描的代价，重扫描的代价定义如下：
 $$
 \verb|rescan_cost| = \verb|cpu_operator_cost| × N_{\verb|inner|}
 $$
-这个例子中，
+这本例中：
 $$
 \verb|rescan_cost| = (0.0025)× 5000=12.5
 $$
-运行时代价定义如下公式
+运行代价由以下公式定义：
 $$
 \verb|run_cost| =(\verb|cpu_operator_cost| + \verb|cpu_tuple_cost|)× N_{\verb|inner|}× N_{\verb|outer|} \\
-+ \verb|recan_cost|'× (N_{\verb|outer|}-1) + C^{\verb|total|}_{\verb|outer|,\verb|seqscan|} + C^{\verb|total|}_{\verb|materialize|}，
++ \verb|recan_cost|× (N_{\verb|outer|}-1) + C^{\verb|total|}_{\verb|outer|,\verb|seqscan|} + C^{\verb|total|}_{\verb|materialize|}，
 $$
 这里 $C^{\verb|total|}_{\verb|outer|,\verb|seqscan|}$代表外部表的全部扫描代价，$C^{\verb|total|}_{\verb|materialize|}$代表物化代价；因此
 $$
 \verb|run_cost| = ( 0.0025 + 0.01 ) × 5000 × 10000 + 12.5 ×(10000−1)+145.0+98.0=750230.5
 $$
 
-#### 3.5.1.3. 使用索引的嵌套循环连接
+#### 3.5.1.3 索引嵌套循环连接
 
-如果内表上有索引并且index能够找到满足外表每个元组join条件的元组，计划器考虑直接使用这个索引来直接查询内部表元组而不用顺序扫描。这个变体叫做**索引嵌套循环连接（indexed nested loop join）**，如图3.18。尽管叫索引"嵌套循环连接"，这个算法可以只扫描一次外部表；因此，可以高效执行join操作。
+如果内表上有索引，且该索引能用于搜索满足连接条件的元组。那么计划器在为外表的每条元组搜索内表中的匹配元组时，会考虑使用索引进行直接搜索，以替代顺序扫描。这种变体叫做**索引嵌套循环连接（indexed nested loop join）**，如图3.18所示。尽管这种变体叫做索引"嵌套循环连接"，但该算法基本上只需要在在外表上循环一次，因此连接操作执行起来相当高效。
 
-**图.3.18 索引嵌套循环连接**
+**图3.18 索引嵌套循环连接**
 
 ![](img/fig-3-18.png)
 
-一个关于索引嵌套循环连接的例子如下。
+下面是索引嵌套循环连接的一个具体例子。
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id;
@@ -1696,43 +1699,43 @@ testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id;
 (4 rows)
 ```
 
-​	在第6行中，展示了访问内表中元组的代价。即，查找内表中满足第七行条件的。
+第6行展示了访问内表中元组的代价。即在内表中查找满足第七行连接条件`(id = b.id)`的元组的代价。
 
-​	在第7行的索引条件（`id=b.id`）中，‘b.id’是连接条件中的外表属性的值。当外表按照顺序扫描取到一个元组是，就按照第6行的索引扫描路径，查找内表中的连接元组。换句话说，将外表元组的值传入索引扫描中，内表按照索引扫描找到满足join条件的元组。这种索引路径称为**参数化（索引）路径（parameterized (index) path）**，细节见PostgreSQ源码optimizer/README。
+在第7行的索引条件`(id = b.id)`中，`b.id`是连接条件中的外表属性的值。每当顺序扫描外表取回一条元组时，就会依第6行所示的索引搜索路径，查找内表中需要与之连接的元组。换而言之，外表元组的值作为参数传入内表的索引扫描中，索引扫描路径会查找满足连接条件的内表元组。这种索引路径被称为**参数化（索引）路径（parameterized (index) path）**，细节见PostgreSQ源码：[`backend/optimizer/README`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/README)。
 
-这个嵌套循环连接的启动代价等于第6行索引扫描的代价；因此有
+该嵌套循环连接的启动代价，等于第6行中索引扫描的代价，因此：
 $$
 \verb|start-up_cost| = 0.285
 $$
-索引嵌套循环扫描的整体代价定义如下等式：
+索引嵌套循环扫描的总代价由下列公式所定义：
 $$
-\verb|total_cost|=\verb|cpu_tuple_cost| + C^{\verb|total|}_{\verb|inner,parameterized|}× N_{\verb|outer|}+C^{\verb|run|}_{\verb|outer,seqscan|}
+\verb|total_cost|= (\verb|cpu_tuple_cost| + C^{\verb|total|}_{\verb|inner,parameterized|} )× N_{\verb|outer|}+C^{\verb|run|}_{\verb|outer,seqscan|}
 $$
 这里$C^{\verb|total|}_{\verb|inner,parameterized|}$是参数化内表索引扫描的整体代价，
 
-这里，
+在本例中：
 $$
 \verb|total_cost|=(0.01+0.3625)× 5000 + 73.0 = 1935.5
 $$
-并且运行代价等于
+而运行代价为：
 $$
 \verb|run_cost| = 1935.5-0.285=1935.215
 $$
-如上所示，索引嵌套扫描的整体低价是$O(N_{\verb|outer|})$。
+如上所示，索引嵌套扫描的整体代价是$O(N_{\verb|outer|})$。
 
-#### 3.5.1.4 其他变种
+#### 3.5.1.4 其他变体
 
-如果外表有一个和连接条件相关的索引，外表同样可以利用索引扫描，而不是顺序扫描。特别地，如果索引相关的属性能够用在`WHERE`子句中，作为访问谓词，外表的查找范围会缩小；因此，嵌套循环连接的代价会显著减少。
+如果在外表上存在一个与连接条件相关的索引，那么在外表上也可以以索引扫描替代顺序扫描。特别是，当`WHERE`子句中的访问谓词可以使用该索引时，能缩小外表上的搜索范围，嵌套循环连接的代价可能会急剧减少。
 
-PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
+当使用外表索引扫描时，PostgreSQL支持三种嵌套循环连接的变体，如图3.19所示。
 
-**图3.19.  外部表带索引扫描的嵌套循环连接的三个变体**
+**图3.19 嵌套循环连接的三种变体，使用外表索引扫描**
 
 ![out](img/fig-3-19.png)
 
-这些连接的EXPLAIN命令结果如下。
+这些连接的`EXPLAIN`结果如下：
 
-1. 带有外表索引扫描的嵌套循环连接
+1. 使用外表索引扫描的嵌套循环连接
 
    ```sql
    testdb=# SET enable_hashjoin TO off;
@@ -1741,7 +1744,7 @@ PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
    SET
    testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id AND c.id = 500;
                                       QUERY PLAN                                   
-   --------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
     Nested Loop  (cost=0.29..93.81 rows=1 width=16)
       ->  Index Scan using tbl_c_pkey on tbl_c c  (cost=0.29..8.30 rows=1 width=8)
             Index Cond: (id = 500)
@@ -1750,7 +1753,7 @@ PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
    (5 rows)
    ```
 
-2. 带有外表索引扫描的物化嵌套循环连接
+2. 使用外表索引扫描的物化嵌套循环连接
 
    ```sql
    testdb=# SET enable_hashjoin TO off;
@@ -1759,7 +1762,7 @@ PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
    SET
    testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id AND c.id < 40 AND b.id < 10;
                                       QUERY PLAN                                    
-   ---------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
     Nested Loop  (cost=0.29..99.76 rows=1 width=16)
       Join Filter: (c.id = b.id)
       ->  Index Scan using tbl_c_pkey on tbl_c c  (cost=0.29..8.97 rows=39 width=8)
@@ -1770,7 +1773,7 @@ PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
    (7 rows)
    ```
 
-3. 带有外表索引扫描的索引嵌套循环连接
+3. 使用外表索引扫描的索引嵌套循环连接
 
    ```sql
    testdb=# SET enable_hashjoin TO off;
@@ -1779,7 +1782,7 @@ PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
    SET
    testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_d AS d WHERE a.id = d.id AND a.id <  40;
                                       QUERY PLAN                                    
-   ---------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
     Nested Loop  (cost=0.57..173.06 rows=20 width=16)
       ->  Index Scan using tbl_a_pkey on tbl_a a  (cost=0.29..8.97 rows=39 width=8)
             Index Cond: (id < 40)
@@ -1788,34 +1791,36 @@ PostgreSQL执行是三种嵌套循环连接的变体，如图. 3.19。
    (5 rows)
    ```
 
+
+
 ### 3.5.2 归并连接（Merge Join）
 
-与嵌套循环连接不同，归并连接只能用于自然连接和等值连接。
+与嵌套循环连接不同的是，**归并连接（Merge Join）**只能用于自然连接与等值连接。
 
-合并连接的开销由函数`initial_cost_mergejoin()`和`final_cost_mergejoin()`估算。
+函数`initial_cost_mergejoin()`和`final_cost_mergejoin()`用于估计归并连接的代价。
 
-由于确切的成本估算很复杂，因此省略它并且仅显示合并连接算法的运行时顺序。 合并连接的启动成本是内表和外表的排序成本之和; 因此，启动成本是
+因为精确估计归并连接的代价非常复杂，因此这里略过不提，只会说明归并连接算法的工作流程。归并连接的启动成本是内表与外表排序成本之和，因此其启动成本为：
 $$
 O(N_{\verb|outer|} \log_2(N_{\verb|outer|}) + N_{\verb|inner|} \log_2(N_{\verb|inner|}))
 $$
-这里$N_{outer}$和$N_{inner}$是分别是外表和内表的元组数，运行代价是$O(N_{\verb|outer|}+N_{\verb|inner|})$。
+这里$N_{\verb|outer|}$和$N_{\verb|inner|}$是分别是外表和内表的元组条数，而运行代价是$O(N_{\verb|outer|}+N_{\verb|inner|})$。
 
-和嵌套循环连接类似，merge join在PostgreSQL中有4个变体。
+与嵌套循环连接类似，归并连接在PostgreSQL中有4种变体。
 
 #### 3.5.2.1 归并连接
 
-图3.20显示了归并连接的概念图。
+图3.20是归并连接的概念示意图。
 
-**图3.20. 合并连接**
+**图3.20 归并连接**
 
 ![](img/fig-3-20.png)
 
-如果所有元组都可以存储在内存中，那么排序操作将能够在内存中进行; 否则，使用临时文件。
+如果所有元组都可以存储在内存中，那么排序操作就能在内存中进行，否则会使用临时文件。
 
-EXPLAIN命令的归并连接结果的具体示例如下所示。
+下面是一个具体的例子，一个归并连接的`EXPLAIN`输出如下所示。
 
 ```sql
-testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.id < 1000;
+# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.id < 1000;
                                QUERY PLAN
 -------------------------------------------------------------------------
  Merge Join  (cost=944.71..984.71 rows=1000 width=16)
@@ -1830,24 +1835,24 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.id
 (9 rows)
 ```
 
-第9行：执行器使用顺序扫描（第11行）对内部表tbl_b进行排序。
-第6行：执行器使用顺序扫描（第8行）对外表tbl_a进行排序。
-第4行：执行器执行归并连接操作; 外部表是已排序的tbl_a，内部表是已排序的tbl_b。
+* 第9行：执行器对内表`tbl_b`进行排序，使用顺序扫描（第11行）。
+* 第6行：执行器对外表`tbl_a`进行排序，使用顺序扫描（第8行）。
+* 第4行：执行器执行归并连接操作，外表是排好序的`tbl_a`，内表是排好序的`tbl_b`。
 
 #### 3.5.2.2 物化归并连接
 
-与嵌套循环连接中的相同，归并连接还支持**物化归并连接（Materialized Merge Join）**，将内部表物化，以使内部表扫描更有效。
+与嵌套循环连接类似，归并连接还支持**物化归并连接（Materialized Merge Join）**，物化内表，使内表扫描更为高效。
 
-**图3.21 物化合并连接**
+**图3.21 物化归并连接**
 
 ![](img/fig-3-21.png)
 
-图中显示了物化归并连接的结果的示例。 很容易发现上面的归并连接结果的差异是第9行：'Materialise'。
+这里是物化归并连接的`EXPLAIN`结果，很容易发现，与普通归并连接的差异是第9行：`Materialize`。
 
-```
+```sql
 testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
                                     QUERY PLAN                                     
------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
  Merge Join  (cost=10466.08..10578.58 rows=5000 width=2064)
    Merge Cond: (a.id = b.id)
    ->  Sort  (cost=6708.39..6733.39 rows=10000 width=1032)
@@ -1858,33 +1863,34 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
                Sort Key: b.id
                ->  Seq Scan on tbl_b b  (cost=0.00..1193.00 rows=5000 width=1032)
 (9 rows)
+
 ```
 
-第10行：执行器使用顺序扫描（第12行）对内部表*tbl_b*进行排序。
-第9行：执行器实现了排序的*tbl_b*的结果。
-第6行：执行器使用顺序扫描（第8行）对外表*tbl_a*进行排序。
-第4行：执行器执行归并连接操作; 外部表是已排序的*tbl_a*，而内部表是已实现的已排序的*tbl_b*。
+* 第10行：执行器对内表`tbl_b`进行排序，使用顺序扫描（第12行）。
+* 第9行：执行器对`tbl_b`排好序的结果进行物化。
+* 第6行：执行器对外表`tbl_a`进行排序，使用顺序扫描（第8行）。
+* 第4行：执行器执行归并连接操作，外表是排好序的`tbl_a`，内表是物化的排好序的`tbl_b`。
 
 #### 3.5.2.3 其他变体
 
-与嵌套循环连接类似，PostgreSQL中的归并连接也有带有外部表的索引扫描的变体。
+与嵌套循环连接类似，当外表上可以进行索引扫描时，归并连接也存在相应的变体。
 
-**图3.22 合并的三个变体与外部索引扫描连接**
+**图3.22 归并连接的三种变体，使用外表索引扫描**
 
 ![](img/fig-3-22.png)
 
-这些连接的`EXPLAIN`结果显示如下。
+这些连接的`EXPLAIN`结果如下。
 
-1. 合并外部索引扫描的连接
+1. 使用外表索引扫描的归并连接
 
-   ```
+   ```sql
    testdb=# SET enable_hashjoin TO off;
    SET
    testdb=# SET enable_nestloop TO off;
    SET
    testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id AND b.id < 1000;
                                          QUERY PLAN                                      
-   --------------------------------------------------------------------------------------
+   ------------------------------------------------------------------------------
     Merge Join  (cost=135.61..322.11 rows=1000 width=16)
       Merge Cond: (c.id = b.id)
       ->  Index Scan using tbl_c_pkey on tbl_c c  (cost=0.29..318.29 rows=10000 width=8)
@@ -1893,9 +1899,10 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
             ->  Seq Scan on tbl_b b  (cost=0.00..85.50 rows=1000 width=8)
                   Filter: (id < 1000)
    (7 rows)
+   
    ```
 
-2. 物化合并连接与外部索引扫描
+2. 使用外表索引扫描的物化归并连接
 
    ```
    testdb=# SET enable_hashjoin TO off;
@@ -1904,7 +1911,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
    SET
    testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id AND b.id < 4500;
                                          QUERY PLAN                                      
-   --------------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
     Merge Join  (cost=421.84..672.09 rows=4500 width=16)
       Merge Cond: (c.id = b.id)
       ->  Index Scan using tbl_c_pkey on tbl_c c  (cost=0.29..318.29 rows=10000 width=8)
@@ -1914,9 +1921,10 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
                   ->  Seq Scan on tbl_b b  (cost=0.00..85.50 rows=4500 width=8)
                         Filter: (id < 4500)
    (8 rows)
+   
    ```
 
-3. 索引归并连接与外部索引扫描
+3. 使用外表索引扫描的索引归并连接
 
    ```
    testdb=# SET enable_hashjoin TO off;
@@ -1925,216 +1933,265 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
    SET
    testdb=# EXPLAIN SELECT * FROM tbl_c AS c, tbl_d AS d WHERE c.id = d.id AND d.id < 1000;
                                          QUERY PLAN                                      
-   --------------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
     Merge Join  (cost=0.57..226.07 rows=1000 width=16)
       Merge Cond: (c.id = d.id)
       ->  Index Scan using tbl_c_pkey on tbl_c c  (cost=0.29..318.29 rows=10000 width=8)
       ->  Index Scan using tbl_d_pkey on tbl_d d  (cost=0.28..41.78 rows=1000 width=8)
             Index Cond: (id < 1000)
    (5 rows)
+   
    ```
+
+
+
+
 
 ### 3.5.3 散列连接（Hash Join）
 
-​	与归并连接类似，散列连接（Hash Join）只能用于自然连接和等值连接。
+与归并连接类似，**散列连接（Hash Join）**只能用于自然连接与等值连接。
 
-​	PostgreSQL中的散列连接的行为有所不同，具体取决于表的大小。 如果目标表足够小（更确切地说，内部表的大小是work_mem的25％或更小），那么它将是一个简单的两阶段的**内存散列连接（in-memory hash join）**; 否则，将会使用带有倾斜方法的**混合散列连接（hybrid hash join）**。
+PostgreSQL中的散列连接的行为因表的大小而异。 如果目标表足够小（确切地讲，内表大小不超过工作内存的25％），那么散列连接就是简单的**两阶段内存散列连接（two-phase in-memory hash join）** ； 否则，将会使用带倾斜批次的**混合散列连接（hybrid hash join）**。
 
-​	在本小节中，描述了PostgreSQL中两个散列连接的执行。
+本小节将介绍PostgreSQL中这两种散列连接的执行过程。
 
-​	省略了对成本估算的讨论，因为它很复杂。如果在搜索和插入哈希表时没有冲突， 粗略地说，启动和运行成本是$O(N_{\verb|outer|} + N_{\verb|inner|})$。
+这里省略了代价估算的部分，因为它很复杂。粗略来说，假设向散列表插入与搜索时没有遇到冲突，那么启动和运行成本复杂度都是$O(N_{\verb|outer|} + N_{\verb|inner|})$。
 
 #### 3.5.3.1 内存散列连接
 
-​	在该子部分中，描述了内存中的散列连接。
+下面将描述内存中的散列连接。
 
-​	这个内存中的散列连接在工作内存上处理，散列表区域在PostgreSQL中称为**batch**。 **batch**有多个散列槽，内部称为**buckets**，桶的数量由nodeHash.c中定义的`ExecChooseHashTableSize()`函数确定。 桶的数量总是$2^n$，这里n是整数。
+内存中的散列连接是在`work_mem`中处理的，在PostgreSQL中，散列表区域被称作**处理批次（batch）**。 一个处理批次会有多个**散列槽(hash slots)**，内部称其为**桶（buckets）**，桶的数量由[`nodeHash.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeHash.c)中定义的`ExecChooseHashTableSize()`函数所确定。 桶的数量总是2的整数次幂。
 
-​	内存中的散列连接有两个阶段：构建阶段和探测阶段。 在构建阶段，内部表的所有元组都插入到batch中; 在探测阶段，将外表的每个元组与batch中的内元组进行比较，如果满足连接条件，则将其连接起来。
+内存散列连接有两个阶段：**构建（build）**阶段和**探测（probe）**阶段。 在构建阶段，内表中的所有元组都会被插入到batch中；在探测阶段，每条外表元组都会与处理批次中的内表元组比较，如果满足连接条件，则将两条元组连接起来。
 
-这里示出了一个具体示例，以清楚地理解该操作。 假设使用散列连接执行下面显示的查询。
+为了理解该操作的过程，下面是一个具体的例子。 假设该查询中的连接操作使用散列连接。
 
 ```sql
 SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.attr2;
 ```
 
-在下文中，示出了散列连接的操作。 参见图3.23和3.24。
+散列连接的过程如图3.23和3.24所示。
 
-**图3.23 内存中散列连接中的构建阶段**
+**图3.23 内存散列连接的构建阶段**
 
 ![](img/fig-3-23.png)
 
-1. 在work_mem上创建一个batch。
+1. 在工作内存上创建一个处理批次。
 
-   在这个例子中，batch有八个bucket; 也就是说，桶的数量是2到3次方。
+   在本例中，处理批次有八个桶；即桶的数量是2的3次方。
 
-2. 将内表的第一个元组插入batch的相应bucket中。
+2. 将内表的第一个元组插入批次的相应的桶中。
 
-   详情如下：
+   具体过程如下：
 
-   1. 计算连接条件中涉及的第一个元组属性的哈希键。
+   1. 找出元组中涉及连接条件的属性，计算其散列键。
 
-      在此示例中，使用内置哈希函数计算第一个元组的属性“attr1”的哈希键，因为WHERE子句是“inner.attr1 = outer.attr2”。
+      在本例中，因为`WHERE`子句是`inner.attr1 = outer.attr2`，因此内置的散列函数会对第一条元组的属性`attr1`取散列值，用作散列键。
 
-   2. 将第一个元组插入相应的bucket中。
+   2. 将第一条元组插入散列键相应的桶中。
 
-      假设第一元组的哈希键是二进制表示法的'0x000 ... 001'; 也就是说，最后三位是'001'。 在这种情况下，将该元组插入到密钥为“001”的桶中。
+      假设第一条元组的散列键以二进制记法表示为`0x000 ... 001`，即其末三**位（bit）**为`001`。 在这种情况下，该元组会被插入到键为`001`的桶中。
 
-   在本文档中，构建batch的此类插入操作由此运算符表示：⊕
+   在本文中，构建处理批次的插入操作会用运算符 ⊕ 表示。
 
-3. 插入内表的剩余元组。
+3. 插入内表中的其余元组。
 
-**图3.24. 内存Hash连接的probe阶段**
+**图3.24. 内存散列连接的探测阶段**
 
 ![](img/fig-3-24.png)
 
-1. 探测外表的第一个元组。
+4. 依外表的第一条元组进行探测。
 
    详情如下：
 
-   1. 计算第一个元组属性的哈希键，该属性涉及外表的连接条件。
+   1. 找出第一条外表元组中涉及连接条件的属性，计算其散列键。
 
-      在这个例子中，假设第一个元组的属性'attr2'的哈希键是'0x000 ... 100';也就是说，最后三位是'100'。
+      在这个例子中，假设第一条元组的属性`attr2`的散列键是`0x000 ... 100`，即其末三**位（bit）**为`100`。 最后三位是`100`。
 
-   2. 如果满足连接条件，则将外部表的第一个元组与batch中的内部元组进行比较，并连接元组。
+   2. 将外表中第一条元组与批次中的内表元组进行比较。如果满足连接条件，则连接内外表元组。
 
-      因为第一个元组的散列键的最后三位是'100'，excutor检索属于其键为'100'的bucket的元组，并比较由连接条件指定的表的各个属性的两个值（由WHERE子句定义）。
+      因为第一个元组的散列键的末三位为`100`，执行器找出键为`100`的桶中的所有内表元组，并对内外表元组两侧相应的属性进行比较。这些属性由连接条件（在`WHERE`子句中）所指明。
 
-      如果满足连接条件，则将连接外表的第一个元组和内表的相应元组;否则，excutor不做任何事情。
+      如果满足连接条件，执行器会连接外表中的第一条元组与内表中的相应元组。如果不满足则执行器不做任何事情。
 
-      在此示例中，密钥为“100”的bucket具有Tuple_C。如果Tuple_C的attr1等于第一个元组的attr2（Tuple_W），则Tuple_C和Tuple_W将被连接并保存到内存或临时文件中。
+      在本例中，键为`100`的桶中有`Tuple_C`。如果`Tuple_C`的`attr1`等于第一条元组（`Tuple_W`）的`attr2`，则`Tuple_C`和`Tuple_W`将被连接，并保存至内存或临时文件中。
 
-      在本文档中，此运算符表示此类操作以探测批处理：⊗
+   在本文中，处理批次的探测操作用运算符 ⊗ 表示。
 
-2. 探测外表的剩余元组。
+5. 依次对外表中的其他元组执行探测。
 
-#### 3.5.3.2 带倾斜的混合哈希
+#### 3.5.3.2 带倾斜的混合散列连接
 
-当内部表的元组无法存储在work_mem中的一个批处理中时，PostgreSQL使用具有偏移算法的混合散列连接，该算法是基于混合散列连接的变体。
+当内表的元组无法全部存储在工作内存中的单个处理批次时，PostgreSQL使用带倾斜批次的混合散列连接算法，该算法是混合散列连接的一种变体。
 
-首先，描述混合散列连接的基本概念。在第一个构建和探测阶段，PostgreSQL准备多个批次。batch的数量与bucket的数量相同，由ExecChooseHashTableSize（）函数确定;它总是$ 2 ^ m $，其中m是整数。在此阶段，只在work_mem中分配一个batch，而其他batch则作为临时文件创建;并且属于这些batch的元组，将写入相应的文件并使用临时元组存储功能进行保存。
+首先，这里会描述混合散列连接的基本概念。在第一个构建和探测阶段，PostgreSQL准备多个批次。与桶的数目类似，处理批次的数目由函数`ExecChooseHashTableSize()`决定，也总是2的整数次幂。工作内存中只会分配一个处理批次，而其他批次作都以临时文件的形式创建。属于这些批次的元组将通过临时元组存储功能，被写入到相应的文件中。
 
-图3.25说明了如何将元组存储在四个（$ 2 ^ 2 $）batch中。在这种情况下，哪个batch存储每个元组由元组的散列键的最后5位的前两位确定，因为buckets和batchs的大小分别是$ 2 ^ 3 $和$ 2 ^ 2 $。 Batch_0存储散列键的最后5位在'00000'和'00111'之间的元组，Batch_1存储散列键的最后5位在'01000'和'01111'之间的元组，依此类推。
+图3.25说明了如何将元组存储在四个（$ 2 ^ 2 $）处理批次中。在本例中元组散列键的最后五个比特位决定了元组所属的批次与桶，因为处理批次的数量为$2^2$，而桶的数量为$2^3$，因此需要5个比特位来表示，其中前两位决定了元组所属的批次，而后三位决定了元组在该批次中所属的桶。例如：`Batch_0`存储着散列键介于$\textcolor{red}{00}000$与$\textcolor{red}{00}111$的元组；而`Batch_1`存储着散列键介于$\textcolor{red}{01}000$与$\textcolor{red}{01}111$的元组，依此类推。
 
-**图. 3.25 多路混合Hash连接**
+**图3.25 混合散列连接中的多个处理批次**
 
 ![](img/fig-3-25.png)
 
-在混合散列连接中，构建和探测阶段的执行次数与batch数相同，因为内部表和外部表存储在相同数量的batch中。在构建和探测阶段的第一轮中，不仅创建了每个批处理，而且还处理了内部表和外部表的第一组batch。另一方面，第二轮和后续轮的处理需要向从临时文件写入和重新加载，因此这些是昂贵的过程。因此，PostgreSQL还准备了一个名为skew的特殊batch，以便在第一轮中更有效地处理许多元组。
+在混合散列连接中，构建与探测阶段的执行次数与处理批次的数目相同，因为内外表元组都被存至相同数量的处理批次中。在第一轮构建与探测阶段中，除了处理第一个处理批次，还会创建所有的处理批次。另一方面，第二轮及后续的处理批次都需要读写临时文件，这属于代价巨大的操作。因此PostgreSQL还准备了一个名为**skew**的特殊处理批次，即倾斜批次，以便在第一轮中高效处理尽可能多的元组。
 
-这个skew batch存储将与外表元组连接的内表元组，这些外表元组的连接条件中的属性的MCV值相对较大。然而，因为这种解释不容易理解，所以将使用具体示例来解释。
+这个特殊的倾斜批次中的内表元组在连接条件内表一侧属性上的取值，会选用外表连接属性上最常见的值（MCV）。因此在第一轮处理中能与外表中尽可能多的元组相连接。这种解释不太好理解，因此下面给出了一个具体的例子。
 
-假设有两个表：customers和purchase_history。客户表由两个属性组成：name和address； purchase_history表由两个属性组成：customer_name和buying_item。客户表有10,000行，purchase_history表有1,000,000行。前10％的客户购买了所有商品的70％。
+假设有两个表：客户表`customers`与购买历史表`purchase_history`。`customers`由两个属性组成：`name`和`address`； `purchase_history`由两个属性组成：`customer_name`和`buying_item`。`customers`有10,000行，而`purchase_history`表有1,000,000行。前10％的客户进行了70％的购买。
 
-在这些假设下，让我们考虑当执行下面的查询时，带skew batch的混合散列连接如何在第一轮中执行。
+理解了这些假设，让我们考虑当执行以下查询时，带倾斜的混合散列连接的第一轮是如何执行的。
 
 ```sql
-testdb=# SELECT * FROM customers AS c, purchase_history AS h WHERE c.name = h.customer_name;
+SELECT * FROM customers AS c, purchase_history AS h 
+WHERE c.name = h.customer_name;
 ```
 
-如果客户的表是内部表，并且`purchase_history`是外部表，则使用`purchase_history`表的MCV值将前10％的客户存储在倾斜批次中。 请注意，引用外部表的MCV值是为了将内部表元组插入到skew batch中。 在第一轮的探测阶段，外表（purchase_history）的70％元组将与skew batch中存储的元组连接。 这样，外表分布越不均匀，就可以在第一轮中处理外表的许多元组。
+如果`customers`是内表，而`purchase_history`是外表，则PostgreSQL将使用`purchase_history`表的MCV值，将前10％的`customers`元组存储于倾斜批次中。 请注意这里引用的是外表上的MCV值，而插入倾斜批次的是内表元组。 在第一轮的探测阶段，外表（`purchase_history`）中70％的元组将与倾斜批次中存储的元组相连接。 因此，外表分布越是不均匀，第一轮中越是可以处理尽可能多的元组。
 
-在下文中，示出了带有skew batch的混合散列连接的工作。 参见图3.26至3.29。
+接下来会介绍带倾斜批次的混合散列连接的工作原理，如图3.26至3.29所示。
 
-**图3.26. 混合散列的构建阶段的第一轮**
+**图3.26 混合散列连接的构建阶段的第一轮**
 
 ![](img/fig-3-26.png)
 
-1. 在work_mem上创建batch和skew batch。
+1. 在工作内存中创建一个处理批次，以及一个倾斜批次。
 
-2. 创建用于存储内部表元组的临时batch文件。
+2. 创建处理批次相应的临时文件，用于存储排好序的内表元组。
 
-   在此示例中，创建了三个batch文件，因为内部表将被四个batch分割。
+   在本例中，内表被分割为四个批次，因此创建了三个批次文件。
 
-3. 对内表的第一个元组执行构建操作。
+3. 为内表的第一条元组执行构建操作。
 
-   细节描述如下：
+   细节如下：
 
-   1. 如果应将第一个元组插入skew batch中，请执行此操作; 否则，继续2。
+   1. 如果第一条元组应当插入倾斜批次中，则将其插入倾斜批次；否则继续下一步。
 
-      在上面解释的示例中，如果第一个元组是前10％的客户之一，则将其插入到skew batch中。
+      在该例中，如果第一条元组属于前10％的客户，则将其插入到倾斜批次中。
 
-   2. 计算第一个元组的哈希键，然后插入相应的batch。
+   2. 计算第一条元组的散列键，然后将其插入相应的处理批次。
 
-4. 对内表的剩余元组执行构建操作。
+4. 对内表其余元组依次执行构建操作。
 
-**图3.27 混合散列的探测阶段的第一轮**
+**图3.27 混合散列连接，探测阶段第一轮**
 
 ![](img/fig-3-27.png)
 
-1. 创建用于存储外部表元组的临时batch文件。
+5. 创建临时处理批次文件，用于外表排序。
 
-2. 如果第一个元组的MCV值很大，则使用skew batch执行探测操作; 否则，进入7。
+6. 为外表的第一条元组执行探测操作，如果外表第一条元组上相应字段取值为MCV，则在倾斜批次上进行探测，否则进行第七步。
 
-   在上面解释的示例中，如果第一个元组是前10％客户的购买数据，则将其与skew batch中的元组进行比较。
+   在本例中，如果第一条元组是前10％客户的购买数据，则它会与倾斜批次中的内表元组进行比较。
 
-1. 执行第一个元组的探测操作。
+7. 为外表的第一条元组执行探测操作。
 
-   根据第一个元组的哈希键值，执行以下过程：
+   操作的内容取决于该元组散列键的取值。如果该元组属于`Batch_0`则直接完成探测操作；否则将其插入相应的外表处理批次中。
 
-   如果第一个元组属于Batch_0，则执行探测操作。
+8. 为外表的其余元组执行探测操作。
 
-   否则，插入相应的batch。
+   注意在本例中，外表中70％的元组已经在第一轮中的倾斜批次中处理了。
 
-2. 从外表的其余元组执行探测操作。 请注意，在该示例中，外表的70％的元组已由第一轮中的skew处理。
-
-**图3.28. 构建和探测阶段的第二轮**
+**图3.28 构建阶段与探测阶段，第二轮**
 
 ![](img/fig-3-28.png)
 
-1. 删除skew batch 并清除Batch_0以准备第二轮。
-2. 从batch文件'batch_1_in'执行构建操作。
-3. 对存储在batch文件'batch_1_out'中的元组执行探测操作。
+9. 移除倾斜批次与`Batch_0`，为下一轮处理批次腾地方。
 
-**图3.29 构建和探测阶段的第三轮以及后面几轮**
+10. 为批次文件`batch_1_in`中的内表元组执行构建操作。
+
+11. 为批次文件`batch_1_out`中的外表元组依次执行探测操作。
+
+**图3.29 构建阶段与探测阶段，第三轮及后续**
 
 ![](img/fig-3-29.png)
 
-1. 使用batch文件'batch_2_in'和'batch_2_out'执行构建和探测操作。
-2. 使用batch文件'batch_3_in'和'batch_3_out'执行构建和探测操作。
+12. 为批次文件`batch_2_in`与`batch_2_out`执行构建操作与探测操作。
 
-### 3.5.4连接访问路径和连接节点
+13. 为批次文件`batch_3_in`与`batch_3_out`执行构建操作与探测操作。
+
+### 3.5.4 连接访问路径与连接节点
 
 #### 3.5.4.1 连接访问路径
 
-嵌套循环连接的访问路径是JoinPath结构，其他连接访问路径，比如MergePath和HashPath基于它实现。
+嵌套循环连接的访问路径由`JoinPath`结构表示，其他连接访问路径，诸如`MergePath`与`HashPath`都基于其实现。
 
-以下展示了所有连接访问路径，但没有解释。
+下图列出了所有的连接访问路径，细节略过不提。
 
 **图3.30 Join访问路径**
 
 ![](img/fig-3-30.png)
 
+```c
+typedef JoinPath NestPath;
+
+typedef enum JoinType
+{
+        /* 根据SQL JOIN语法确定的标准连接种类，解析器只允许输出这几种取值。
+         * (例如JoinExpr节点) */
+        JOIN_INNER,           /* 仅包含匹配的元组对 */
+        JOIN_LEFT,            /* 匹配元组对 + 未匹配的左表元组 */
+        JOIN_FULL,            /* 匹配元组对 + 未匹配的左右表元组  */
+        JOIN_RIGHT,           /* 匹配元组对 + 未匹配的右表元组  */
+        /* 关系理论中的半连接(semijoin)与否定半连接(anti-semijoin)并没有用SQL JOIN
+         * 语法来表示，而是用另一种风格标准来表示(举个例子，EXISTS)。计划器会认出这些情景
+         * 并将其转换为连接。因此计划器与执行器必须支持这几种取值。注意：对于JOIN_SEMI的
+         * 输出而言，连接到哪一条右表元组是不确定的。而对于JOIN_ANTI的输出而言，会保证使用
+         * 空值进行行扩展。*/
+        JOIN_SEMI,            /* 左表元组的一份拷贝，如果该元组有相应匹配 */
+        JOIN_ANTI,            /* 右表元组的一份拷贝，如果该元组有相应匹配 */
+        /* 这几种代码用于计划器内部，执行器并不支持。(其实大多数时候计划器也不会用)   */
+        JOIN_UNIQUE_OUTER,    /* 左表路径必须是UNIQUE的 */
+        JOIN_UNIQUE_INNER     /* 右表路径必须是UNIQUE的 */
+} JoinType;
+
+typedef struct JoinPath
+{
+	Path	   path;
+	JoinType   jointype;
+	Path	   *outerjoinpath;		/* 连接外表一侧的路径 */
+	Path	   *innerjoinpath;		/* 连接内表一侧的路径 */
+	List	   *joinrestrictinfo;	/* 连接所适用的限制信息 */
+	/* 参考RelOptInfo与ParamPathInfo才能理解为什么JoinPath需要有joinrestrictinfo
+	 * 且不能合并到RelOptInfo中。 */
+} JoinPath;
+
+typedef struct MergePath
+{
+	JoinPath   jpath;
+	List	   *path_mergeclauses;	/* 归并所需的连接子句 */
+	List	   *outersortkeys;		/* 用于外表显式排序的键，如果存在 */
+	List	   *innersortkeys;		/* 用于内表显式排序的键，如果存在 */
+	bool	   materialize_inner;	/* 为内表执行物化过程? */
+} MergePath;
+```
+
 #### 3.5.4.2 连接节点
 
-本小节显示了三个没有解释的连接节点： NestedLoopNode，MergeJoinNode 和 HashJoinNode。 它们基于 JoinNode实现。
+本小节列出了三种连接节点：`NestedLoopNode`，`MergeJoinNode` 和`HashJoinNode`，它们都基于`JoinNode`实现，细节略过不提。
 
 ```c
 /* ----------------
- *		Join node
+ *		连接节点
  *
- * jointype:	rule for joining tuples from left and right subtrees
- * joinqual:	qual conditions that came from JOIN/ON or JOIN/USING
- *				(plan.qual contains conditions that came from WHERE)
+ * jointype:	连接左右子树元组的规则
+ * joinqual:	来自 JOIN/ON 或 JOIN/USING 的连接限定条件
+ *				(plan.qual 包含了来自WHERE子句的条件)
  *
- * When jointype is INNER, joinqual and plan.qual are semantically
- * interchangeable.  For OUTER jointypes, the two are *not* interchangeable;
- * only joinqual is used to determine whether a match has been found for
- * the purpose of deciding whether to generate null-extended tuples.
- * (But plan.qual is still applied before actually returning a tuple.)
- * For an outer join, only joinquals are allowed to be used as the merge
- * or hash condition of a merge or hash join.
+ * 当jointype为INNER时，joinqual 与 plan.qual 在语义上可以互换。对于OUTER而言这两者
+ * 则无法互换；只有joinqual会被用于匹配判定，以及是否需要生成空值扩展的元组。
+ * (但 plan.qual 仍然会在实际返回一条元组前生效。)
+ * 对于外连接而言，只有joinquals能被用于归并连接或散列连接的连接条件。
  * ----------------
  */
 typedef struct Join
 {
 	Plan		plan;
 	JoinType	jointype;
-	List	   	*joinqual;	/* JOIN quals (in addition to plan.qual) */
+	List	   	*joinqual;	/* JOIN 条件 (除 plan.qual 外) */
 } Join;
+
 /* ----------------
- *		nest loop join node
- *
+ *		嵌套循环连接节点
+ * 
  * The nestParams list identifies any executor Params that must be passed
  * into execution of the inner subplan carrying values from the current row
  * of the outer subplan.  Currently we restrict these values to be simple
@@ -2146,17 +2203,18 @@ typedef struct Join
 typedef struct NestLoop
 {
 	Join	   join;
-	List	   *nestParams;		/* list of NestLoopParam nodes */
+	List	   *nestParams;		/* NestLoopParam 节点的列表*/
 } NestLoop;
 
 typedef struct NestLoopParam
 {
 	NodeTag	   type;
-	int	   paramno;		/* number of the PARAM_EXEC Param to set */
-	Var	   *paramval;		/* outer-relation Var to assign to Param */
+	int	   	paramno;		/* 需要配置的PARAM_EXEC参数数量 */
+	Var	   *paramval;		/* 需要赋值给Param的外表变量 */
 } NestLoopParam;
+
 /* ----------------
- *		merge join node
+ *		归并连接节点
  *
  * The expected ordering of each mergeable column is described by a btree
  * opfamily OID, a collation OID, a direction (BTLessStrategyNumber or
@@ -2169,15 +2227,17 @@ typedef struct NestLoopParam
 typedef struct MergeJoin
 {
 	Join	 join;
-	List	 *mergeclauses;		/* mergeclauses as expression trees */
-	/* these are arrays, but have the same length as the mergeclauses list: */
+	List	 *mergeclauses;		/* mergeclauses 是一颗表达式树 */
+	/* 这些字段都是数组，但与mergeclauses列表有着同样的长度： */
 	Oid	 *mergeFamilies;	/* per-clause OIDs of btree opfamilies */
 	Oid	 *mergeCollations;	/* per-clause OIDs of collations */
 	int	 *mergeStrategies;	/* per-clause ordering (ASC or DESC) */
 	bool	 *mergeNullsFirst;	/* per-clause nulls ordering */
 } MergeJoin;
+
+
 /* ----------------
- *		hash join node
+ *		散列连接节点
  * ----------------
  */
 typedef struct HashJoin
