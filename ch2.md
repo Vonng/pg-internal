@@ -2,9 +2,7 @@
 
 [TOC]
 
-​	本章总结了PostgreSQL中进程与内存的架构，有助于理解后续章节。 如果读者已经熟悉这些内容，可以直接跳过本章。
-
-
+​	本章总结了PostgreSQL中进程与内存的架构，有助于读者理解后续章节。 如果读者已经熟悉这些内容，可以直接跳过本章。
 
 ## 2.1 进程架构
 
@@ -15,7 +13,7 @@
 * **postgres服务器进程（Postgres Server Process）**是所有数据库集簇管理进程的父进程。
 * 每个**后端进程（Backend Process）** 负责处理客户端发出的查询和语句。
 
-* 各种**后台进程（Background Process）** 负责执行各种数据库管理任务（例如`VACUUM`和`CHECKPOINT`进程）。
+* 各种**后台进程（Background Process）** 负责执行各种数据库管理任务（例如清理过程与存档过程）。
 
 * 各种**复制相关（Replication Associated Process）**的进程负责流复制，流复制的细节会在[第11章](ch11.md)中介绍。
 * **后台工作进程（Background Worker Process）** 在9.3版被引入，它能执行任意由用户实现的处理逻辑。这里不详述，请参阅[官方文档](https://www.postgresql.org/docs/current/static/bgworker.html)。
@@ -86,7 +84,7 @@ PostgreSQL允许多个客户端同时连接；配置参数[`max_connections`](ht
 
 ## 2.2 内存架构
 
-PostgreSQL的内存架构可以分为两个大类：
+PostgreSQL的内存架构可以分为两部分：
 
 + 本地内存区域 —— 由每个后端进程分配，供自己使用。
 + 共享内存区域 —— 供PostgreSQL服务器的所有进程使用。
@@ -124,7 +122,7 @@ PostgreSQL的内存架构可以分为两个大类：
 除了上面这些，PostgreSQL还分配了这几个区域：
 
 * 用于访问控制机制的子区域（例如信号量，轻量级锁，共享和排他锁等）。
-* 各种后台进程使用的子区域，例如checkpointer和autovacuum。
-* 用于事务处理的子区域，例如**保存点（save-point）**和**两阶段提交（2PC）**。
+* 各种后台进程使用的子区域，例如`checkpointer`和`autovacuum`。
+* 用于事务处理的子区域，例如**保存点（save-point）** 与 **两阶段提交（2PC）**。
 
 诸如此类。

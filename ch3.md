@@ -74,8 +74,8 @@ typedef struct SelectStmt
         NodeTag         type;
 
         /* 这些字段只会在SelectStmts“叶节点”中使用 */
-        List       *distinctClause;     /* NULL, DISTINCT ON表达式列表, or
-                                         * lcons(NIL,NIL) for all (SELECT DISTINCT) */
+        List       *distinctClause;     /* NULL, DISTINCT ON表达式列表, 或
+                                       对所有的(SELECT DISTINCT)为lcons(NIL,NIL) */
         IntoClause *intoClause;         /* SELECT INTO 的目标 */
         List       *targetList;         /* 结果目标列表 (ResTarget) */
         List       *fromClause;         /* FROM 子句 */
@@ -112,7 +112,7 @@ typedef struct SelectStmt
 
 ![ParseTree](img/fig-3-02.png)
 
-`SELECT`查询中的元素和语法解析树中的元素有着对应关系。比如，(1)是目标列表中的一个元素，与目标表的*'id'*列相对应，(4)是一个`WHERE`子句，诸如此类。
+`SELECT`查询中的元素和语法解析树中的元素有着对应关系。比如，(1)是目标列表中的一个元素，与目标表的`'id'`列相对应，(4)是一个`WHERE`子句，诸如此类。
 
 当解析器生成语法分析树时只会检查语法，只有当查询中出现语法错误时才会返回错误。解析器并不会检查输入查询的语义，举个例子，如果查询中包含一个不存在的表名，解析器并不会报错，语义检查由分析器负责。
 
@@ -194,7 +194,7 @@ PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules
 >
 > 在PostgreSQL中，[视图](https://www.postgresql.org/docs/current/static/rules-views.html)是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/static/sql-createview.html)命令定义一个视图时，PostgreSQL就会创建相应的规则，并存储到系统目录中。
 >
-> 假设下面的视图已经被定义，而*pg_rule*中也存储了相应的规则。
+> 假设下面的视图已经被定义，而`pg_rule`中也存储了相应的规则。
 >
 > ```sql
 > sampledb=# CREATE VIEW employees_list 
@@ -208,7 +208,7 @@ PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules
 > sampledb=# SELECT * FROM employees_list;
 > ```
 >
-> 在该阶段，重写器会基于*pg_rules*中存储的视图规则，将*rangetable*节点重写为一颗子查询对应的语法解析树。
+> 在该阶段，重写器会基于`pg_rules`中存储的视图规则，将`rangetable`节点重写为一颗子查询对应的语法解析树。
 >
 > **图3.4 重写阶段一例**
 >
@@ -251,7 +251,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会从终端节点往根节点，依次处理这些节点。
 
-比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表*tbl_a*执行顺序扫描，并对获取的结果进行排序。
+比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表`tbl_a`执行顺序扫描，并对获取的结果进行排序。
 
 执行器会通过[第8章](ch8.md)将阐述的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
 
@@ -321,7 +321,7 @@ $$
   &= (\verb|cpu_tuple_cost| + \verb|cpu_operator_cost|) × N_{\verb|tuple|} + \verb|seq_page_cost| × N_{\verb|page|},
 \end{align}
 $$
-其中[*seq_page_cost*](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)，[*cpu_tuple_cost*](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-TUPLE-COST)和[*cpu_operator_cost*](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-OPERATOR-COST)是在*postgresql.conf* 中配置的参数，默认值分别为1.0，0.01和0.0025。$N_{tuple}$ 和$N_{page}$ 分别是表中的元组总数和页面总数，这两个值可以使用下列查询获得。
+其中[`seq_page_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)，[`cpu_tuple_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-TUPLE-COST)和[`cpu_operator_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-OPERATOR-COST)是在*postgresql.conf* 中配置的参数，默认值分别为1.0，0.01和0.0025。$N_{\verb|tuple|}$ 和$N_{\verb|page|}$ 分别是表中的元组总数与页面总数，这两个值可以使用以下查询获取。
 
 ```sql
 testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl';
@@ -498,7 +498,7 @@ $$
 > Expanded display is on.
 > testdb=# SELECT most_common_vals, most_common_freqs FROM pg_stats 
 > testdb-#                  WHERE tablename = 'countries' AND attname='continent';
-> -[ RECORD 1 ]-----+-------------------------------------------------------------
+> -[ RECORD 1 ]-----+-----------------------------------------------------------
 > most_common_vals  | {Africa,Europe,Asia,"North America",Oceania,"South America"}
 > most_common_freqs | {0.274611,0.243523,0.227979,0.119171,0.0725389,0.0621762}
 > ```
@@ -514,7 +514,7 @@ $$
 > ```sql
 > testdb=# SELECT histogram_bounds FROM pg_stats WHERE tablename = 'tbl' AND attname = 'data';
 >         			     	      histogram_bounds
-> ------------------------------------------------------------------------------------
+> ------------------------------------------------------------------------------
 >  {1,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,
 > 2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,
 > 4200,4300,4400,4500,4600,4700,4800,4900,5000,5100,5200,5300,5400,5500,5600,5700,5800,5900,6000,6100,

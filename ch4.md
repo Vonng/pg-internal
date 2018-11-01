@@ -2,7 +2,7 @@
 
 [TOC]
 
-本章将介绍两种相当实用，而且很有趣的特性：**外部数据包装器（Foreign Data Wrapper FDW）**和**并行查询（Parallel Query）**。
+本章将介绍两种相当实用，而且很有趣的特性：**外部数据包装器（Foreign Data Wrapper FDW）**与**并行查询（Parallel Query）**。
 
 
 
@@ -16,7 +16,7 @@
 
 ![Fig. 4.1. Basic concept of FDW.](img/fig-4-1.png)
 
-安装完必要的扩展并配置妥当后，就可以访问远程服务器上的外部表了。 例如假设有两个远程服务器分别名为 *postgresql* 和 *mysql*，它们上面分别有两张表：*foreign_pg_tbl* 和*foreign_my_tbl table*。 在这个例子中，可以在本地服务器上执行`SELECT`查询以访问外部表，如下所示。
+安装完必要的扩展并配置妥当后，就可以访问远程服务器上的外部表了。 例如假设有两个远程服务器分别名为`postgresql`和`mysql`，它们上面分别有两张表：`foreign_pg_tbl`和`foreign_my_tbl`。 在本例中，可以在本地服务器上执行`SELECT`查询以访问外部表，如下所示。
 
 ```sql
 localdb=# -- foreign_pg_tbl 在远程postgresql服务器上
@@ -32,7 +32,7 @@ localdb-# SELECT count(*) FROM foreign_my_tbl;
  10000
 ```
 
-此外还可以在本地 JOIN来自不同服务器中的外部表。
+此外还可以在本地连接来自不同服务器中的外部表。
 
 ```sql
 localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.id = m.id;
@@ -41,9 +41,9 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
  10000
 ```
 
-[Postgres wiki](https://wiki.postgresql.org/wiki/Foreign_data_wrappers)中列出了很多现有的FDW扩展。但只有[*postgres_fdw*](https://www.postgresql.org/docs/current/static/postgres-fdw.html) 与[*file_fdw*](https://www.postgresql.org/docs/current/static/file-fdw.html) 是由官方PostgreSQL全球开发组维护的。*postgres_fdw* 可用于访问远程的PostgreSQL服务器。
+[Postgres wiki](https://wiki.postgresql.org/wiki/Foreign_data_wrappers)中列出了很多现有的FDW扩展。但只有[`postgres_fdw`](https://www.postgresql.org/docs/current/static/postgres-fdw.html) 与[`file_fdw`](https://www.postgresql.org/docs/current/static/file-fdw.html) 是由官方PostgreSQL全球开发组维护的。`postgres_fdw`可用于访问远程PostgreSQL服务器。
 
-以下部分将详细介绍PostgreSQL的FDW。 4.1.1节为概述，4.1.2节介绍了*postgres_fdw*扩展的工作方式。
+以下部分将详细介绍PostgreSQL的FDW。 4.1.1节为概述，4.1.2节介绍了`postgres_fdw`扩展的工作方式。
 
 > #### Citus
 >
@@ -69,7 +69,7 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
 4. 计划器按照计划树创建出纯文本SQL语句，在内部称该过程为**逆解析（deparesing）**。
 5. 执行器将纯文本SQL语句发送到远程服务器并接收结果。
 
-如有必要，执行器会进一步处理接收到的结果。 例如执行多表查询时，执行器会将收到的数据与其他表做JOIN。
+如有必要，执行器会进一步处理接收到的结果。 例如执行多表查询时，执行器会将收到的数据与其他表进行连接。
 
 以下各节介绍了每一步中的具体细节。
 
@@ -87,7 +87,7 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
 
 PostgreSQL的FDW机制支持一种特性：获取外部表上的统计信息，用于估计查询代价。一些FDW扩展使用了该特性，例如`postgres_fdw`，`mysql_fdw`，`tds_fdw`和`jdbc2_fdw`。
 
-如果使用[`ALTER SERVER`](https://www.postgresql.org/docs/current/static/sql-alterserver.html)命令将 *use_remote_estimate* 选项设置为*on*，则计划器会向远程服务器发起查询，执行`EXPLAIN`命令获取执行计划的代价。否则在默认情况下，会使用默认内置常量值作为代价。
+如果使用[`ALTER SERVER`](https://www.postgresql.org/docs/current/static/sql-alterserver.html)命令将`use_remote_estimate`选项设置为`on`，则计划器会向远程服务器发起查询，执行`EXPLAIN`命令获取执行计划的代价。否则在默认情况下，会使用默认内置常量值作为代价。
 
 ```sql
 localdb=# ALTER SERVER remote_server_name OPTIONS (use_remote_estimate 'on');
@@ -103,7 +103,7 @@ localdb=# ALTER SERVER remote_server_name OPTIONS (use_remote_estimate 'on');
 localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 ```
 
-图4.3展示了一个存储着纯文本形式`SELECT`语句的*ForeignScan*节点，*PlannedStmt* 是执行计划树对应的数据结构，包含指向*ForeignScan* 节点的链接。 这里，`postgres_fdw`从查询树中重新创建出`SELECT`纯文本语句，该过程在PostgreSQL中被称为**逆解析（deparsing）**。
+图4.3展示了一个存储着纯文本形式`SELECT`语句的`ForeignScan`节点，`PlannedStmt`是执行计划树对应的数据结构，包含指向`ForeignScan`节点的链接。 这里，`postgres_fdw`从查询树中重新创建出`SELECT`纯文本语句，该过程在PostgreSQL中被称为**逆解析（deparsing）**。
 
 **图4.3 扫描外部表的计划树样例**
 
@@ -115,13 +115,13 @@ localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 
 在进行逆解析之后，执行器将逆解析得到的SQL语句发送到远程服务器并接收结果。
 
-扩展的开发者决定了将SQL语句发送至远程服务器的具体方法。 例如*mysql_fdw*在发送多条SQL语句时不使用事务。 在*mysql_fdw*中执行`SELECT`查询的典型SQL语句序列如下所示（图4.4）。
+扩展的开发者决定了将SQL语句发送至远程服务器的具体方法。 例如`mysql_fdw`在发送多条SQL语句时不使用事务。 在`mysql_fdw`中执行`SELECT`查询的典型SQL语句序列如下所示（图4.4）。
 
 * （5-1）将`SQL_MODE`设置为`'ANSI_QUOTES'`。
 * （5-2）将`SELECT`语句发送到远程服务器。
-* （5-3）从远程服务器接收结果。这里*mysql_fdw*会将结果转换为PostgreSQL可读的格式。所有FDW扩展都实现了将结果转换为PostgreSQL可读数据的功能。
+* （5-3）从远程服务器接收结果。这里`mysql_fdw`会将结果转换为PostgreSQL可读的格式。所有FDW扩展都实现了将结果转换为PostgreSQL可读数据的功能。
 
-**图4.4 mysql_fdw执行一个典型SELECT查询时的SQL语句序列**
+**图4.4 `mysql_fdw`执行一个典型SELECT查询时的SQL语句序列**
 
 ![Fig. 4.4. Typical sequence of SQL statements to execute a SELECT query in mysql_fdw](img/fig-4-4.png)
 
@@ -129,18 +129,18 @@ localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 
 ```sql
 mysql> SELECT command_type,argument FROM mysql.general_log;
-+--------------+----------------------------------------------------------------------+
++--------------+-----------------------------------------------------------+
 | command_type | argument                                                              |
-+--------------+----------------------------------------------------------------------+
++--------------+-----------------------------------------------------------+
 ... snip ...
 
 | Query        | SET sql_mode='ANSI_QUOTES'                                            |
 | Prepare      | SELECT `id`, `data` FROM `localdb`.`tbl_a` WHERE ((`id` < 10))         |
 | Close stmt   |                                                                       |
-+--------------+----------------------------------------------------------------------+
++--------------+-----------------------------------------------------------+
 ```
 
-*postgres_fdw*中的SQL命令顺序要更为复杂。在*postgres_fdw*中执行一个典型的`SELECT`查询，实际的语句序列如下图4.5所示。
+`postgres_fdw`中的SQL命令顺序要更为复杂。在`postgres_fdw`中执行一个典型的`SELECT`查询，实际的语句序列如图4.5所示。
 
 * （5-1）启动远程事务。远程事务的默认隔离级别是`REPEATABLE READ`；但如果本地事务的隔离级别设置为`SERIALIZABLE`，则远程事务的隔离级别也会设置为`SERIALIZABLE`。
 
@@ -154,7 +154,7 @@ mysql> SELECT command_type,argument FROM mysql.general_log;
 
 * （5-8）提交远程事务。
 
-**图4.5 postgres_fdw执行一个典型SELECT查询时的SQL语句序列**
+**图4.5 `postgres_fdw`执行一个典型SELECT查询时的SQL语句序列**
 
 ![Fig. 4.5. Typical sequence of SQL statements to execute a SELECT query in postgres_fdw.](img/fig-4-5.png)
 
@@ -170,7 +170,7 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-> #### postgres_fdw中远程事务的默认隔离级别
+> #### `postgres_fdw`中远程事务的默认隔离级别
 >
 > 远程事务的默认隔离级别为`REPEATABLE READ`，官方文档给出了原因和说明：
 >
@@ -178,11 +178,11 @@ LOG:  statement: COMMIT TRANSACTION
 
 
 
-### 4.1.2 postgres_fdw的工作原理
+### 4.1.2 `postgres_fdw`的工作原理
 
-*postgres_fdw*扩展是一个由PostgreSQL全球开发组官方维护的特殊模块，其源码包含在PostgreSQL源码树中。
+`postgres_fdw`扩展是一个由PostgreSQL全球开发组官方维护的特殊模块，其源码包含在PostgreSQL源码树中。
 
-*postgres_fdw*正处于不断改善的过程中。 表4.1列出了官方文档中与*postgres_fdw*有关的发行说明。
+`postgres_fdw`正处于不断改善的过程中。 表4.1列出了官方文档中与`postgres_fdw`有关的发行说明。
 
 **表4.1 与postgres_fdw有关的发布说明（摘自官方文档）**
 
@@ -191,13 +191,14 @@ LOG:  statement: COMMIT TRANSACTION
 | 9.3  | `postgres_fdw`模块正式发布                                   |
 | 9.6  | 在远程服务器上执行排序<br />在远程服务器上执行连接<br />如果可行，在远程服务器上执行`UPDATE`与`DELETE`<br />允许在服务器与表的选项中设置批量拉取结果集的大小 |
 | 10   | 如果可行， 将聚合函数下推至远程服务器                        |
-前一节描述了*postgres_fdw*如何处理单表查询，接下来的小节将介绍*postgres_fdw*如何处理多表查询，排序操作与聚合函数。
+前一节描述了`postgres_fdw`如何处理单表查询，接下来的小节将介绍`postgres_fdw`如何处理多表查询，排序操作与聚合函数。
 
-本小节重点介绍`SELECT`语句；但*postgres_fdw*还可以处理其他DML（`INSERT`，`UPDATE`和`DELETE`）语句。
+本小节重点介绍`SELECT`语句；但`postgres_fdw`还可以处理其他DML（`INSERT`，`UPDATE`和`DELETE`）语句。
 
 > #### PostgreSQL的FDW不会检测死锁
 >
-> *postgres_fdw*与FDW功能并不支持分布式锁管理器与分布式死锁检测功能， 因此很容易产生死锁。 例如某客户端A更新了一个本地表*tbl_local*与一个外部表*tbl_remote*，而另一个客户端B以相反的顺序更新*tbl_remote*和*tbl_local*，则这两个事务陷入死锁。但PostgreSQL无法检测到这种情况， 因而无法提交这些事务。
+> `postgres_fdw`与FDW功能并不支持分布式锁管理器与分布式死锁检测功能， 因此很容易产生死锁。 例如某客户端A更新了一个本地表`tbl_local`与一个外部表`tbl_remote`，而另一个客户端B以相反的顺序更新`tbl_remote`和`tbl_local`，则这两个事务陷入死锁。但PostgreSQL无法检测到这种情况， 因而无法提交这些事务。
+>
 > ```sql
 > localdb=# -- Client A
 > localdb=# BEGIN;
@@ -220,17 +221,17 @@ LOG:  statement: COMMIT TRANSACTION
 
 #### 4.1.2.1 多表查询
 
-当执行多表查询时，*postgres_fdw*使用单表`SELECT`语句依次拉取每个外部表，并在本地服务器上执行连接操作。
+当执行多表查询时，`postgres_fdw`使用单表`SELECT`语句依次拉取每个外部表，并在本地服务器上执行连接操作。
 
-在9.5或更早版本中，即使所有外部表都存储在同一个远程服务器中，*postgres_fdw*也会单独拉取每个表再连接。
+在9.5或更早版本中，即使所有外部表都存储在同一个远程服务器中，`postgres_fdw`也会单独拉取每个表再连接。
 
-在9.6或更高版本中，*postgres_fdw*已经有所改进，当外部表位于同一服务器上且[use_remote_estimate](https://www.postgresql.org/docs/current/static/postgres-fdw.html)选项打开时，可以在远程服务器上执行远程连接操作。
+在9.6或更高版本中，`postgres_fdw`已经有所改进，当外部表位于同一服务器上且[`use_remote_estimate`](https://www.postgresql.org/docs/current/static/postgres-fdw.html)选项打开时，可以在远程服务器上执行远程连接操作。
 
 执行细节如下所述。
 
 **9.5及更早版本：**
 
-我们研究一下PostgreSQL如何处理以下查询：两个外部表的连接：*tbl_a*和*tbl_b*。
+我们研究一下PostgreSQL如何处理以下查询：两个外部表的连接：`tbl_a`和`tbl_b`。
 
 ```sql
 localdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.id < 200;
@@ -255,13 +256,13 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 结果显示，执行器选择了归并连接，并按以下步骤处理：
 
-* 第8行：执行器使用外部表扫描拉取表*tbl_a*。
+* 第8行：执行器使用外部表扫描拉取表`tbl_a`。
 
-* 第6行：执行器在本地服务器上对拉取的*tbl_a*行进行排序。
+* 第6行：执行器在本地服务器上对拉取的`tbl_a`行进行排序。
 
-* 第11行：执行器使用外表扫描拉取表*tbl_b*。
+* 第11行：执行器使用外表扫描拉取表`tbl_b`。
 
-* 第9行：执行器在本地服务器上对拉取的tbl_b行进行排序。
+* 第9行：执行器在本地服务器上对拉取的`tbl_b`行进行排序。
 
 * 第4行：执行器在本地服务器上执行归并连接操作。
 
@@ -269,29 +270,29 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 * （5-1）启动远程事务。
 
-* （5-2）声明游标*c1*，其`SELECT`语句如下所示：
+* （5-2）声明游标`c1`，其`SELECT`语句如下所示：
 
   ```sql
   SELECT id，data FROM public.tbl_a WHERE（id <200）
   ```
 
-* （5-3）执行`FETCH`命令以拉取游标*c1*的结果。
+* （5-3）执行`FETCH`命令以拉取游标`c1`的结果。
 
-* （5-4）声明游标*c2*，其`SELECT`语句如下所示：
+* （5-4）声明游标`c2`，其`SELECT`语句如下所示：
 
   ```sql
   SELECT id,data FROM public.tbl_b
   ```
 
-  注意原来双表查询中的WHERE子句是`tbl_a.id = tbl_b.id AND tbl_a.id <200`；因而从逻辑上讲这条`SELECT`语句也可以添加上一条WHERE子句`tbl_b.id <200`。但*postgres_fdw*没有办法执行这样的推理，因此执行器必须执行不包含任何WHERE子句的`SELECT`语句，获取外部表*tbl_b* 中的所有行。
+  注意原来双表查询中的WHERE子句是`tbl_a.id = tbl_b.id AND tbl_a.id <200`；因而从逻辑上讲这条`SELECT`语句也可以添加上一条WHERE子句`tbl_b.id <200`。但`postgres_fdw`没有办法执行这样的推理，因此执行器必须执行不包含任何WHERE子句的`SELECT`语句，获取外部表`tbl_b` 中的所有行。
 
   这种处理方式效率很差，因为必须通过网络从远程服务器读取不必要的行。此外，执行归并连接还需要先对接受到的行进行排序。
 
-* （5-5）执行`FETCH`命令，拉取游标*c2*的结果。
+* （5-5）执行`FETCH`命令，拉取游标`c2`的结果。
 
-* （5-6）关闭游标*c1*。
+* （5-6）关闭游标`c1`。
 
-* （5-7）关闭游标*c2*。
+* （5-7）关闭游标`c2`。
 
 * （5-8）提交事务。
 
@@ -337,7 +338,7 @@ LOG:  statement: COMMIT TRANSACTION
 
 **9.6或更高版本：**
 
-如果启用了*use_remote_estimate*选项（默认为关闭），则*postgres_fdw*会发送几条`EXPLAIN`命令，用于获取与外部表相关的所有计划的代价。
+如果启用了`use_remote_estimate`选项（默认为关闭），则`postgres_fdw`会发送几条`EXPLAIN`命令，用于获取与外部表相关的所有计划的代价。
 
 当发送`EXPLAIN`命令时，`postgres_fdw`将为每个单表查询执行`EXPLAIN`，也为执行远程连接操作时的`SELECT`语句执行`EXPLAIN` 。在本例中，以下七个`EXPLAIN`命令会被发送至远程服务器，用于估算每个`SELECT`语句的开销，从而选择开销最小的执行计划。
 
@@ -364,7 +365,7 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 结果显示，计划器选择了在远程服务器上进行`INNER JOIN`处理的执行计划，也是最有效率的执行计划。
 
-下面讲述*postgres_fdw*是如何执行这一过程的，如图4.7所示。
+下面讲述`postgres_fdw`是如何执行这一过程的，如图4.7所示。
 
 
 
@@ -378,7 +379,7 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 * （3-2）执行`EXPLAIN`命令，估计每条计划路径的代价。在本例中执行了七条`EXPLAIN`命令。然后计划器根据`EXPLAIN`命令的结果，选取具有最低开销的`SELECT`查询。
 
-* （5-1）声明游标*c1*，其`SELECT`语句如下所示：
+* （5-1）声明游标`c1`，其`SELECT`语句如下所示：
 
   ```sql
   SELECT r1.id, r1.data, r2.id, r2.data 
@@ -388,7 +389,7 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 * （5-2）从远程服务器接收结果。
 
-* （5-3）关闭游标*c1*。
+* （5-3）关闭游标`c1`。
 
 * （5-4）提交事务。
 
@@ -415,7 +416,7 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-注意如果禁用 *use_remote_estimate*选项（默认情况），则远程连接查询很少会被选择，因为这种情况下其代价会使用一个很大的预置值进行估计。
+注意如果禁用`use_remote_estimate`选项（默认情况），则远程连接查询很少会被选择，因为这种情况下其代价会使用一个很大的预置值进行估计。
 
 #### 4.1.2.2 排序操作
 
@@ -437,7 +438,7 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a WHERE a.id < 200 ORDER BY a.id;
 SELECT id, data FROM public.tbl_a WHERE ((id < 200))
 ```
 
-第4行：执行器在本地服务器上对拉取的*tbl_a*中的行进行排序。
+第4行：执行器在本地服务器上对拉取的`tbl_a`中的行进行排序。
 
 这里是远程服务器的实际日志。
 
@@ -455,7 +456,7 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-在9.6或更高版本中，如果可行，*postgres_fdw*能在远程服务器上直接执行带`ORDER BY`子句的`SELECT`语句。
+在9.6或更高版本中，如果可行，`postgres_fdw`能在远程服务器上直接执行带`ORDER BY`子句的`SELECT`语句。
 
 ```sql
 localdb=# EXPLAIN SELECT * FROM tbl_a AS a WHERE a.id < 200 ORDER BY a.id;
@@ -506,7 +507,7 @@ localdb=# EXPLAIN SELECT AVG(data) FROM tbl_a AS a WHERE a.id < 200;
 SELECT id, data FROM public.tbl_a WHERE ((id < 200))
 ```
 
-第4行：执行器在本地服务器上对拉取的*tbl_a*行集求均值。
+第4行：执行器在本地服务器上对拉取的`tbl_a`行集求均值。
 
 这一过程开销很大，因为发送大量的行会产生大量网络流量，而且需要很长时间。
 
@@ -526,7 +527,7 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-在10或更高版本中，如果可行的话，*postgres_fdw*将在远程服务器上执行带聚合函数的`SELECT`语句。
+在10或更高版本中，如果可行的话，`postgres_fdw`将在远程服务器上执行带聚合函数的`SELECT`语句。
 
 ```sql
 localdb=# EXPLAIN SELECT AVG(data) FROM tbl_a AS a WHERE a.id < 200;

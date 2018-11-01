@@ -2,7 +2,7 @@
 
 [TOC]
 
-第一章和第二章概述了一些PostgreSQL的基础知识，有助于读者理解后续章节的内容。本章包括以下几个主题：
+第一章和第二章简单介绍了一些PostgreSQL的基础知识，有助于读者理解后续章节的内容。本章包括以下几个主题：
 
 * **数据库集簇（database cluster）**的逻辑结构
 * 数据库集簇的物理结构
@@ -43,9 +43,9 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 
 ## 1.2 数据库集簇的物理结构
 
-数据库集簇在本质上就是一个文件目录，名曰**基础目录（base directory）**，包含着一系列子目录与文件。 执行 [*initdb*](https://www.postgresql.org/docs/current/static/app-initdb.html) 命令会在指定目录下创建基础目录从而初始化一个新的数据库集簇。 通常会将基础目录的路径配置到环境变量`PGDATA`中，但这并不是必须的。
+数据库集簇在本质上就是一个文件目录，名曰**基础目录（base directory）**，包含着一系列子目录与文件。 执行 [`initdb`](https://www.postgresql.org/docs/current/static/app-initdb.html) 命令会在指定目录下创建基础目录从而初始化一个新的数据库集簇。 通常会将基础目录的路径配置到环境变量`PGDATA`中，但这并不是必须的。
 
-图1.2 展示了一个PostgreSQL数据库集簇的例子。 *base* 子目录中的每一个子目录都对应一个数据库，数据库中每个表和索引都会在相应子目录下存储为（至少）一个文件；还有几个包含特定数据的子目录，以及配置文件。 虽然PostgreSQL支持**表空间（Tablespace）**，但该术语的含义与其他RDBMS不同。 PostgreSQL中的表空间对应一个包含基础目录之外数据的目录。
+图1.2 展示了一个PostgreSQL数据库集簇的例子。 `base`子目录中的每一个子目录都对应一个数据库，数据库中每个表和索引都会在相应子目录下存储为（至少）一个文件；还有几个包含特定数据的子目录，以及配置文件。 虽然PostgreSQL支持**表空间（Tablespace）**，但该术语的含义与其他RDBMS不同。 PostgreSQL中的表空间对应一个包含基础目录之外数据的目录。
 
 **图1.2 数据库集簇示例**
 
@@ -53,49 +53,47 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 
 后续小节将描述数据库集簇的布局，数据库的布局，表和索引对应的文件布局，以及PostgreSQL中表空间的布局。
 
-### 
-
 ### 1.2.1 数据库集簇的布局
 
 [官方文档](https://www.postgresql.org/docs/current/static/storage-file-layout.html)中描述了数据库集簇的布局。 表1.1中列出了主要的文件与子目录：
 
-**表 1.1： 基本目录下的数据库文件和子目录的布局（参考官方文档）**
+**表 1.1 基本目录下的数据库文件和子目录的布局（参考官方文档）**
 
-| 文件                 | 描述                                                  |
-| -------------------- | ----------------------------------------------------- |
-| PG_VERSION           | 包含PostgreSQL主版本号                                |
-| pg_hba.conf          | 控制PosgreSQL客户端认证                               |
-| pg_ident.conf        | 控制PostgreSQL用户名映射                              |
-| postgresql.conf      | 配置参数                                              |
-| postgresql.auto.conf | 存储使用`ALTER SYSTEM`修改的配置参数（9.4或更新版本） |
-| postmaster.opts      | 记录服务器上次启动的命令行选项                        |
+| 文件                   | 描述                                                  |
+| ---------------------- | ----------------------------------------------------- |
+| `PG_VERSION`           | 包含PostgreSQL主版本号                                |
+| `pg_hba.conf`          | 控制PosgreSQL客户端认证                               |
+| `pg_ident.conf`        | 控制PostgreSQL用户名映射                              |
+| `postgresql.conf`      | 配置参数                                              |
+| `postgresql.auto.conf` | 存储使用`ALTER SYSTEM`修改的配置参数（9.4或更新版本） |
+| `postmaster.opts`      | 记录服务器上次启动的命令行选项                        |
 
 
 | 子目录                              | 描述                                                         |
 | --------------------------------- | ------------------------------------------------------------ |
-| base/                             | 每个数据库对应的子目录存储于此                                  |
-| global/                           | 数据库集簇范畴的表（例如`pg_database`），以及`pg_control`文件。 |
-| pg_commit_ts/                     | 事务提交的时间戳数据（9.5及更新版本）。 |
-| pg_clog/ (9.6-) | 事务提交状态数据（9.6及更老版本），在版本10中重命名为`pg_xact`。CLOG将在[5.4节](ch5.md)中描述 |
-| pg_dynshmem/                      | 动态共享内存子系统中使用的文件（9.4或更新版本）。 |
-| pg_logical/                       | 逻辑解码的状态数据（9.4或更新版本）。          |
-| pg_multixact/                     | 多事务状态数据                                       |
-| pg_notify/                        | `LISTEN`/`NOTIFY`状态数据                     |
-| pg_repslot/                       | 复制槽数据（9.4或更新版本）。           |
-| pg_serial/                        | 已提交的可串行化事务相关信息（9.1或更新版本） |
-| pg_snapshots/                     | 导出快照（9.2或更新版本）。 PostgreSQL函数`pg_export_snapshot`在此子目录中创建快照信息文件。 |
-| pg_stat/                          | 统计子系统的永久文件                        |
-| pg_stat_tmp/                      | 统计子系统的临时文件                            |
-| pg_subtrans/                      | 子事务状态数据                                   |
-| pg_tblspc/                        | 指向表空间的符号链接                             |
-| pg_twophase/                      | 两阶段事务（prepared transactions）的状态文件 |
-| pg_wal/ (10+) | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。 |
-| pg_xact/ (10+) | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](ch5.md)中描述。 |
-| pg_xlog/ (9.6-) | WAL（Write Ahead Logging）段文件（9.6及更老版本），它在版本10中重命名为`pg_wal`。 |
+| `base/`                           | 每个数据库对应的子目录存储于此                                  |
+| `global/`                         | 数据库集簇范畴的表（例如`pg_database`），以及`pg_control`文件。 |
+| `pg_commit_ts/`                   | 事务提交的时间戳数据（9.5及更新版本）。 |
+| `pg_clog/ (9.6-)` | 事务提交状态数据（9.6及更老版本），在版本10中被重命名为`pg_xact`。CLOG将在[5.4节](ch5.md)中描述 |
+| `pg_dynshmem/`                    | 动态共享内存子系统中使用的文件（9.4或更新版本）。 |
+| `pg_logical/`                     | 逻辑解码的状态数据（9.4或更新版本）。          |
+| `pg_multixact/`                   | 多事务状态数据                                       |
+| `pg_notify/`                      | `LISTEN`/`NOTIFY`状态数据                     |
+| `pg_repslot/`                     | 复制槽数据（9.4或更新版本）。           |
+| `pg_serial/`                      | 已提交的可串行化事务相关信息（9.1或更新版本） |
+| `pg_snapshots/`                   | 导出快照（9.2或更新版本）。 PostgreSQL函数`pg_export_snapshot`在此子目录中创建快照信息文件。 |
+| `pg_stat/`                        | 统计子系统的永久文件                        |
+| `pg_stat_tmp/`                    | 统计子系统的临时文件                            |
+| `pg_subtrans/`                    | 子事务状态数据                                   |
+| `pg_tblspc/`                      | 指向表空间的符号链接                             |
+| `pg_twophase/`                    | 两阶段事务（prepared transactions）的状态文件 |
+| `pg_wal/ (10+)` | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。 |
+| `pg_xact/ (10+)` | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](ch5.md)中描述。 |
+| pg_xlog/ (9.6-) | **WAL（Write Ahead Logging）**段文件（9.6及更老版本），它在版本10中被重命名为`pg_wal`。 |
 
 ### 1.2.2 数据库布局
 
-一个数据库与*base*子目录下的一个子目录对应；且该子目录的名称与相应数据库的OID相同。 例如当数据库*sampledb* 的OID为16384时，它对应的子目录名称即为16384。
+一个数据库与`base`子目录下的一个子目录对应；且该子目录的名称与相应数据库的OID相同。 例如当数据库`sampledb`的OID为16384时，它对应的子目录名称即为16384。
 
 ```bash
 $ cd $PGDATA
@@ -105,9 +103,9 @@ drwx------  213 postgres postgres  7242  8 26 16:33 16384
 
 ### 1.2.3 表与索引相关文件的布局
 
-每个小于1GB的表或索引都在相应的数据库目录中存储为单个文件。在数据库内部，表和索引作为数据库对象是通过OID来管理的，而这些数据文件则由变量 *relfilenode* 管理。 表和索引的 *relfilenode* 值通常与其OID一致，但也有例外，下面将详细展开。
+每个小于1GB的表或索引都在相应的数据库目录中存储为单个文件。在数据库内部，表和索引作为数据库对象是通过OID来管理的，而这些数据文件则由变量`relfilenode`管理。 表和索引的`relfilenode`值通常与其OID一致，但也有例外，下面将详细展开。
 
-让我们看一看表 *sampletbl* 的 *oid* 和 *relfilenode*：
+让我们看一看表`sampletbl`的`oid`和`relfilenode`：
 
 ```sql
 sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampletbl';
@@ -117,7 +115,7 @@ sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampl
 (1 row)
 ```
 
-从上面的结果可以看出*oid* 和 *relfilenode* 值相等。还可以看到表 *sampletbl* 的数据文件路径是*’base/16384/18740‘*。
+从上面的结果可以看出`oid`和`relfilenode`值相等。还可以看到表`sampletbl`的数据文件路径是`base/16384/18740`。
 
 ```bash
 $ cd $PGDATA
@@ -125,7 +123,7 @@ $ ls -la base/16384/18740
 -rw------- 1 postgres postgres 8192 Apr 21 10:21 base/16384/18740
 ```
 
-表和索引的 *relfilenode* 值会被一些命令（例如`TRUNCATE`，`REINDEX`，`CLUSTER`）所改变。 例如对表 *sampletbl* 执行`TRUNCATE`，PostgreSQL会为表分配一个新的 *relfilenode*（18812），删除旧的数据文件（18740），并创建一个新的数据文件（18812）。
+表和索引的`relfilenode`值会被一些命令（例如`TRUNCATE`，`REINDEX`，`CLUSTER`）所改变。 例如对表 `sampletbl`执行`TRUNCATE`，PostgreSQL会为表分配一个新的`relfilenode`（18812），删除旧的数据文件（18740），并创建一个新的数据文件（18812）。
 
 ```sql
 sampledb=# TRUNCATE sampletbl;
@@ -148,7 +146,7 @@ sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampl
 >  (1 row)
 >  ```
 
-当表和索引的文件大小超过1GB时，PostgreSQL会创建并使用一个名为 *relfilenode.1* 的新文件。如果新文件也填满了，则会创建下一个名为 *relfilenode.2*的新文件，依此类推。
+当表和索引的文件大小超过1GB时，PostgreSQL会创建并使用一个名为`relfilenode.1`的新文件。如果新文件也填满了，则会创建下一个名为`relfilenode.2`的新文件，依此类推。
 
 > 译者注：数据库系统中的**表（Table）**与关系代数中的**关系（Relation）**关系紧密但又不尽相同。在PostgreSQL中，表，索引，TOAST表都归类为关系。
 
@@ -334,7 +332,7 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 为了识别表中的元组，数据库内部会使用**元组标识符（tuple identifier, TID）**。TID由一对值组成：元组所属页面的**区块号**，及指向元组的行指针的**偏移号**。TID的一种典型用途是索引，更多细节参见[第1.4.2节](ch1.md)。
 
-> 结构体`PageHeaderData`定义于[src/include/storage/bufpage.h](https://github.com/postgres/postgres/blob/master/src/include/storage/bufpage.h)中。
+> 结构体`PageHeaderData`定义于[`src/include/storage/bufpage.h`](https://github.com/postgres/postgres/blob/master/src/include/storage/bufpage.h)中。
 
 此外，大小超过约2KB（8KB的四分之一）的堆元组会使用一种称为 **TOAST（The Oversized-Attribute Storage Technique，超大属性存储技术）** 的方法来存储与管理。详情请参阅[PostgreSQL文档](https://www.postgresql.org/docs/current/static/storage-toast.html)。
 
