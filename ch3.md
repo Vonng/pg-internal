@@ -4,21 +4,21 @@
 
 查询处理是PostgreSQL中最为复杂的子系统。如PostgreSQL[官方文档](https://www.postgresql.org/docs/current/static/features.html)所述，PostgreSQL支持SQL2011标准中的大多数特性，查询处理子系统能够高效地处理这些SQL。本章概述了查询处理的流程，特别关注了查询优化的部分。
 
-本章包括下面三个部分：
+本章包括下列三个部分：
 
 + 第一部分：3.1节
 
-   本节概述了PostgreSQL的查询处理流程。
+   这一节会简单介绍PostgreSQL中查询处理的流程。
 
 + 第二部分：3.2~3.4节
 
-   这一部分描述了获取单表查询上最优执行计划的步骤。3.2节讨论了代价估计的过程，3.3节说明了创建计划树的过程，3.4节简要描述了执行器的工作过程。
+   这一部分会描述获取单表查询上最优执行计划的步骤。3.2节讨论代价估计的过程，3.3节描述创建计划树的过程，3.4节将简要介绍执行器的工作过程。
 
 + 第三部分：3.5~3.6节
 
-  这一部分描述了获取多表查询上最优执行计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节说明了为多表查询创建计划树的过程。
+  这一部分会描述获取多表查询上最优执行计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节将介绍为多表查询创建计划树的过程。
 
-PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外部数据包装（Foreign Data Wrapper, FDW）**](https://www.postgresql.org/docs/current/static/fdwhandler.html)，[**并行查询**](https://www.postgresql.org/docs/current/static/parallel-query.html)，以及版本11即将支持的[JIT编译](https://www.postgresql.org/docs/11/static/jit-reason.html)。前两者将在第4章中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
+PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外部数据包装（Foreign Data Wrapper, FDW）**](https://www.postgresql.org/docs/current/static/fdwhandler.html)，[**并行查询**](https://www.postgresql.org/docs/current/static/parallel-query.html)，以及版本11即将支持的[JIT编译](https://www.postgresql.org/docs/11/static/jit-reason.html)。前两者将在[第4章](ch4.md)中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
 
 
 
@@ -40,7 +40,7 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
 4. **计划器（Planner）**
 
-   计划器基于查询树，生成一颗执行最为高效的**计划树（plan tree）**。
+   计划器基于查询树，生成一颗执行效率最高的**计划树（plan tree）**。
 
 5. **执行器（Executor）**
 
@@ -52,21 +52,21 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
 
 
-本节将概述这些子系统。由于计划器和执行器很复杂，后面的章节会对这些函数的细节进行阐述。
+本节将概述这些子系统。计划器和执行器很复杂，后面的章节会对这些函数的细节进行描述。
 
 > PostgreSQL的查询处理在[官方文档](http://www.postgresql.org/docs/current/static/overview.html)中有详细的描述
 
 ### 3.1.1 解析器（Parser）
 
-解析器基于SQL语句的文本，生成一颗后续子系统可以理解的语法解析树。下面给出了一个例子。
+解析器基于SQL语句的文本，生成一颗后续子系统可以理解的语法解析树。下面是一个具体的例子。
 
-考虑以下查询。
+考虑以下查询：
 
 ```sql
 testdb=# SELECT id, data FROM tbl_a WHERE id < 300 ORDER BY data;
 ```
 
-语法解析树的根节点是一个定义在`parsenodes.h`中 `SelectStmt`数据结构。图3.2(a)展示了一个查询，而图3.2(b)则是该查询对应的语法解析树。
+语法解析树的根节点是一个定义在[`parsenodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中的`SelectStmt`数据结构。图3.2(a)展示了一个查询，而图3.2(b)则是该查询对应的语法解析树。
 
 ```c
 typedef struct SelectStmt
@@ -97,18 +97,15 @@ typedef struct SelectStmt
         List       *lockingClause;      /* FOR UPDATE (锁子句的列表) */
         WithClause *withClause;         /* WITH 子句 */
 
-        /*
-         * 这些字段只会在上层的 SelectStmts 中出现
-         */
+        /* 这些字段只会在上层的 SelectStmts 中出现 */
         SetOperation op;                /* set 操作的类型 */
         bool            all;            /* 是否指明了 ALL 选项? */
         struct SelectStmt *larg;        /* 左子节点 */
         struct SelectStmt *rarg;        /* 右子节点 */
-        /* Eventually add fields for CORRESPONDING spec here */
 } SelectStmt;
 ```
 
-**图. 3.2. 语法解析树的例子**
+**图3.2. 语法解析树的例子**
 
 ![ParseTree](img/fig-3-02.png)
 
@@ -120,9 +117,9 @@ typedef struct SelectStmt
 
 ### 3.1.2 分析器（Analyzer）
 
-分析器对解析器产出的语法解析树进行语义分析，生成一颗查询树。
+分析器对解析器产出的**语法解析树（parse tree）**进行语义分析，并产出一颗**查询树（query tree）**。
 
-查询树的根是[`parsenode.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中定义的一个`Query`数据结构，这个结构包含了对应查询的元数据，比如命令的类型（`SELECT/INSERT`等），还包括了一些叶子节点，叶子节点由列表或树组成，包含了特定子句相应的数据。
+查询树的根节点是[`parsenode.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中定义的`Query`数据结构，这个结构包含着对应查询的元数据，比如命令的类型（`SELECT/INSERT`等），还包括了一些叶子节点，叶子节点由列表或树组成，包含了特定子句相应的数据。
 
 ```c
 /*
@@ -188,7 +185,7 @@ typedef struct Query
 
 ### 3.1.3 重写器（Rewriter）
 
-PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules.html)正是依赖重写器而实现的，当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，不过本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
+PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules.html)正是基于重写器实现的；当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，不过本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
 
 > #### 视图
 >
@@ -208,23 +205,23 @@ PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules
 > sampledb=# SELECT * FROM employees_list;
 > ```
 >
-> 在该阶段，重写器会基于`pg_rules`中存储的视图规则，将`rangetable`节点重写为一颗子查询对应的语法解析树。
+> 在该阶段，重写器会基于`pg_rules`中存储的视图规则将`rangetable`节点重写为一颗查询子树，与子查询相对应。
 >
 > **图3.4 重写阶段一例**
 >
 > ![rewriter](img/fig-3-04.png)
 >
-> 因为PostgreSQL使用这种机制实现视图，直到9.2版本视图都是不能更新的。9.3版本后可以对视图进行更新；尽管如此，对视图的更新仍然有很多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
+> 因为PostgreSQL使用这种机制实现视图，直到9.2版本，视图都是不能更新的。虽然9.3版本后可以对视图进行更新，但对视图的更新仍然存在很多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
 
 ### 3.1.4 计划器与执行器
 
-计划器从重写器获取一颗查询树，基于此生成一颗能被**执行器（Executor）**高效执行的（查询）计划树。	
+计划器从重写器获取一颗**查询树（query tree）**，基于查询树生成一颗能被执行器高效执行的（查询）**计划树（plan tree）**。	
 
 在PostgreSQL中，计划器是完全**基于代价估计（cost-based）**的；它不支持基于规则的优化与**提示（hint）**。计划器是RDBMS中最为复杂的部分，因此本章的后续内容会对计划器做一个概述。
 
-> #### pg_hint_plan
+> #### `pg_hint_plan`
 >
-> PostgreSQL不支持在SQL中的**提示（hint）**，并且永远也不会去支持。如果你想在查询中使用提示，可以考虑使用`pg_hint_plan`扩展，细节请参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
+> PostgreSQL不支持SQL中的**提示（hint）**，并且永远也不会去支持。如果你想在查询中使用提示，可以考虑使用`pg_hint_plan`扩展，细节请参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
 
 与其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令会显示命令的计划树。下面给出了一个具体的例子。
 
@@ -249,11 +246,11 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 计划树由许多称为**计划节点（plan node）**的元素组成，这些节点挂在`PlannedStmt`结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
 
-每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会从终端节点往根节点，依次处理这些节点。
+每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会按照从终端节点往根节点的顺序依次处理这些节点。
 
 比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表`tbl_a`执行顺序扫描，并对获取的结果进行排序。
 
-执行器会通过[第8章](ch8.md)将阐述的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
+执行器会通过[第8章](ch8.md)将介绍的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
 
 **图3.6 执行器，缓冲管理器，临时文件之间的关系**
 
@@ -263,9 +260,9 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 ## 3.2 单表查询的代价估计
 
-PostgreSQL的查询优化是基于**代价（Cost）**的。代价是一个无量纲的值，它并不是一种绝对的性能指标，但可以作为比较各种操作开销时的相对性能指标。
+PostgreSQL的查询优化是基于**代价（Cost）**的。代价是一个无量纲的值，它并不是一种绝对的性能指标，但可以作为比较各种操作代价时的相对性能指标。
 
-[*costsize.c*](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/path/costsize.c)中的函数用于估算各种操作的代价。所有被执行器执行的操作都有着相应的代价函数。例如，函数`cost_seqscan()` 和 `cost_index()`分别用于估算顺序扫描和索引扫描的代价。
+[`costsize.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/path/costsize.c)中的函数用于估算各种操作的代价。所有被执行器执行的操作都有着相应的代价函数。例如，函数`cost_seqscan()` 和 `cost_index()`分别用于估算顺序扫描和索引扫描的代价。
 
 在PostgreSQL中有三种代价：**启动（start-up）** ， **运行（run）**和**总和（total）**。**总代价**是**启动代价**和**运行代价**的和；因此只有启动代价和运行代价是单独估计的。
 
@@ -307,7 +304,7 @@ Indexes:
 
 ### 3.2.1 顺序扫描
 
-顺序扫描的代价是通过函数`cost_seqscan()`估计的。本节将研究顺序扫描代价是如何估计的，以下列查询为例。
+顺序扫描的代价是通过函数`cost_seqscan()`估计的。本节将研究顺序扫描代价是如何估计的，以下面的查询为例：
 
 ```sql
 testdb=# SELECT * FROM tbl WHERE id < 8000;
@@ -378,15 +375,13 @@ testdb=# EXPLAIN SELECT * FROM tbl WHERE id < 8000;
 
 尽管PostgreSQL支持很多[索引方法](https://www.postgresql.org/docs/current/static/indexes-types.html)，比如B树，[GiST](https://www.postgresql.org/docs/current/static/gist.html)，[GIN](https://www.postgresql.org/docs/current/static/gin.html)和[BRIN](https://www.postgresql.org/docs/current/static/brin.html)，不过索引扫描的代价估计都使用一个共用的代价函数：`cost_index()`。
 
-在这一节中，我们基于下面的查询，探究索引扫描的代价估计：
-
 本节将研究索引扫描的代价是如何估计的，以下列查询为例。
 
 ```sql
 testdb=# SELECT id, data FROM tbl WHERE data < 240;
 ```
 
-在估计该代价之前，下面的查询能获取$N_{\verb|index|,\verb|page|}$和$N_{\verb|index|,\verb|tuple|}$的值：
+在估计该查询的代价之前，下面的查询能获取$N_{\verb|index|,\verb|page|}$和$N_{\verb|index|,\verb|tuple|}$的值：
 
 ```sql
 testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl_data_idx';
@@ -417,9 +412,9 @@ $$
 		 + (H_{\verb|index|} + 1) × 50\} × \verb|cpu_operator_cost|
 \end{equation}
 $$
-其中$H_{index}$是索引树的高度。
+其中$H_{\verb|index|}$是索引树的高度。
 
-在本例中，套用公式(3)，$N_{index,tuple}$是10000；$H_{index}$是1；$\verb|cpu_operator_cost|$是0.0025（默认值）。因此
+在本例中，套用公式(3)，$N_{\verb|index,tuple|}$是10000；$H_{\verb|index|}$是1；$\verb|cpu_operator_cost|$是0.0025（默认值）。因此
 $$
 \begin{equation}\tag{5}
  \verb|start-up_cost| = \{\mathrm{ceil}(\log_2(10000)) + (1 + 1) × 50\} × 0.0025 = 0.285
@@ -549,7 +544,7 @@ $$
 
 $$
 \begin{equation}\tag{9}
-\verb|index_io_cost| = ceil(0.024 × 30) × 4.0 = 4.0
+\verb|index_io_cost| = \mathrm{ceil}(0.024 × 30) × 4.0 = 4.0
 \end{equation}
 $$
 
@@ -785,13 +780,12 @@ PostgreSQL中的计划器会执行三个处理步骤：
 2. 在所有可能的访问路径中，找出代价最小的访问路径
 3. 按照代价最小的路径，创建计划树
 
-**访问路径（access path）**是估算代价时的处理单元；比如，顺序扫描，索引扫描，排序以及各种连接操作都有其对应的**路径**。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是[relation.h](https://github.com/postgres/postgres/blob/master/src/include/nodes/relation.h)中定义的*Path*结构体。它就相当于是顺序扫描。所有其他的访问路径都基于该结构，下面会介绍细节。
+**访问路径（access path）**是估算代价时的处理单元；比如，顺序扫描，索引扫描，排序以及各种连接操作都有其对应的**路径**。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是[`relation.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/relation.h)中定义的`Path`结构体。它就相当于是顺序扫描。所有其他的访问路径都基于该结构，下面会介绍细节。
 
 计划器为了处理上述步骤，会在内部创建一个`PlannerInfo`数据结构。在该数据结构中包含着查询树，查询所涉及关系信息，访问路径等等。
 
 ```c
-typedef struct PathKey
-{
+typedef struct PathKey {
     NodeTag type;
     EquivalenceClass *pk_eclass; /* 值是否有序 */
     Oid pk_opfamily;             /* 用于定义顺序的B树操作符族 */
@@ -799,8 +793,7 @@ typedef struct PathKey
     bool pk_nulls_first;         /* NULL是否排序在常规值之前？ */
 } PathKey;
 
-typedef struct Path
-{
+typedef struct Path {
     NodeTag type;
     NodeTag pathtype;          /* 标识 scan/join 方法的标签 */
     RelOptInfo *parent;        /* 路径所基于的关系 */
@@ -818,87 +811,61 @@ typedef struct Path
     /* pathkeys 是PathKey节点的列表，PathKey定义见上面 */
 } Path;
 
-typedef struct PlannerInfo
-{
+typedef struct PlannerInfo {
     NodeTag type;
     Query *parse;                    /* 被计划的查询 */
     PlannerGlobal *glob;             /* 当前计划器运行时的全局信息 */
     Index query_level;               /* 最外层查询为1 */
     struct PlannerInfo *parent_root; /* 最外层查询为NULL */
 
-    /*
-	 * plan_params contains the expressions that this query level needs to
-	 * make available to a lower query level that is currently being planned.
-	 * outer_params contains the paramIds of PARAM_EXEC Params that outer
-	 * query levels will make available to this query level.
-	 */
+    /* plan_params包含着当前计划中的查询层次需要对低层查询暴露的表达式。
+     * outer_params包含着PARAM_EXEC参数中的paramId列表，这些参数是外
+     * 部查询层次对当前查询层次所暴露的。*/
     List *plan_params; /* PlannerParamItems的列表, 见下 */
     Bitmapset *outer_params;
 
-    /*
-	 * simple_rel_array holds pointers to "base rels" and "other rels" (see
-	 * comments for RelOptInfo for more info).  It is indexed by rangetable
-	 * index (so entry 0 is always wasted).  Entries can be NULL when an RTE
-	 * does not correspond to a base relation, such as a join RTE or an
-	 * unreferenced view RTE; or if the RelOptInfo hasn't been made yet.
-	 */
-    struct RelOptInfo **simple_rel_array; /* All 1-rel RelOptInfos */
-    int simple_rel_array_size;            /* allocated size of array */
+    /* simple_rel_array 持有着指向“基础关系”与“其他关系”的指针 (详情参考
+     * RelOptInfo的注释)。它由rangetable index所索引（因此第0项总是废值）。
+     * 当RTE并不与基础关系相对应，譬如连接的RTE，或未引用的视图RTE，或该
+     * RelOptInfo还没有产生时，里面的项目可能为NULL。*/
+    struct RelOptInfo **simple_rel_array; /* 所有单个关系的RelOptInfos */
+    int simple_rel_array_size;            /* 数组分配的大小 */
 
-    /*
-	 * simple_rte_array is the same length as simple_rel_array and holds
-	 * pointers to the associated rangetable entries.  This lets us avoid
-	 * rt_fetch(), which can be a bit slow once large inheritance sets have
-	 * been expanded.
-	 */
-    RangeTblEntry **simple_rte_array; /* rangetable as an array */
+    /* simple_rte_array 与simple_rel_array 长度相同，且持有指向关联范围表项的指针。
+     * 这使得我们能避免执行rt_fetch(), 当需要展开很大的继承集时会很慢。 */
+    RangeTblEntry **simple_rte_array; /* rangetable的数组 */
 
-    /*
-	 * all_baserels is a Relids set of all base relids (but not "other"
-	 * relids) in the query; that is, the Relids identifier of the final join
-	 * we need to form.  This is computed in make_one_rel, just before we
-	 * start making Paths.
-	 */
+    /* all_baserels是所有查询所涉及基本关系的关系ID列表（但不含“其他关系”的ID）
+     * 也就是说，最终连接时，所需构建的关系标识符。该字段是由make_one_rel计算的。
+     * 计算发生于计算Paths之前。*/
     Relids all_baserels;
 
-    /*
-	 * nullable_baserels is a Relids set of base relids that are nullable by
-	 * some outer join in the jointree; these are rels that are potentially
-	 * nullable below the WHERE clause, SELECT targetlist, etc.  This is
-	 * computed in deconstruct_jointree.
-	 */
+    /* nullable_baserels 是在进行外连接的jointree中那些可空的基础关系的ID集合。
+     * 这些关系可能在WHERE子句，SELECT目标列表或其他地方产生空值。该字段由函数
+     * deconstruct_jointree负责计算。*/
     Relids nullable_baserels;
 
-    /*
-	 * join_rel_list is a list of all join-relation RelOptInfos we have
-	 * considered in this planning run.  For small problems we just scan the
-	 * list to do lookups, but when there are many join relations we build a
-	 * hash table for faster lookups.  The hash table is present and valid
-	 * when join_rel_hash is not NULL.  Note that we still maintain the list
-	 * even when using the hash table for lookups; this simplifies life for
-	 * GEQO.
-	 */
-    List *join_rel_list;        /* list of join-relation RelOptInfos */
-    struct HTAB *join_rel_hash; /* optional hashtable for join relations */
+    /* join_rel_list是一个列表，在计划过程中连接关系的RelOptInfos都放在这里。
+     * 对于比较小的问题，我们只是简单的扫过这个列表来完成查找。但当连接很多关系时，
+     * 我们会使用散列表来加速查询。散列表当且仅当join_rel_hash不为空时存在且
+     * 有效。注意即使用散列表查找时，我们依然会维护列表，这会简化GEQO的相关问题。*/
+    List *join_rel_list;        /* 连接关系的RelOptInfos */
+    struct HTAB *join_rel_hash; /* 连接关系的散列表，可选 */
 
-    /*
-	 * When doing a dynamic-programming-style join search, join_rel_level[k]
-	 * is a list of all join-relation RelOptInfos of level k, and
-	 * join_cur_level is the current level.  New join-relation RelOptInfos are
-	 * automatically added to the join_rel_level[join_cur_level] list.
-	 * join_rel_level is NULL if not in use.
-	 */
-    List **join_rel_level;    /* lists of join-relation RelOptInfos */
-    int join_cur_level;       /* index of list being extended */
-    List *init_plans;         /* init SubPlans for query */
+    /* 当使用动态规划进行连接搜索时，join_rel_level[k]是第k层的连接关系RelOptInfos列表。
+     * 新的连接关系RelOptInfos会自动添加到join_rel_level[join_cur_level]中，
+     * 而join_cur_level为当前层级。如果没用到动态规划，join_rel_level则为空。*/
+    List **join_rel_level;    /* 连接关系RelOptInfo的列表 */
+    int join_cur_level;       /* 待追加列表的序号 */
+    List *init_plans;         /* 查询的初始SubPlans */
     List *cte_plan_ids;       /* per-CTE-item list of subplan IDs */
     List *multiexpr_params;   /* List of Lists of Params for MULTIEXPR subquery outputs */
     List *eq_classes;         /* list of active EquivalenceClasses */
     List *canon_pathkeys;     /* list of "canonical" PathKeys */
     List *left_join_clauses;  /* list of RestrictInfos for
-					 * mergejoinable outer join clauses w/nonnullable var on left */
+                     * mergejoinable outer join clauses w/nonnullable var on left */
     List *right_join_clauses; /* list of RestrictInfos for
-					 * mergejoinable outer join clauses w/nonnullable var on right */
+                     * mergejoinable outer join clauses w/nonnullable var on right */
     List *full_join_clauses;  /* list of RestrictInfos for mergejoinable full join clauses */
     List *join_info_list;     /* list of SpecialJoinInfos */
     List *append_rel_list;    /* list of AppendRelInfos */
@@ -919,35 +886,35 @@ typedef struct PlannerInfo
     struct PathTarget *upper_targets[UPPERREL_FINAL + 1];
 
     /*
-	 * grouping_planner passes back its final processed targetlist here, for
-	 * use in relabeling the topmost tlist of the finished Plan.
-	 */
+     * grouping_planner passes back its final processed targetlist here, for
+     * use in relabeling the topmost tlist of the finished Plan.
+     */
     List *processed_tlist;
 
-    /* Fields filled during create_plan() for use in setrefs.c */
-    AttrNumber *grouping_map;    /* for GroupingFunc fixup */
-    List *minmax_aggs;           /* List of MinMaxAggInfos */
-    MemoryContext planner_cxt;   /* context holding PlannerInfo */
-    double total_table_pages;    /* # of pages in all tables of query */
-    double tuple_fraction;       /* tuple_fraction passed to query_planner */
-    double limit_tuples;         /* limit_tuples passed to query_planner */
-    bool hasInheritedTarget;     /* true if parse->resultRelation is an inheritance child rel */
-    bool hasJoinRTEs;            /* true if any RTEs are RTE_JOIN kind */
-    bool hasLateralRTEs;         /* true if any RTEs are marked LATERAL */
-    bool hasDeletedRTEs;         /* true if any RTE was deleted from jointree */
-    bool hasHavingQual;          /* true if havingQual was non-null */
-    bool hasPseudoConstantQuals; /* true if any RestrictInfo has pseudoconstant = true */
-    bool hasRecursion;           /* true if planning a recursive WITH item */
+    /* create_plan()期间填充的字段，定义于setrefs.c */
+    AttrNumber *grouping_map;    /* 针对GroupingFunc的修补 */
+    List *minmax_aggs;           /* MinMaxAggInfos列表 */
+    MemoryContext planner_cxt;   /* 持有PlannerInfo的上下文 */
+    double total_table_pages;    /* 查询涉及到所有表的页面总数 */
+    double tuple_fraction;       /* 传递给查询计划器的tuple_fraction */
+    double limit_tuples;         /* 传递给查询计划器的limit_tuples */
+    bool hasInheritedTarget;     /* 若parse->resultRelation为继承的子关系则为真 */
+    bool hasJoinRTEs;            /* 如果任意RTEs为RTE_JOIN类别则为真 */
+    bool hasLateralRTEs;         /* 如果任意RTEs被标记为LATERAL则为真 */
+    bool hasDeletedRTEs;         /* 如果任意RTEs从连接树中被删除则为真 */
+    bool hasHavingQual;          /* 如果havingQual非空则为真 */
+    bool hasPseudoConstantQuals; /* 如果任意RestrictInfo包含pseudoconstant = true则为真 */
+    bool hasRecursion;           /* 如果计划中包含递归WITH项则为真 */
 
-    /* These fields are used only when hasRecursion is true: */
-    int wt_param_id;                 /* PARAM_EXEC ID for the work table */
-    struct Path *non_recursive_path; /* a path for non-recursive term */
+    /* 当hasRecursion为真时，会使用以下字段： */
+    int wt_param_id;                 /* 工作表上PARAM_EXEC的ID */
+    struct Path *non_recursive_path; /* 非递归项的路径 */
 
-    /* These fields are workspace for createplan.c */
-    Relids curOuterRels;  /* outer rels above current node */
-    List *curOuterParams; /* not-yet-assigned NestLoopParams */
+    /* 这些字段是createplan.c的工作变量 */
+    Relids curOuterRels;  /* 当前节点外部的关系 */
+    List *curOuterParams; /* 尚未赋值的NestLoopParams */
 
-    /* optional private data for join_search_hook, e.g., GEQO */
+    /* 可选的join_search_hook私有数据, 例如, GEQO */
     void *join_search_private;
 } PlannerInfo;
 ```
@@ -1373,16 +1340,12 @@ typedef struct Plan
 	struct Plan *lefttree;		/* 输入的查询树 */
 	struct Plan *righttree;
 	List	   	*initPlan;	/* Init Plan 节点 (无关子查询表达式) */
-	/*
-	 * Information for management of parameter-change-driven rescanning
-	 *
-	 * extParam includes the paramIDs of all external PARAM_EXEC params
-	 * affecting this plan node or its children.  setParam params from the
-	 * node's initPlans are not included, but their extParams are.
-	 *
-	 * allParam includes all the extParam paramIDs, plus the IDs of local
-	 * params that affect the node (i.e., the setParams of its initplans).
-	 * These are _all_ the PARAM_EXEC params that affect this node.
+	/* “参数变化驱动”的重扫描 相关的管理信息
+	 * extParam包含着所有外部PARAM_EXEC参数的参数ID列表，这些参数会影响当前计划节点
+     * 及其子节点。这里不包括该节点initPlans时setParam的相关参数，但会包括其extParams
+     * 
+     * allParam包含了所有extParam的参数ID列表，以及影响当前节点的参数ID。（即，
+     * 在initPlans中setParams的参数）。注意这里包含了*所有*会影响本节点的PARAM_EXEC参数
 	 */
 	Bitmapset	*extParam;
 	Bitmapset  	*allParam;
@@ -1440,59 +1403,23 @@ typedef struct Sort
 在本例中，`WHERE`子句`id < 240`是一个访问谓词，它储存在`IndexScanNode`的`indexqual`字段中。
 
 ```c
-/* ----------------
- *		索引扫描节点
- *
- * indexqualorig is an implicitly-ANDed list of index qual expressions, each
- * in the same form it appeared in the query WHERE condition.  Each should
- * be of the form (indexkey OP comparisonval) or (comparisonval OP indexkey).
- * The indexkey is a Var or expression referencing column(s) of the index's
- * base table.  The comparisonval might be any expression, but it won't use
- * any columns of the base table.  The expressions are ordered by index
- * column position (but items referencing the same index column can appear
- * in any order).  indexqualorig is used at runtime only if we have to recheck
- * a lossy indexqual.
- *
- * indexqual has the same form, but the expressions have been commuted if
- * necessary to put the indexkeys on the left, and the indexkeys are replaced
- * by Var nodes identifying the index columns (their varno is INDEX_VAR and
- * their varattno is the index column number).
- *
- * indexorderbyorig is similarly the original form of any ORDER BY expressions
- * that are being implemented by the index, while indexorderby is modified to
- * have index column Vars on the left-hand side.  Here, multiple expressions
- * must appear in exactly the ORDER BY order, and this is not necessarily the
- * index column order.  Only the expressions are provided, not the auxiliary
- * sort-order information from the ORDER BY SortGroupClauses; it's assumed
- * that the sort ordering is fully determinable from the top-level operators.
- * indexorderbyorig is used at runtime to recheck the ordering, if the index
- * cannot calculate an accurate ordering.  It is also needed for EXPLAIN.
- *
- * indexorderbyops is a list of the OIDs of the operators used to sort the
- * ORDER BY expressions.  This is used together with indexorderbyorig to
- * recheck ordering at run time.  (Note that indexorderby, indexorderbyorig,
- * and indexorderbyops are used for amcanorderbyop cases, not amcanorder.)
- *
- * indexorderdir specifies the scan ordering, for indexscans on amcanorder
- * indexes (for other indexes it should be "don't care").
- * ----------------
- */
+/* 索引扫描节点 */
 typedef struct Scan
 {
-        Plan        plan;
-        Index       scanrelid;          /* relid is index into the range table */
+    Plan          plan;
+    Index         scanrelid;         /* relid 是范围表上的索引ID */
 } Scan;
 
 typedef struct IndexScan
 {
-	Scan	   scan;
-	Oid	   indexid;		/* OID of index to scan */
-	List	   *indexqual;		/* list of index quals (usually OpExprs) */
-	List	   *indexqualorig;	/* the same in original form */
-	List	   *indexorderby;	/* list of index ORDER BY exprs */
-	List	   *indexorderbyorig;	/* the same in original form */
-	List	   *indexorderbyops;	/* OIDs of sort ops for ORDER BY exprs */
-	ScanDirection indexorderdir;	/* forward or backward or don't care */
+    Scan          scan;
+    Oid           indexid;            /* 待扫描的索引OID */
+    List          *indexqual;         /* 索引限定条件的列表 (通常是OpExprs) */
+    List          *indexqualorig;     /* 同上，但使用原始形式 */
+    List          *indexorderby;      /* 索引的ORDER BY表达式 */
+    List          *indexorderbyorig;  /* 同上，但使用原始形式 */
+    List          *indexorderbyops;   /* ORDER BY表达式用到的排序运算符的OID */
+    ScanDirection indexorderdir;      /* 正序扫描还是逆序扫描，或者根本不在乎 */
 } IndexScan;
 ```
 
@@ -2170,11 +2097,11 @@ typedef struct MergePath
 
 ```c
 /* ----------------
- *		连接节点
+ *        连接节点
  *
- * jointype:	连接左右子树元组的规则
- * joinqual:	来自 JOIN/ON 或 JOIN/USING 的连接限定条件
- *				(plan.qual 包含了来自WHERE子句的条件)
+ * jointype:    连接左右子树元组的规则
+ * joinqual:    来自 JOIN/ON 或 JOIN/USING 的连接限定条件
+ *                (plan.qual 包含了来自WHERE子句的条件)
  *
  * 当jointype为INNER时，joinqual 与 plan.qual 在语义上可以互换。对于OUTER而言这两者
  * 则无法互换；只有joinqual会被用于匹配判定，以及是否需要生成空值扩展的元组。
@@ -2184,66 +2111,60 @@ typedef struct MergePath
  */
 typedef struct Join
 {
-	Plan		plan;
-	JoinType	jointype;
-	List	   	*joinqual;	/* JOIN 条件 (除 plan.qual 外) */
+    Plan        plan;
+    JoinType    jointype;
+    List        *joinqual;    /* 连接条件 (除 plan.qual 外) */
 } Join;
 
 /* ----------------
- *		嵌套循环连接节点
+ *        嵌套循环连接节点
  * 
- * The nestParams list identifies any executor Params that must be passed
- * into execution of the inner subplan carrying values from the current row
- * of the outer subplan.  Currently we restrict these values to be simple
- * Vars, but perhaps someday that'd be worth relaxing.  (Note: during plan
- * creation, the paramval can actually be a PlaceHolderVar expression; but it
- * must be a Var with varno OUTER_VAR by the time it gets to the executor.)
- * ----------------
- */
+ * nestParams的列表标识出了执行器所需的参数，这些参数从外表子计划中的当前行获取，
+ * 并传入内表子计划中用于执行。当前我们限制这些值为简单的Vars，但也许某一天这一限制
+ * 会放松。（注意在创建执行计划期间，paramval实际上可能是一个PlaceHolderVar表达式；
+ * 但当其进入执行器时，它必须转换为varno为OUTER_VAR的Var。）
+ * ----------------*/
 typedef struct NestLoop
 {
-	Join	   join;
-	List	   *nestParams;		/* NestLoopParam 节点的列表*/
+    Join       join;
+    List       *nestParams;   /* NestLoopParam 节点的列表*/
 } NestLoop;
 
 typedef struct NestLoopParam
 {
-	NodeTag	   type;
-	int	   	paramno;		/* 需要配置的PARAM_EXEC参数数量 */
-	Var	   *paramval;		/* 需要赋值给Param的外表变量 */
+    NodeTag   type;
+    int       paramno;        /* 需要配置的PARAM_EXEC参数数量 */
+    Var       *paramval;      /* 需要赋值给Param的外表变量 */
 } NestLoopParam;
 
 /* ----------------
- *		归并连接节点
- *
- * The expected ordering of each mergeable column is described by a btree
- * opfamily OID, a collation OID, a direction (BTLessStrategyNumber or
- * BTGreaterStrategyNumber) and a nulls-first flag.  Note that the two sides
- * of each mergeclause may be of different datatypes, but they are ordered the
- * same way according to the common opfamily and collation.  The operator in
- * each mergeclause must be an equality operator of the indicated opfamily.
- * ----------------
- */
+ *        归并连接节点
+ * 
+ * 待归并列上期待的顺序是通过一个btree运算符族的OID，一个排序规则的OID，一个方向字段
+ * （BTLessStrategyNumber 或 * BTGreaterStrategyNumber)，以及一个 NULL FIRST
+ * 标记位描述的。注意归并语句的两侧可能是不同的数据类型，但它们会按照共同的运算符族与排序
+ * 规则，以同样的方式排序。每个归并子句中的算子必须为相应运算符族中的等值运算。
+ * ---------------- */
 typedef struct MergeJoin
 {
-	Join	 join;
-	List	 *mergeclauses;		/* mergeclauses 是一颗表达式树 */
-	/* 这些字段都是数组，但与mergeclauses列表有着同样的长度： */
-	Oid	 *mergeFamilies;	/* per-clause OIDs of btree opfamilies */
-	Oid	 *mergeCollations;	/* per-clause OIDs of collations */
-	int	 *mergeStrategies;	/* per-clause ordering (ASC or DESC) */
-	bool	 *mergeNullsFirst;	/* per-clause nulls ordering */
+    Join    join;
+    List    *mergeclauses;        /* mergeclauses 是一颗表达式树 */
+    /* 这些字段都是数组，但与mergeclauses列表有着同样的长度： */
+    Oid     *mergeFamilies;      /* B树运算符族的OID列表，每条子句一个 */
+    Oid     *mergeCollations;    /* 排序规则的OID列表，每条子句一个 */
+    int     *mergeStrategies;    /* 顺序(ASC 或 DESC)的列表，每条子句一个 */
+    bool    *mergeNullsFirst;    /* 空值顺序，每条子句一个  */
 } MergeJoin;
 
 
 /* ----------------
- *		散列连接节点
+ *        散列连接节点
  * ----------------
  */
 typedef struct HashJoin
 {
-	Join	join;
-	List	*hashclauses;
+    Join    join;
+    List    *hashclauses;
 } HashJoin;
 ```
 
