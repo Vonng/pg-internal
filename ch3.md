@@ -165,7 +165,8 @@ typedef struct Query
 	Node	   	*limitOffset;		/* Offset跳过元组数目 (int8 表达式) */
 	Node	   	*limitCount;		/* Limit返回元组数目 (int8 表达式) */
 	List	   	*rowMarks;          /* RowMarkClause列表 */
-	Node	   	*setOperations;		/* 如果是UNION/INTERSECT/EXCEPT的顶层查询，则为集合操作 列表 */
+	Node	   	*setOperations;		/* 如果是UNION/INTERSECT/EXCEPT的顶层查询，
+	                                   则为集合操作列表 */
 	List	   	*constraintDeps; 	/* 确认查询语义是否合法时，所依赖约束对象的OID列表 */
 } Query;
 ```
@@ -447,12 +448,12 @@ $$
 
 > #### 选择率（Selectivity）
 >
-> 查询谓词的选择率是通过**直方图界值（histogram_bounds）**和**众数（Most Common Value, MCV）**估计的，这些信息都存储在`pg_stats` 中。这里通过一个特定的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
+> 查询谓词的选择率是通过**直方图界值（histogram_bounds）**与**高频值（Most Common Value, MCV）**估计的，这些信息都存储在系统目录`pg_statistics`中，并可通过`pg_stats`视图查询。这里通过一个具体的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
 >
-> 表中每一列的MCV都在`pg_stats`视图的`most_common_vals`和`most_common_freqs`中成对存储。
+> 表中每一列的高频值都在`pg_stats`视图的`most_common_vals`和`most_common_freqs`中成对存储。
 >
-> + **众数（most_common_vals）**：该列上的众数列表
-> + **众数频率（most_common_freqs）**：MCV相应的频率列表
+> + **高频值（most_common_vals）**：该列上最常出现的取值列表
+> + **高频值频率（most_common_freqs）**：高频值相应出现频率的列表
 >
 > 下面是一个简单的例子。表`countries`有两列：一列`country`存储国家名，一列`continent`存储该国所属大洲。
 >
@@ -486,7 +487,7 @@ $$
 > testdb=# SELECT * FROM countries WHERE continent = 'Asia';
 > ```
 >
-> 这时候，计划器使用`continent`列上的MCV来估计索引扫描的代价，列上的`most_common_vals`与 `most_common_freqs`如下所示：
+> 这时候，计划器使用`continent`列上的高频值来估计索引扫描的代价，列上的`most_common_vals`与 `most_common_freqs`如下所示：
 >
 > ```sql
 > testdb=# \x
@@ -500,7 +501,7 @@ $$
 >
 > 与`most_common_vals`中`Asia`值对应的`most_common_freqs`为0.227979。因此0.227979会在估算中被用作选择率。
 >
-> 如果MCV不可用，就会使用目标列上的直方图界值来估计代价。
+> 如果高频值不可用，就会使用目标列上的直方图界值来估计代价。
 >
 > + **直方图值（histogram_bounds）**是一系列值，这些值将列上的取值划分为数量大致相同的若干个组。
 >
@@ -858,37 +859,32 @@ typedef struct PlannerInfo {
     List **join_rel_level;    /* 连接关系RelOptInfo的列表 */
     int join_cur_level;       /* 待追加列表的序号 */
     List *init_plans;         /* 查询的初始SubPlans */
-    List *cte_plan_ids;       /* per-CTE-item list of subplan IDs */
-    List *multiexpr_params;   /* List of Lists of Params for MULTIEXPR subquery outputs */
-    List *eq_classes;         /* list of active EquivalenceClasses */
-    List *canon_pathkeys;     /* list of "canonical" PathKeys */
-    List *left_join_clauses;  /* list of RestrictInfos for
-                     * mergejoinable outer join clauses w/nonnullable var on left */
-    List *right_join_clauses; /* list of RestrictInfos for
-                     * mergejoinable outer join clauses w/nonnullable var on right */
-    List *full_join_clauses;  /* list of RestrictInfos for mergejoinable full join clauses */
-    List *join_info_list;     /* list of SpecialJoinInfos */
-    List *append_rel_list;    /* list of AppendRelInfos */
-    List *rowMarks;           /* list of PlanRowMarks */
-    List *placeholder_list;   /* list of PlaceHolderInfos */
-    List *fkey_list;          /* list of ForeignKeyOptInfos */
-    List *query_pathkeys;     /* desired pathkeys for query_planner() */
-    List *group_pathkeys;     /* groupClause pathkeys, if any */
-    List *window_pathkeys;    /* pathkeys of bottom window, if any */
-    List *distinct_pathkeys;  /* distinctClause pathkeys, if any */
-    List *sort_pathkeys;      /* sortClause pathkeys, if any */
-    List *initial_rels;       /* RelOptInfos we are now trying to join */
+    List *cte_plan_ids;       /* 子计划的ID列表，每个CTE对应一个 */
+    List *multiexpr_params;   /* MULTIEXPR子查询输出用到的双层嵌套参数列表 */
+    List *eq_classes;         /* 活跃的EquivalenceClasses列表 */
+    List *canon_pathkeys;     /* "标准" PathKeys 的列表 */
+    List *left_join_clauses;  /* RestrictInfos列表，用于左连接子句 */
+    List *right_join_clauses; /* RestrictInfos列表，用于右连接子句 */
+    List *full_join_clauses;  /* RestrictInfos列表，用于完全连接子句 */
+    List *join_info_list;     /* SpecialJoinInfos 的列表 */
+    List *append_rel_list;    /* AppendRelInfos 的列表 */
+    List *rowMarks;           /* PlanRowMarks 的列表 */
+    List *placeholder_list;   /* PlaceHolderInfos 的列表 */
+    List *fkey_list;          /* ForeignKeyOptInfos 的列表 */
+    List *query_pathkeys;     /* query_planner()期望的pathkeys */
+    List *group_pathkeys;     /* groupClause的pathkeys, 如果有的话 */
+    List *window_pathkeys;    /* 底部窗口的pathkeys, 如果有的话 */
+    List *distinct_pathkeys;  /* distinctClause的pathkeys, 如果有的话 */
+    List *sort_pathkeys;      /* sortClause的pathkeys, 如果有的话 */
+    List *initial_rels;       /* 我们现在正在尝试连接的RelOptInfos */
 
-    /* Use fetch_upper_rel() to get any particular upper rel */
+    /* 使用fetch_upper_rel()来获取任意特定的上层关系 */
     List *upper_rels[UPPERREL_FINAL + 1]; /* upper-rel RelOptInfos */
 
-    /* Result tlists chosen by grouping_planner for upper-stage processing */
+    /* grouping_planner针对上层处理过程选择的目标列表 */
     struct PathTarget *upper_targets[UPPERREL_FINAL + 1];
 
-    /*
-     * grouping_planner passes back its final processed targetlist here, for
-     * use in relabeling the topmost tlist of the finished Plan.
-     */
+    /* grouping_planner会将最终处理过后的targetlist回传至此。在最终计划最顶层的目标列表中会用到 */
     List *processed_tlist;
 
     /* create_plan()期间填充的字段，定义于setrefs.c */
@@ -903,7 +899,8 @@ typedef struct PlannerInfo {
     bool hasLateralRTEs;         /* 如果任意RTEs被标记为LATERAL则为真 */
     bool hasDeletedRTEs;         /* 如果任意RTEs从连接树中被删除则为真 */
     bool hasHavingQual;          /* 如果havingQual非空则为真 */
-    bool hasPseudoConstantQuals; /* 如果任意RestrictInfo包含pseudoconstant = true则为真 */
+    bool hasPseudoConstantQuals; /* 如果任意RestrictInfo包含
+    								pseudoconstant = true则为真 */
     bool hasRecursion;           /* 如果计划中包含递归WITH项则为真 */
 
     /* 当hasRecursion为真时，会使用以下字段： */
@@ -969,63 +966,62 @@ typedef struct PlannerInfo {
    	RelOptKind	reloptkind;
    
    	/* 本RelOptInfo包含的所有关系 */
-   	Relids		relids;			/* set of base relids (rangetable indexes) */
+   	Relids		relids;			/* 基本关系的ID集合 (范围表索引) */
    
-   	/* size estimates generated by planner */
-   	double		rows;			/* estimated number of result tuples */
+   	/* 由计划器生成的预估尺寸 */
+   	double		rows;			/* 预估结果元组数目 */
    
-   	/* per-relation planner control flags */
-   	bool		consider_startup;	/* keep cheap-startup-cost paths? */
-   	bool		consider_param_startup; /* ditto, for parameterized paths? */
-   	bool		consider_parallel;	/* consider parallel paths? */
+   	/* 计划器标记位，每个关系一份 */
+   	bool		consider_startup;	    /* 保留启动代价最低的路径？ */
+   	bool		consider_param_startup; /* 同上, 针对参数化路径？ */
+   	bool		consider_parallel;	    /* 考虑并行路径？ */
    
-   	/* default result targetlist for Paths scanning this relation */
-   	struct PathTarget *reltarget;		/* list of Vars/Exprs, cost, width */
+   	/* 扫描当前关系的默认结果目标列表 */
+   	struct PathTarget *reltarget;		/* Vars/Exprs, 代价, 宽度的列表 */
    
-   	/* materialization information */
-   	List	   *pathlist;			/* Path structures */
-   	List	   *ppilist;			/* ParamPathInfos used in pathlist */
-   	List	   *partial_pathlist;		/* partial Paths */
+   	/* 物化相关信息 */
+   	List	   *pathlist;			    /* Path 结构体列表 */
+   	List	   *ppilist;			    /* pathlist中使用的ParamPathInfos */
+   	List	   *partial_pathlist;		/* 部分路径 */
    	struct Path *cheapest_startup_path;
    	struct Path *cheapest_total_path;
    	struct Path *cheapest_unique_path;
-   	List	   *cheapest_parameterized_paths;
+   	List	    *cheapest_parameterized_paths;
    
-   	/* parameterization information needed for both base rels and join rels */
-   	/* (see also lateral_vars and lateral_referencers) */
-   	Relids		direct_lateral_relids;	/* rels directly laterally referenced */
-   	Relids		lateral_relids; 	/* minimum parameterization of rel */
+   	/* 基础关系与连接关系都需要的 参数化信息 */
+   	/* (参见 lateral_vars 与 lateral_referencers) */
+   	Relids		direct_lateral_relids;	/* 直接以LATERAL方式引用的关系 */
+   	Relids		lateral_relids; 	    
    
-   	/* information about a base rel (not set for join rels!) */
+   	/* 关于基础关系的信息 (连接关系不会设置这些字段！) */
    	Index		relid;
-   	Oid		reltablespace;		/* containing tablespace */
-   	RTEKind		rtekind;		/* RELATION, SUBQUERY, or FUNCTION */
-   	AttrNumber	min_attr;		/* smallest attrno of rel (often <0) */
-   	AttrNumber	max_attr;		/* largest attrno of rel */
-   	Relids	   	*attr_needed;		/* array indexed [min_attr .. max_attr] */
-   	int32	   	*attr_widths;	   	/* array indexed [min_attr .. max_attr] */
-   	List	   	*lateral_vars;	   	/* LATERAL Vars and PHVs referenced by rel */
-   	Relids		lateral_referencers;	/* rels that reference me laterally */
-   	List	   	*indexlist;		/* list of IndexOptInfo */
-   	BlockNumber 	pages;			/* size estimates derived from pg_class */
+   	Oid		    reltablespace;	    /* 表空间 */
+   	RTEKind		rtekind;		    /* RELATION, SUBQUERY, 或 FUNCTION */
+   	AttrNumber	min_attr;		    /* 关系属性的最小值 (通常<0) */
+   	AttrNumber	max_attr;		    /* 关系属性的最大值 */
+   	Relids	   	*attr_needed;		/* 被索引的数组 [min_attr .. max_attr] */
+   	int32	   	*attr_widths;	   	/* 被索引的数组 [min_attr .. max_attr] */
+   	List	   	*lateral_vars;	   	/* 关系所引用的LATERAL Vars 与 PHVs */
+   	Relids		lateral_referencers;/* 侧面引用本表的关系 */
+   	List	   	*indexlist;		    /* IndexOptInfo列表 */
+   	BlockNumber pages;			    /* 来自pg_class的页面数估计值 */
    	double		tuples;
    	double		allvisfrac;
-   	PlannerInfo 	*subroot;		/* if subquery */
-   	List	   	*subplan_params; 	/* if subquery */
-   	int		rel_parallel_workers;	/* wanted number of parallel workers */
+   	PlannerInfo *subroot;		    /* 如有子查询 */
+   	List	   	*subplan_params; 	/* 如有子查询 */
+   	int		    rel_parallel_workers;	/* 期望的并行工作进程数量 */
    
-   	/* Information about foreign tables and foreign joins */
-   	Oid		serverid;		/* identifies server for the table or join */
-   	Oid		userid;			/* identifies user to check access as */
-   	bool		useridiscurrent;	/* join is only valid for current user */
-   	/* use "struct FdwRoutine" to avoid including fdwapi.h here */
+   	/* 有关外部表与外部表连接的相关信息 */
+   	Oid			serverid;		/* 外部表与外部表连接相应的服务器ID */
+   	Oid			userid;			/* 用于检查访问权限的用户标识 */
+   	bool		useridiscurrent;/* 当前用户是否能合法进行JOIN */
    	struct FdwRoutine *fdwroutine;
    	void	   	*fdw_private;
    
    	/* 被各种扫描与连接所使用 */
    	List	   	*baserestrictinfo;	/* RestrictInfo结构体列表 (如果存在基础关系) */
    	QualCost	baserestrictcost;	/* 求值上述限制条件的代价 */
-   	List	   	*joininfo;		/* RestrictInfo 结构体列表，涉及到本表的连接会用到 */
+   	List	   	*joininfo;		    /* RestrictInfo 结构体列表，涉及到本表的连接会用到 */
    	bool		has_eclass_joins;	/* T 意味着joininfo不完整 */
    } RelOptInfo;
    ```
@@ -1153,82 +1149,75 @@ typedef struct IndexPath
 
 /*
  * IndexOptInfo
- *		Per-index information for planning/optimization
+ *      用于计划/优化的信息，每个索引对应一个。
  *
- *		indexkeys[], indexcollations[], opfamily[], and opcintype[]
- *		each have ncolumns entries.
+ *		indexkeys[], indexcollations[], opfamily[], 以及 opcintype[]
+ *		每个字段都有 ncolumns 个项.
  *
- *		sortopfamily[], reverse_sort[], and nulls_first[] likewise have
- *		ncolumns entries, if the index is ordered; but if it is unordered,
- *		those pointers are NULL.
+ *		sortopfamily[], reverse_sort[], 以及 nulls_first[] 类似，也都有
+ *		ncolumns 个项, 当且仅当该索引是有序的，否则这些指针都为空。
  *
- *		Zeroes in the indexkeys[] array indicate index columns that are
- *		expressions; there is one element in indexprs for each such column.
+ *		indexkeys[] 数组中的零值表示该索引列是一个表达式，而每个这种列在indexprs
+ *      中都会有一个对应的元素。
  *
- *		For an ordered index, reverse_sort[] and nulls_first[] describe the
- *		sort ordering of a forward indexscan; we can also consider a backward
- *		indexscan, which will generate the reverse ordering.
+ *      对于有序索引，reverse_sort[] 以及 nulls_first[] 描述了正向索引扫描时
+ *      索引的排序顺序。当进行反向索引扫描时，就会产生相反的顺序。
  *
- *		The indexprs and indpred expressions have been run through
- *		prepqual.c and eval_const_expressions() for ease of matching to
- *		WHERE clauses. indpred is in implicit-AND form.
+ *		indexprs 与 indpred 会通过prepqual.c 中的 eval_const_expressions() 
+ *      用于简单地与WHERE子句匹配，indpred使用简单的合取范式。
  *
- *		indextlist is a TargetEntry list representing the index columns.
- *		It provides an equivalent base-relation Var for each simple column,
- *		and links to the matching indexprs element for each expression column.
+ *		indextlist 是 TargetEntry的列表，标识着索引建在哪些列上。对于简单的列，
+ *      它会提供基本关系中与之对应的Var，对于表达式列，它还会指向indexprs对应元素。
+ *      相对应的Var。
  *
- *		While most of these fields are filled when the IndexOptInfo is created
- *		(by plancat.c), indrestrictinfo and predOK are set later, in
- *		check_index_predicates().
+ *		当IndexOptInfo创建时，这里大多数字段都会被填充 (plancat.c)，但indrestrictinfo 
+ *      与predOK会在稍后通过check_index_predicates()设置。
  */
 typedef struct IndexOptInfo
 {
 	NodeTag		type;
-	Oid		indexoid;		/* OID of the index relation */
-	Oid		reltablespace;		/* tablespace of index (not table) */
-	RelOptInfo 	*rel;			/* back-link to index's table */
+	Oid		    indexoid;		/* 索引关系的OID */
+	Oid		    reltablespace;	/* 索引所属的表空间 (不是表) */
+	RelOptInfo 	*rel;			/* 索引对应的表，反向链接 */
 
-	/* index-size statistics (from pg_class and elsewhere) */
-	BlockNumber     pages;			/* number of disk pages in index */
-	double		tuples;			/* number of index tuples in index */
-	int		tree_height;		/* index tree height, or -1 if unknown */
+	/* 索引尺寸的统计 (来自pg_class和其他地方) */
+	BlockNumber pages;			/* 索引中的磁盘页面数 */
+	double		tuples;			/* 索引中的元组数量 */
+	int		    tree_height;	/* 索引树的高度，未知则为 -1  */
 
-	/* index descriptor information */
-	int		ncolumns;		/* number of columns in index */
-	int		*indexkeys;		/* column numbers of index's keys, or 0 */
-	Oid		*indexcollations;	/* OIDs of collations of index columns */
-	Oid		*opfamily;		/* OIDs of operator families for columns */
-	Oid		*opcintype;		/* OIDs of opclass declared input data types */
-	Oid		*sortopfamily;		/* OIDs of btree opfamilies, if orderable */
-	bool	   	*reverse_sort;		/* is sort order descending? */
-	bool	   	*nulls_first;		/* do NULLs come first in the sort order? */
-	bool	   	*canreturn;		/* which index cols can be returned in an index-only scan? */
-	Oid		relam;			/* OID of the access method (in pg_am) */
+	/* 索引描述符信息 */
+	int		    ncolumns;		/* 索引中列的数量 */
+	int		    *indexkeys;		/* 索引中列的序号，或者0 */
+	Oid		    *indexcollations;	/* 索引列上排序规则的OID */
+	Oid		    *opfamily;		/* 列上运算符族的OID */
+	Oid		    *opcintype;		/* 运算符族输入数据类型的OID */
+	Oid		    *sortopfamily;	/* 如果这些列有序，B树算子族的OID */
+	bool	   	*reverse_sort;	/* 排序顺序是反向降序的吗？ */
+	bool	   	*nulls_first;	/* 排序顺序中，空值是排在最前面的吗？ */
+	bool	   	*canreturn;		/* 在仅索引扫描中，哪些索引列可以被返回？ */
+	Oid		    relam;			/* 访问方法的OID (在 pg_am 中) */
 
-	List	   	*indexprs;		/* expressions for non-simple index columns */
-	List	   	*indpred;		/* predicate if a partial index, else NIL */
+	List	   	*indexprs;		/* 非平凡的索引列，即表达式 */
+	List	   	*indpred;		/* 如果是部分索引，则为谓词，否则为空 */
 
-	List	   	*indextlist;		/* targetlist representing index columns */
+	List	   	*indextlist;	/* 表示索引列的目标列表 */
 
-	List	   	*indrestrictinfo;	/* parent relation's baserestrictinfo list,
-						 * less any conditions implied by the index's
-						 * predicate (unless it's a target rel, see
-						 * comments in check_index_predicates()) */
+	List	   	*indrestrictinfo;	/* 父关系的baserestrictinfo列表 */
 
-	bool		predOK;			/* true if index predicate matches query */
-	bool		unique;			/* true if a unique index */
-	bool		immediate;		/* is uniqueness enforced immediately? */
-	bool		hypothetical;		/* true if index doesn't really exist */
+	bool		predOK;			    /* 如果查询与索引谓词匹配则为真 */
+	bool		unique;			    /* 唯一索引则为真 */
+	bool		immediate;		    /* 唯一约束是否是立即强制实施的？ */
+	bool		hypothetical;		/* 如果索引并非真实存在则为真。 */
 
-	/* Remaining fields are copied from the index AM's API struct: */
-	bool		amcanorderbyop;     	/* does AM support order by operator result? */
-	bool		amoptionalkey;		/* can query omit key for the first column? */
-	bool		amsearcharray;		/* can AM handle ScalarArrayOpExpr quals? */
-	bool		amsearchnulls;		/* can AM search for NULL/NOT NULL entries? */
-	bool		amhasgettuple;		/* does AM have amgettuple interface? */
-	bool		amhasgetbitmap; 	/* does AM have amgetbitmap interface? */
-	/* Rather than include amapi.h here, we declare amcostestimate like this */
-	void		(*amcostestimate) ();	/* AM's cost estimator */
+	/* 剩下这些字段是从索引访问方法的API结构里复制过来的 */
+	bool		amcanorderbyop;     /* 访问方法是否支持按算子结果排序？ */
+	bool		amoptionalkey;		/* 查询是否可以忽略第一列中的键？ */
+	bool		amsearcharray;		/* 访问方法是否能处理ScalarArrayOpExpr限定条件? */
+	bool		amsearchnulls;		/* 访问方法是否能搜索空项或非空项？ */
+	bool		amhasgettuple;		/* 访问方法是否有amgettuple接口？ */
+	bool		amhasgetbitmap; 	/* 访问方法是否有amgetbitmap接口？ */
+	/* 相比include amapi.h，我们直接在这里用这种方式声明 amcostestimate  */
+	void		(*amcostestimate) ();	/* 访问方法的代价估计器 */
 } IndexOptInfo;
 ```
 
@@ -1293,7 +1282,7 @@ typedef struct PlannedStmt
 	List	   	*resultRelations;   /* RT索引的整数列表, 或NIL */
 	Node	   	*utilityStmt;		/* 如为DECLARE CURSOR则非空 */
 	List	   	*subplans;			/* SubPlan表达式的计划树 expressions */
-	Bitmapset  	*rewindPlanIDs;		/* indices of subplans that require REWIND */
+	Bitmapset  	*rewindPlanIDs;		/* 需要REWIND的子计划的索引序号 */
 	List	   	*rowMarks;			/* PlanRowMark列表 */
 	List	   	*relationOids;		/* 计划所依赖的关系OID列表 */
 	List	   	*invalItems;		/* 其他依赖，诸如PlanInvalItems */
@@ -1535,7 +1524,7 @@ $$
 >
 > PostgreSQL内部提供了临时元组存储的模块，可用于各种操作：物化表，创建混合散列连接的批次，等等。该模块包含一系列函数，都在[`tuplestore.c`](https://github.com/postgres/postgres/blob/master/src/backend/utils/sort/tuplestore.c)中。这些函数用于从工作内存或临时文件读写元组。使用工作内存还是临时文件取决于待存储元组的总数。
 
-下面给出一个具体的例子，让我们来研究一下，执行器是如何处理物化嵌套循环连接的计划树并估计其代价的。
+下面给出一个具体的例子，并研究一下执行器是如何处理物化嵌套循环连接的计划树并估计其代价的。
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
@@ -1555,7 +1544,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 
 第4行：执行器执行嵌套循环连接操作，外表是`tbl_a`，内表是物化的`tbl_b`。
 
-下面来估算“物化”操作（第七行）与“嵌套循环”（第4行）的代价。假设物化的内部表元组都在工作内存中。
+下面来估算“物化”操作（第7行）与“嵌套循环”（第4行）的代价。假设物化的内部表元组都在工作内存中。
 
 **物化（Materialize）**:
 
@@ -1831,7 +1820,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 
 2. 使用外表索引扫描的物化归并连接
 
-   ```
+   ```sql
    testdb=# SET enable_hashjoin TO off;
    SET
    testdb=# SET enable_nestloop TO off;
@@ -1853,7 +1842,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 
 3. 使用外表索引扫描的索引归并连接
 
-   ```
+   ```sql
    testdb=# SET enable_hashjoin TO off;
    SET
    testdb=# SET enable_nestloop TO off;
@@ -1962,7 +1951,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
 在混合散列连接中，构建与探测阶段的执行次数与处理批次的数目相同，因为内外表元组都被存至相同数量的处理批次中。在第一轮构建与探测阶段中，除了处理第一个处理批次，还会创建所有的处理批次。另一方面，第二轮及后续的处理批次都需要读写临时文件，这属于代价巨大的操作。因此PostgreSQL还准备了一个名为**skew**的特殊处理批次，即倾斜批次，以便在第一轮中高效处理尽可能多的元组。
 
-这个特殊的倾斜批次中的内表元组在连接条件内表一侧属性上的取值，会选用外表连接属性上最常见的值（MCV）。因此在第一轮处理中能与外表中尽可能多的元组相连接。这种解释不太好理解，因此下面给出了一个具体的例子。
+这个特殊的倾斜批次中的内表元组在连接条件内表一侧属性上的取值，会选用外表连接属性上的高频值（MCV）。因此在第一轮处理中能与外表中尽可能多的元组相连接。这种解释不太好理解，因此下面给出了一个具体的例子。
 
 假设有两个表：客户表`customers`与购买历史表`purchase_history`。`customers`由两个属性组成：`name`和`address`； `purchase_history`由两个属性组成：`customer_name`和`buying_item`。`customers`有10,000行，而`purchase_history`表有1,000,000行。前10％的客户进行了70％的购买。
 
@@ -1973,7 +1962,7 @@ SELECT * FROM customers AS c, purchase_history AS h
 WHERE c.name = h.customer_name;
 ```
 
-如果`customers`是内表，而`purchase_history`是外表，则PostgreSQL将使用`purchase_history`表的MCV值，将前10％的`customers`元组存储于倾斜批次中。 请注意这里引用的是外表上的MCV值，而插入倾斜批次的是内表元组。 在第一轮的探测阶段，外表（`purchase_history`）中70％的元组将与倾斜批次中存储的元组相连接。 因此，外表分布越是不均匀，第一轮中越是可以处理尽可能多的元组。
+如果`customers`是内表，而`purchase_history`是外表，则PostgreSQL将使用`purchase_history`表的高频值值，将前10％的`customers`元组存储于倾斜批次中。 请注意这里引用的是外表上的高频值，而插入倾斜批次的是内表元组。 在第一轮的探测阶段，外表（`purchase_history`）中70％的元组将与倾斜批次中存储的元组相连接。 因此，外表分布越是不均匀，第一轮中越是可以处理尽可能多的元组。
 
 接下来会介绍带倾斜批次的混合散列连接的工作原理，如图3.26至3.29所示。
 
@@ -2159,8 +2148,7 @@ typedef struct MergeJoin
 
 /* ----------------
  *        散列连接节点
- * ----------------
- */
+ * ---------------- */
 typedef struct HashJoin
 {
     Join    join;

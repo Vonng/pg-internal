@@ -47,9 +47,9 @@ PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于�
 | :--: | :--: | :---: | :--: |
 | ch1  | 精翻 |       | Done |
 | ch2  | 精翻 |       | Done |
-| ch3  | 精翻 | Vonng | 30%  |
-| ch4  | 精翻 |  YM   | Done |
-| ch5  | 精翻 |       | Done |
+| ch3  | 精翻 |       | Done |
+| ch4  | 精翻 |       | Done |
+| ch5  | 精翻 | Vonng | Done |
 | ch6  | 精翻 |       | Done |
 | ch7  | 精翻 |       | Done |
 | ch8  | 精翻 |       | Done |

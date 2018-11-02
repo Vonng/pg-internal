@@ -334,7 +334,7 @@ LOG:  statement: CLOSE c1
 LOG:  statement: COMMIT TRANSACTION
 ```
 
-在接收到行之后，执行器对接收到的tbl_a和tbl_b行进行排序，然后对已排序的行执行合并连接操作。
+在接收到行之后，执行器对接收到的`tbl_a`和`tbl_b`行进行排序，然后对已排序的行执行合并连接操作。
 
 **9.6或更高版本：**
 

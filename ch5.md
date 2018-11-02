@@ -48,7 +48,7 @@
 >
 > (1)：在9.0及更早版本中，此级别被当做`SERIALIZABLE`，因为它不会出现ANSI SQL-92标准中定义的三种异常。 但随着9.1版中SSI的实现，该级别已被改称为`REPEATABLE READ`，并引入了真正的`SERIALIZABLE`级别。
 
-> PostgreSQL对DML（SELECT, UPDATE, INSERT, DELETE等命令）使用SSI，对DDL（CREATE TABLE等命令）使用2PL。
+> PostgreSQL对DML（`SELECT, UPDATE, INSERT, DELETE`等命令）使用SSI，对DDL（`CREATE TABLE`等命令）使用2PL。
 
 
 
@@ -88,7 +88,7 @@ Txid可以相互比较。例如，对于txid=100的事务，大于100的txid是�
 
 表页中的堆元组被分类为普通堆数据元组和TOAST元组。本节仅介绍普通堆数据元组。
 
-堆元组包括三个部分，即HeapTupleHeaderData结构，NULL位图和用户数据（图5.2）。
+堆元组包括三个部分，即`HeapTupleHeaderData`结构，空值位图和用户数据（图5.2）。
 
 **图5.2 元组结构**
 
@@ -139,16 +139,16 @@ typedef struct HeapTupleHeaderData
 typedef HeapTupleHeaderData *HeapTupleHeader;
 ```
 
-虽然HeapTupleHeaderData结构包含七个字段，但后续部分中只需要四个字段。
+虽然`HeapTupleHeaderData`结构包含七个字段，但后续部分中只需要四个字段。
 
-* t_xmin保存插入此元组的事务的txid。
-* t_xmax保存删除或更新此元组的事务的txid。如果尚未删除或更新此元组，则t_xmax设置为0，即无效。
-* t_cid保存命令标识（cid），意思是在当前事务中，从0开始计数，执行此命令之前执行了多少SQL命令。例如，假设我们在单个事务中执行三个INSERT命令`BEGIN;INSERT;INSERT;INSERT;COMMIT;`。如果第一个命令插入此元组，则t_cid设置为0。如果第二个命令插入此命令，则t_cid设置为1，依此类推。
-* t_ctid保存指向自身或新元组的元组标识符（tid）。如第1.3节中的描述，tid用于标识表中的元组。更新此元组时，此元组的t_ctid指向新元组；否则，t_ctid指向自己。
+* `t_xmin`保存插入此元组的事务的`txid`。
+* `t_xmax`保存删除或更新此元组的事务的`txid`。如果尚未删除或更新此元组，则t_xmax设置为0，即无效。
+* `t_cid`保存命令标识（cid），意思是在当前事务中，从0开始计数，执行此命令之前执行了多少SQL命令。例如，假设我们在单个事务中执行三个INSERT命令`BEGIN;INSERT;INSERT;INSERT;COMMIT;`。如果第一个命令插入此元组，则`t_cid`设置为0。如果第二个命令插入此命令，则`t_cid`设置为1，依此类推。
+* `t_ctid`保存指向自身或新元组的元组标识符（`tid`）。如第1.3节中的描述，`tid`用于标识表中的元组。更新此元组时，此元组的`t_ctid`指向新元组；否则，`t_ctid`指向自己。
 
 ## 5.3 元组的增删改
 
-本节介绍如何插入，删除和更新元组。然后，简要描述用于插入和更新元组的自由空间映射表（FSM）。
+本节介绍如何插入，删除和更新元组。然后，简要描述用于插入和更新元组的自由空间映射（FSM）。
 
 这里主要关注元组，页眉和行指针不会在此表示。如图5.3显示了元组的具体表示。
 
@@ -173,9 +173,9 @@ Tuple_1：
 * t_cid设置为0，因为此元组是txid=99的事务插入的第一个元组。
 * t_ctid设置为（0，1），指向自身，因为这是最新的元组。
 
-> #### pageinspect
+> #### `pageinspect`
 >
-> PostgreSQL提供了一个扩展pageinspect，它是一个第三方贡献的模块，用于显示数据库页面的内容。
+> PostgreSQL提供了一个扩展`pageinspect`，它是一个第三方贡献的模块，用于显示数据库页面的内容。
 >
 > ```sql
 > testdb=# CREATE EXTENSION pageinspect;
@@ -194,12 +194,12 @@ Tuple_1：
 
 ### 5.3.2 删除
 
-在删除操作中，只是逻辑上删除了目标元组。将执行DELETE命令的事务的txid的值设置为元组的t_xmax（图5.5）。
+在删除操作中，只是逻辑上删除了目标元组。将执行`DELETE`命令的事务的`txid`的值设置为元组的`t_xmax`（图5.5）。
 
 **图5.5 删除元组**
 
 ![](img/fig-5-05.png)
-假设Tuple_1被txid=111的事务删除。在这种情况下，Tuple_1的头部字段设置如下。
+假设`Tuple_1`被`txid=111`的事务删除。在这种情况下，`Tuple_1`的头部字段设置如下。
 
 Tuple_1：
 
@@ -255,7 +255,7 @@ Tuple_3：
 
 所有FSM都以后缀‘fsm’存储，如有必要，它们将被加载到共享内存中。
 
-> #### pg_freespacemap
+> #### `pg_freespacemap`
 >
 > 扩展`pg_freespacemap`提供指定表、索引的自由空间映射信息。以下查询显示指定表中每个页面的自由空间比率。
 >
@@ -292,7 +292,7 @@ Tuple_3：
 
 `SUB_COMMITTED`用于子事务，本书中省略了与其相关描述。
 
-### 5.4.2 clog如何工作
+### 5.4.2 提交日志如何工作
 
 Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个数组。数组的索引对应于相应的事务id，并且数组中的每个项保存相应事务的状态。图5.7显示了clog及其工作过程。
 
@@ -300,16 +300,16 @@ Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个�
 
 ![](img/fig-5-07.png)
 
-> T1：txid 200次提交; txid 200的状态从IN_PROGRESS变为COMMITTED。
-> T2：txid 201中止; txid 201的状态从IN_PROGRESS变为ABORTED。
+> T1：txid 200次提交; txid 200的状态从`IN_PROGRESS`变为`COMMITTED`。
+> T2：txid 201中止; txid 201的状态从`IN_PROGRESS`变为`ABORTED`。
 
-当前的txid向前迭代并且clog存储空间耗尽，会附加一个新页面。
+当前的txid向前迭代并且提交日志存储空间耗尽，会追加一个新页面。
 
 当需要事务的状态时，将调用相应内部函数。这些函数读取clog并返回所请求事务的状态。（另请参见第5.7.1节中的“提示位”。）
 
 ### 5.4.3 clog的维护
 
-​	当PostgreSQL关闭或检查点进程运行时，clog数据将写入到pg_clog子目录下的文件中。（请注意，在版本10中，pg_clog将重命名为`pg_xact`。）这些文件名为0000，0001等。最大文件大小为256 KB。例如，当clog使用八个页面（从第一页到第八页，总大小为64 KB）时，其数据写入到0000（64 KB）中，另外若使用37页（296 KB），数据写入到0000和0001中，其大小分别为256 KB和40 KB。
+​	当PostgreSQL关闭或检查点进程运行时，clog数据将写入到`pg_clog`子目录下的文件中。（请注意，在版本10中，pg_clog将重命名为`pg_xact`。）这些文件名为0000，0001等。最大文件大小为256 KB。例如，当clog使用八个页面（从第一页到第八页，总大小为64 KB）时，其数据写入到0000（64 KB）中，另外若使用37页（296 KB），数据写入到0000和0001中，其大小分别为256 KB和40 KB。
 
 ​	当PostgreSQL启动时，加载存储在pg_clog文件（pg_xact文件）中的数据以初始化clog。
 
@@ -321,9 +321,9 @@ Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个�
 
 ​	在PostgreSQL内部，将事务快照的文本表示格式定义为`100:100:`。例如，‘100:100 :’表示txid小于等于99的事务未激活，并且大于等于100的事务处于活动状态”。在以下描述中，将使用这种方便的表示形式。如果您不熟悉它，请参阅下文。
 
-> ### 内置函数txid_current_snapshot及其文本表示
+> ### 内置函数`txid_current_snapshot`及其文本表示
 >
-> 函数txid_current_snapshot显示当前事务的快照。
+> 函数`txid_current_snapshot`显示当前事务的快照。
 >
 > ```
 > testdb=# SELECT txid_current_snapshot();
@@ -333,17 +333,17 @@ Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个�
 > (1 row)
 > ```
 >
-> txid_current_snapshot的文本表示是`xmin:xmax:xip_list`，各部分描述如下。
+> `txid_current_snapshot`的文本表示是`xmin:xmax:xip_list`，各部分描述如下。
 >
-> * **xmin**
+> * **`xmin`**
 >
 >   最早仍然活跃的事务的txid。比其更早事务，它都已经提交且可见了，或者回滚并且死亡了。
 >
-> * **xmax**
+> * **`xmax`**
 >
 >   第一个尚未分配的txid。所有大于或等于此txid的事务在获取快照时，尚未启动，因此不可见。
 >
-> * **xip_list**
+> * **`xip_list`**
 >
 >   获取快照时的活动事务的txid列表。该列表仅包括xmin和xmax之间的活动txid。
 >   例如，在快照‘100：104：100,102’中，xmin是‘100’，xmax是‘104’，且xip_list为‘100，102’。
@@ -365,9 +365,9 @@ Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个�
 > * txid>=104的事务是活动的。
 > * txid等于100和102的事务是活动的，因为它们存在于xip列表中，而txid等于 101和103的事务不活动。
 
-​	事务管理器提供事务快照。在READ COMMITTED隔离级别，只要执行SQL命令，事务就会获得快照；否则（REPEATABLE READ或SERIALIZABLE），事务只在执行第一个SQL命令时获取快照。获取的事务快照用于元组的可见性检查，如第5.7节所述。
+​	事务管理器提供事务快照。在`READ COMMITTED`隔离级别，只要执行SQL命令，事务就会获得快照；否则（`REPEATABLE READ`或`SERIALIZABLE`），事务只在执行第一个SQL命令时获取快照。获取的事务快照用于元组的可见性检查，如第5.7节所述。
 
-​	使用获取的快照进行可见性检查时，即使实际上，已经提交或中止快照中的活动事务，也必须将其视为正在进行中。此规则很重要，因为它会导致READ COMMITTED和REPEATABLE READ（或SERIALIZABLE）之间的行为不同。我们在以下部分中反复参考此规则。
+​	使用获取的快照进行可见性检查时，即使实际上，已经提交或中止快照中的活动事务，也必须将其视为正在进行中。此规则很重要，因为它会导致`READ COMMITTED`和`REPEATABLE READ`（或`SERIALIZABLE`）之间的行为不同。我们在以下部分中反复参考此规则。
 
 ​	在本节的剩余部分中，我们基于特定场景，如图5.9，来描述事务管理器和事务。
 
@@ -375,7 +375,7 @@ Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个�
 
 ![](img/fig-5-09.png)
 
-事务管理器始终保存着当前运行的事务的有关信息。假设三个事务一个接一个地开始，并且Transaction_A和Transaction_B的隔离级别是READ COMMITTED，Transaction_C的隔离级别是REPEATABLE READ。
+事务管理器始终保存着当前运行的事务的有关信息。假设三个事务一个接一个地开始，并且Transaction_A和Transaction_B的隔离级别是`READ COMMITTED`，Transaction_C的隔离级别是REPEATABLE READ。
 
 * T1：
   Transaction_A启动并执行第一个SELECT命令。执行第一个命令时，Transaction_A请求此刻的txid和快照。在这种情况下，事务管理器分配txid=200，并返回事务快照‘200：200：’。
@@ -620,9 +620,9 @@ testdb=# SELECT * FROM tbl;
 
 ### 5.7.2 PostgreSQL可重复读等级中的幻读
 
-ANSI SQL-92标准中定义的REPEATABLE READ允许幻读（Phantom Reads）。 但是，PostgreSQL的实现中不允许它们发生。 原则上，SI不允许幻读。
+ANSI SQL-92标准中定义的`REPEATABLE READ`允许**幻读（Phantom Reads）**。 但是，PostgreSQL的实现中不允许它们发生。 原则上SI不允许幻读。
 
-假设两个事务，即Tx_A和Tx_B，同时运行。 它们的隔离级别为READ COMMITTED和REPEATABLE READ，它们的txid分别为100和101。 首先，Tx_A插入一个元组。 然后提交。 插入的元组的t_xmin为100。接着，Tx_B执行SELECT命令；但是，按照Rule 5，Tx_A插入的元组是不可见的。因此，不会发生幻读。
+假设两个事务，即Tx_A和Tx_B，同时运行。 它们的隔离级别为`READ COMMITTED`和`REPEATABLE READ`，它们的txid分别为100和101。 首先，Tx_A插入一个元组。 然后提交。 插入的元组的t_xmin为100。接着，Tx_B执行SELECT命令；但是，按照Rule 5，Tx_A插入的元组是不可见的。因此，不会发生幻读。
 
 - Rule5(new tuple): Status(t_xmin:100) = COMMITTED ∧ Snapshot(t_xmin:100) = active ⇒ Invisible
 
@@ -673,8 +673,8 @@ testdb=# SELECT * FROM tbl WHERE id=1;
 > (2)       WHILE true
 > 
 >                /* 第一部分 */
-> (3)            IF the target row is being updated THEN
-> (4)	              等待更新目标行事务的终止
+> (3)            IF 目标行正在被更新 THEN
+> (4)	              等待更新目标行的事务终止
 > 
 > (5)	              IF (更新目标行事务状态是 COMMITTED)
 >    	                   AND (当前事务隔离级别是 REPEATABLE READ 或 SERIALIZABLE) THEN
@@ -718,7 +718,7 @@ testdb=# SELECT * FROM tbl WHERE id=1;
 
 此函数为每个目标行执行更新操作。 它有一个while循环来更新每一行，而while循环的内部根据图5.11所示的条件分支到三个块。
 
-**图 5.11 ExecUpdate内部的三个分支块**
+**图 5.11 `ExecUpdate`内部的三个分支块**
 
 ![Fig. 5.11. Three internal blocks in ExecUpdate.](img/fig-5-11.png)
 
@@ -978,7 +978,7 @@ T6：
 
 ![使用顺序扫描](img/fig-5-18.png)
 
-即使使用索引扫描，如果事务Tx_A和Tx_B都获得相同的索引SIREAD Lock，PostgreSQL也会误报。 图5.19显示了这种情况。 假设索引页Pkey_1包含两个索引项，其中一个指向Tuple_1，另一个指向Tuple_2。 当Tx_A和Tx_B执行相应的SELECT和UPDATE命令时，Pck_1由Tx_A和Tx_B读取和写入。 在这种情况下，会创建与Pkey_1相关联的rw-conflict：C1和C2，在优先级图中形成一个环， 因此，检测到假阳性Write-Skew异常。 （如果Tx_A和Tx_B获取不同索引页的SIREAD Lock，则不会误报，并且可以提交两个事务。）
+即使使用索引扫描，如果事务Tx_A和Tx_B都获得相同的索引SIREAD Lock，PostgreSQL也会误报。 图5.19显示了这种情况。 假设索引页Pkey_1包含两个索引项，其中一个指向Tuple_1，另一个指向Tuple_2。 当Tx_A和Tx_B执行相应的`SELECT`和`UPDATE`命令时，Pck_1由Tx_A和Tx_B读取和写入。 在这种情况下，会创建与Pkey_1相关联的rw-conflict：C1和C2，在优先级图中形成一个环， 因此，检测到假阳性Write-Skew异常。 （如果Tx_A和Tx_B获取不同索引页的SIREAD Lock，则不会误报，并且可以提交两个事务。）
 
 **图5.19。 假阳性异常（2） - 使用相同索引页的索引扫描。**
 
@@ -1007,13 +1007,13 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 ![](img/fig-5-20.png)
 
-​	为了解决这个问题，PostgreSQL引入了一个**冻结事务ID（Frozen txid）**的概念，并实现了一个名为FREEZE的过程。
+​	为了解决这个问题，PostgreSQL引入了一个**冻结事务ID（Frozen txid）**的概念，并实现了一个名为`FREEZE`的过程。
 
-​	在PostgreSQL中，定义了一个冻结的txid，它是一个特殊的保留txid=2，它总是比所有其他txid都旧。换句话说，冻结的txid始终处于非活动状态且可见。
+​	在PostgreSQL中，定义了一个冻结的`txid`，它是一个特殊的保留`txid=2`，它总是比所有其他txid都旧。换句话说，冻结的`txid`始终处于非活动状态且可见。
 
 清理过程调用冻结过程。冻结过程将扫描所有表文件，如果元组的t_xmin比**当前txid-vacuum_freeze_min_age**（默认值为5000万）更老，则将元组的t_xmin重写为冻结事务ID。在第6章中会有更详细的解释。
 
-例如，如图5.21（a）所示，当前txid为5000万，此时通过VACUUM命令调用冻结过程。在这种情况下，Tuple_1和Tuple_2的t_xmin都被重写为2。
+例如，如图5.21（a）所示，当前txid为5000万，此时通过`VACUUM`命令调用冻结过程。在这种情况下，Tuple_1和Tuple_2的t_xmin都被重写为2。
 
 在版本9.4或更高版本中，XMIN_FROZEN位设置在元组的t_infomask字段中，而不是将元组的t_xmin重写为冻结的txid（图5.21 b）。
 
