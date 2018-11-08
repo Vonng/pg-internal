@@ -2,61 +2,61 @@
 
 [TOC]
 
-​	当多个事务同时在数据库中运行时，**并发控制**是一种维持**一致性**与**隔离性**的技术，这是ACID的两个属性。
+当多个事务同时在数据库中运行时，**并发控制**是一种用于维持**一致性**与**隔离性**的技术，一致性与隔离性是ACID的两个属性。
 
-​	从宽泛的意义来说，有三种并发控制技术：**多版本并发控制（MVCC）**，**严格两阶段锁定（S2PL）**和**乐观并发控制（OCC）**，每种技术都有多种变体。在MVCC中，每个写操作都会创建数据项的一个新版本，同时保留旧版本。当事务读取数据对象时，系统会选择其中的一个版本，来确保各个事务间相互隔离。 MVCC的主要优势在于“读不会阻塞写，而写也不会阻塞读”，相反的例子是，基于S2PL的系统在写操作发生时必须阻塞读操作，因为写入者获取了对象的排他锁。 PostgreSQL和一些RDBMS使用一种MVCC的变体，称为**快照隔离（Snapshot Isolation，SI）**。
+从宽泛的意义上来讲，有三种并发控制技术：**多版本并发控制（Multi-version Concurrency Control, MVCC）**，**严格两阶段锁定（Strict Two-Phase Locking, S2PL）**和**乐观并发控制（Optimistic Concurrency Control, OCC）**，每种技术都有多种变体。在MVCC中，每个写操作都会创建一个新版本的数据项，并保留其旧版本。当事务读取数据对象时，系统会选择其中的一个版本，通过这种方式来确保各个事务间相互隔离。 MVCC的主要优势在于“读不会阻塞写，而写也不会阻塞读”，相反的例子是，基于S2PL的系统在写操作发生时会阻塞相应对象上的读操作，因为写入者获取了对象上的排他锁。 PostgreSQL和一些RDBMS使用一种MVCC的变体，名曰**快照隔离（Snapshot Isolation，SI）**。
 
-​	为了实现SI，一些RDBMS（例如Oracle）使用回滚段。当写入新的数据对象时，旧版本的对象先被写入回滚段，随后用新对象覆写至数据区域。 PostgreSQL使用更简单的方法：一个新数据对象被直接插入到相关的表页中。读取对象时，PostgreSQL通过**可见性检查规则**，为每个事务选择合适的对象版本作为响应。
+一些RDBMS（例如Oracle）使用回滚段来实现快照隔离SI。当写入新数据对象时，旧版本对象先被写入回滚段，随后用新对象覆写至数据区域。 PostgreSQL使用更简单的方法：新数据对象被直接插入到相关表页中。读取对象时，PostgreSQL根据**可见性检查规则（visibility check rules）**，为每个事务选择合适的对象版本作为响应。
 
-​	在ANSI SQL-92标准中定义的三种异常，脏读，不可重复读和幻读，不会在SI中出现。但SI无法实现真正的可串行化，因为可能会出现序列化异常：例如**写偏差（write skew）**和**只读事务偏差（Read-only Transaction Skew）**。需要注意的是：ANSI SQL-92标准中可序列化的定义与现代理论中的定义**并不相同**。为了解决这个问题，PostgreSQL从9.1版本之后添加了**可序列化快照隔离（SSI，Serializable Snapshot Isolation）**，SSI可以检测序列化异常，并解决这种异常导致的冲突。因此，9.1版本之后的PostgreSQL提供了真正的`SERIALIZABLE`隔离等级（此外，SQL Server也使用SSI，而Oracle仍然使用SI）。
+SI中不会出现在ANSI SQL-92标准中定义的三种异常：脏读，不可重复读和幻读。但SI无法实现真正的可串行化，因为在SI中可能会出现串行化异常：例如**写偏差（write skew）**和**只读事务偏差（Read-only Transaction Skew）**。需要注意的是：ANSI SQL-92标准中可串行化的定义与现代理论中的定义**并不相同**。为了解决这个问题，PostgreSQL从9.1版本之后添加了**可串行化快照隔离（SSI，Serializable Snapshot Isolation）**，SSI可以检测串行化异常，并解决这种异常导致的冲突。因此，9.1版本之后的PostgreSQL提供了真正的`SERIALIZABLE`隔离等级（此外SQL Server也使用SSI，而Oracle仍然使用SI）。
 
 本章包括以下四个部分：
 
 * 第1部分：第5.1~5.3节。
 
-  本部分提供了解后续部分所需的基本信息。
+  这一部分介绍了理解后续部分所需的基本信息。
 
   第5.1和5.2节分别描述了事务标识和元组结构。第5.3节展示了如何插入，删除和更新元组。
 
 * 第2部分：第5.4~5.6节。
 
-  本部分说明了实现并发控制机制所需的关键功能。
+  这一部分说明了实现并发控制机制所需的关键功能。
 
-  第5.4，5.5和5.6节描述了提交日志（clog），分别讲述了事务状态，事务快照和可见性检查规则。
+  第5.4，5.5和5.6节描述了**提交日志（clog）**，分别介绍了事务状态，事务快照和可见性检查规则。
 
 * 第3部分：第5.7~5.9节。
 
-  本部分使用特定示例描述PostgreSQL中的并发控制。
+  这一部分使用具体的例子来介绍PostgreSQL中的并发控制。
 
-  第5.7节描述了可见性检查。本部分还说明了如何防止ANSI SQL标准中定义的三个异常。第5.8节描述了如何防止丢失更新，第5.9节简要描述了SSI。
+  这一部分说明了如何防止ANSI SQL标准中定义的三种异常。第5.7节描述了可见性检查，第5.8节介绍了如何防止丢失更新，第5.9节简要描述了SSI。
 
 * 第4部分：第5.10节。
 
-  本部分描述了永久运行并发控制机制所需的几个维护过程。维护过程主要通过清理过程进行，这在第6章进行详细阐述。
+  这一部分描述了并发控制机制持久运行所需的几个维护过程。维护过程主要通过**清理过程（vacuum processing）**进行，清理过程将在[第6章](ch6.md)详细阐述。
 
-尽管有许多与并发控制相关的主题，本章重点介绍PostgreSQL独有的主题。请注意，这里省略了死锁预防和锁模式的描述（更多相关信息，请参阅官方文档）。
+并发控制包含着很多主题，本章重点介绍PostgreSQL独有的内容。故这里省略了锁模式与死锁处理的内容（相关信息请参阅官方文档）。
 
 > ### PostgreSQL中的事务隔离等级
 >
 > PostgreSQL实现的事务隔离等级如下表所示：
 >
-> |  隔离等级   |  脏读  | 不可重复读 |               幻读               | 序列化异常 |
-> | :---------: | :----: | :--------: | :------------------------------: | :--------: |
-> |  读已提交   | 不可能 |    可能    |               可能               |    可能    |
-> | 可重复读(1) | 不可能 |   不可能   | PG中不可能<br />但ANSI SQL中可能 |    可能    |
-> |  可序列化   | 不可能 |   不可能   |              不可能              |   不可能   |
+> |  隔离等级   |  脏读  | 不可重复读 |                     幻读                      | 串行化异常 |
+> | :---------: | :----: | :--------: | :-------------------------------------------: | :--------: |
+> |  读已提交   | 不可能 |    可能    |                     可能                      |    可能    |
+> | 可重复读[1] | 不可能 |   不可能   | PG中不可能，见5.7.2小节<br />但ANSI SQL中可能 |    可能    |
+> |  可串行化   | 不可能 |   不可能   |                    不可能                     |   不可能   |
 >
-> (1)：在9.0及更早版本中，此级别被当做`SERIALIZABLE`，因为它不会出现ANSI SQL-92标准中定义的三种异常。 但随着9.1版中SSI的实现，该级别已被改称为`REPEATABLE READ`，并引入了真正的`SERIALIZABLE`级别。
+> [1]：在9.0及更早版本中，该级别被当做`SERIALIZABLE`，因为它不会出现ANSI SQL-92标准中定义的三种异常。 但9.1版中SSI的实现引入了真正的`SERIALIZABLE`级别，该级别已被改称为`REPEATABLE READ`。
 
 > PostgreSQL对DML（`SELECT, UPDATE, INSERT, DELETE`等命令）使用SSI，对DDL（`CREATE TABLE`等命令）使用2PL。
 
 
 
-## 5.1 事务ID
+## 5.1 事务标识
 
-​	每当事务开始时，事务管理器就会分配一个称为**事务标识（txid）**的唯一标识符。 PostgreSQL的txid是一个32位无符号整数，大约42亿。如果在事务启动后执行内置的`txid_current()`函数，该函数将返回当前的txid，如下所示。
+每当事务开始时，事务管理器就会为其分配一个称为**事务标识（transaction id, txid）**的唯一标识符。 PostgreSQL的`txid`是一个32位无符号整数，总取值约42亿。在事务启动后执行内置的`txid_current()`函数，即可获取当前事务的`txid`，如下所示。
 
-```
+```sql
 testdb=# BEGIN;
 BEGIN
 testdb=# SELECT txid_current();
@@ -66,35 +66,37 @@ testdb=# SELECT txid_current();
 (1 row)
 ```
 
-PostgreSQL保留以下三个特殊txid：
+PostgreSQL保留以下三个特殊`txid`：
 
-* 0表示无效的txid。
-* 1表示初始txid，仅用于数据库集群的初始化。
-* 2表示冻结txid，如5.10.1节所述。
+* **0**表示**无效（Invalid）**的`txid`。
+* **1**表示**初始启动（Bootstrap）**的`txid`，仅用于数据库集群的初始化过程。
+* **2**表示**冻结（Frozen）**的`txid`，详情参考第5.10.1节。
 
-Txid可以相互比较。例如，对于txid=100的事务，大于100的txid是“未来的”，并且从txid=100之后的txid都是不可见的；小于100的txid是“过去的”，并且是可见的（图 5.1a））。
+`txid`可以相互比较大小。例如对于`txid=100`的事务，大于100的`txid`属于“未来”，且对于`txid=100`的事务而言都是**不可见（invisible）**的；小于100的`txid`属于“过去”，且对该事务可见，如图5.1(a)所示。
 
-**图5.1  PostgreSQL中的事务ID**
+**图5.1  PostgreSQL中的事务标识**
 
 ![](img/fig-5-01.png)
 
-由于实际系统中的txid空间不足，PostgreSQL将txid空间视为一个圆。之前的21亿个txid是‘ 过去的’，接下来的21亿个txid是‘未来的’（图5.1 b）。
+因为`txid`在逻辑上是无限的，而实际系统中的`txid`空间不足（4字节取值空间约42亿），因此PostgreSQL将`txid`空间视为一个环。对于某个特定的`txid`，其前约21亿个`txid`属于过去，而其后约21亿个`txid`属于未来。如图5.1(b)所示。
 
-请注意，所谓的txid回卷问题在5.10.1节中描述。
+所谓的`txid`回卷问题将在5.10.1节中介绍。
 
-> 请注意，不会为BEGIN命令分配txid。在PostgreSQL中，当执行BEGIN命令后的第一个命令时，事务管理器会分配tixd，然后启动其事务。
+> 请注意，`txid`并非是在`BEGIN`命令执行时分配的。在PostgreSQL中，当执行`BEGIN`命令后的第一条命令时，事务管理器才会分配`txid`，并真正启动其事务。
+
+
 
 ## 5.2 元组结构
 
-表页中的堆元组被分类为普通堆数据元组和TOAST元组。本节仅介绍普通堆数据元组。
+可以将表页中的堆元组分为两类：普通数据元组与TOAST元组。本节只会介绍普通元组。
 
-堆元组包括三个部分，即`HeapTupleHeaderData`结构，空值位图和用户数据（图5.2）。
+堆元组由三个部分组成，即`HeapTupleHeaderData`结构，空值位图，以及用户数据，如图5.2所示。
 
 **图5.2 元组结构**
 
 ![](img/fig-5-02.png)
 
-> `HeapTupleHeaderData`结构在src/include/access/htup_details.h中定义。
+> `HeapTupleHeaderData`结构在[`src/include/access/htup_details.h`](https://github.com/postgres/postgres/blob/ee943004466418595363d567f18c053bae407792/src/include/access/htup_details.h)中定义。
 
 ```c
 typedef struct HeapTupleFields
@@ -139,18 +141,18 @@ typedef struct HeapTupleHeaderData
 typedef HeapTupleHeaderData *HeapTupleHeader;
 ```
 
-虽然`HeapTupleHeaderData`结构包含七个字段，但后续部分中只需要四个字段。
+虽然`HeapTupleHeaderData`结构包含七个字段，但后续部分中只需要了解四个字段即可。
 
 * `t_xmin`保存插入此元组的事务的`txid`。
-* `t_xmax`保存删除或更新此元组的事务的`txid`。如果尚未删除或更新此元组，则t_xmax设置为0，即无效。
-* `t_cid`保存命令标识（cid），意思是在当前事务中，从0开始计数，执行此命令之前执行了多少SQL命令。例如，假设我们在单个事务中执行三个INSERT命令`BEGIN;INSERT;INSERT;INSERT;COMMIT;`。如果第一个命令插入此元组，则`t_cid`设置为0。如果第二个命令插入此命令，则`t_cid`设置为1，依此类推。
-* `t_ctid`保存指向自身或新元组的元组标识符（`tid`）。如第1.3节中的描述，`tid`用于标识表中的元组。更新此元组时，此元组的`t_ctid`指向新元组；否则，`t_ctid`指向自己。
+* `t_xmax`保存删除或更新此元组的事务的`txid`。如果尚未删除或更新此元组，则`t_xmax`设置为0，即无效。
+* `t_cid`保存**命令标识（command id, cid）**，`cid`意思是在当前事务中，执行当前命令之前执行了多少SQL命令，从零开始计数。例如，假设我们在单个事务中执行了三条`INSERT`命令`BEGIN;INSERT;INSERT;INSERT;COMMIT;`。如果第一条命令插入此元组，则该元组的`t_cid`会被设置为0。如果第二条命令插入此元组，则其`t_cid`会被设置为1，依此类推。
+* `t_ctid`保存着指向自身或新元组的元组标识符（`tid`）。如第1.3节中所述，`tid`用于标识表中的元组。在更新该元组时，其`t_ctid`会指向新版本的元组；否则`t_ctid`会指向自己。
 
 ## 5.3 元组的增删改
 
-本节介绍如何插入，删除和更新元组。然后，简要描述用于插入和更新元组的自由空间映射（FSM）。
+本节会介绍元组的增删改过程，并简要描述用于插入与更新元组的**自由空间映射（Free Space Map, FSM）**。
 
-这里主要关注元组，页眉和行指针不会在此表示。如图5.3显示了元组的具体表示。
+这里主要关注元组，页首部与行指针不会在这里画出来，元组的具体表示如图5.3所示。
 
 **图5.3 元组的表示**
 
@@ -158,24 +160,24 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 ### 5.3.1 插入
 
-通过插入操作，新的元组将直接插入目标表的页面中（图5.4）。
+在插入操作中，新元组将直接插入到目标表的页面中，如图5.4所示。
 
 **图5.4 插入元组**
 
 ![](img/fig-5-04.png)
 
-假设通过txid为99的事务在页面中插入元组。在这种情况下，插入元组操作的头部字段设置如下。
+假设元组是由`txid=99`的事务插入页面中的，在这种情况下，被插入元组的首部字段会依以下步骤设置。
 
-Tuple_1：
+`Tuple_1`：
 
-* t_xmin设置为99，因为此元组由txid=99的事务插入。
-* t_xmax设置为0，因为此元组尚未删除或更新。
-* t_cid设置为0，因为此元组是txid=99的事务插入的第一个元组。
-* t_ctid设置为（0，1），指向自身，因为这是最新的元组。
+* `t_xmin`设置为99，因为此元组由`txid=99`的事务所插入。
+* `t_xmax`设置为0，因为此元组尚未被删除或更新。
+* `t_cid`设置为0，因为此元组是由`txid=99`的事务所执行的第一条命令所插入的。
+* `t_ctid`设置为`(0,1)`，指向自身，因为这是该元组的最新版本。
 
 > #### `pageinspect`
 >
-> PostgreSQL提供了一个扩展`pageinspect`，它是一个第三方贡献的模块，用于显示数据库页面的内容。
+> PostgreSQL自带了一个第三方贡献的扩展模块`pageinspect`，可用于检查数据库页面的具体内容。
 >
 > ```sql
 > testdb=# CREATE EXTENSION pageinspect;
@@ -194,70 +196,72 @@ Tuple_1：
 
 ### 5.3.2 删除
 
-在删除操作中，只是逻辑上删除了目标元组。将执行`DELETE`命令的事务的`txid`的值设置为元组的`t_xmax`（图5.5）。
+在删除操作中，目标元组只是在逻辑上被标记为删除。目标元组的`t_xmax`字段将被设置为执行`DELETE`命令事务的`txid`。如图5.5所示。
 
 **图5.5 删除元组**
 
 ![](img/fig-5-05.png)
-假设`Tuple_1`被`txid=111`的事务删除。在这种情况下，`Tuple_1`的头部字段设置如下。
+假设`Tuple_1`被`txid=111`的事务删除。在这种情况下，`Tuple_1`的首部字段会依以下步骤设置。
 
-Tuple_1：
+`Tuple_1`：
 
-* t_xmax设置为111。
+* `t_xmax`被设为111。
 
-如果提交了txid=111的事务，则不再需要Tuple_1。通常，不需要的元组在PostgreSQL中称为死元组。
+如果`txid=111`的事务已经提交，那么`Tuple_1`就不是必需的了。通常不需要的元组在PostgreSQL中被称为**死元组（dead tuple）**。
 
-应该最终从页面中删除死元组。清除死元组称为**清理（VACUUM）过程**，将在第6章中介绍。
+死元组最终将从页面中被移除。清除死元组的过程被称为**清理（VACUUM）过程**，[第6章](ch6.md)将介绍清理过程。
 
 ### 5.3.3 更新
 
-在更新操作中，PostgreSQL在逻辑上删除最新的元组，并插入一个新的元组（图5.6）。
+在更新操作中，PostgreSQL在逻辑上实际执行的是删除最新的元组，并插入一条新的元组（图5.6）。
 
-**图5.6 更新同一行两次**
+**图5.6 两次更新同一行**
 
 ![](img/fig-5-06.png)
 
-假设由txid=99的事务插入的行，被txid=100的事务更新两次。
+假设由`txid=99`的事务插入的行，被`txid=100`的事务更新两次。
 
-当执行第一个UPDATE命令时，通过将txid=100设置为t_xmax，来逻辑删除Tuple_1，然后插入Tuple_2。然后，重写Tuple_1的t_ctid以指向Tuple_2。 Tuple_1和Tuple_2的头部字段设置如下。
+当执行第一条`UPDATE`命令时，`Tuple_1`的`t_xmax`被设为`txid 100`，在逻辑上被删除；然后`Tuple_2`被插入；接下来重写`Tuple_1`的`t_ctid`以指向`Tuple_2`。`Tuple_1`和`Tuple_2`的头部字段设置如下。
 
-Tuple_1：
+`Tuple_1`：
 
-* t_xmax设置为100。
-* t_ctid从（0,1）重写为（0,2）。
+* `t_xmax`被设置为100。
+* `t_ctid`从`(0,1)`被改写为`(0,2)`。
 
-Tuple_2：
-* t_xmin设置为100。
-* t_xmax设置为0。
-* t_cid设置为0。
-* t_ctid设置为（0,2）。
+`Tuple_2`：
 
-当执行第二个UPDATE命令时，如在第一个UPDATE命令中，逻辑删除Tuple_2并插入Tuple_3。 Tuple_2和Tuple_3的头字段如下。
+* `t_xmin`被设置为100。
+* `t_xmax`被设置为0。
+* `t_cid`被设置为0。
+* `t_ctid`被设置为`(0,2)`。
 
-Tuple_2：
-* t_xmax设置为100。
-* t_ctid从（0，2）重写为（0，3）。
+当执行第二条`UPDATE`命令时，和第一条`UPDATE`命令类似，`Tuple_2`被逻辑删除，`Tuple_3`被插入。`Tuple_2`和`Tuple_3`的首部字段设置如下。
 
-Tuple_3：
+`Tuple_2`：
 
-* t_xmin设置为100。
-* t_xmax设置为0。
-* t_cid设置为1。
-* t_ctid设置为（0，3）。
+* `t_xmax`被设置为100。
+* `t_ctid`从`(0,2)`被改写为`(0,3)`。
 
-与删除操作一样，如果提交了txid=100的事务，则Tuple_1和Tuple_2将是死元组，并且如果txid=100的事务被中止，则Tuple_2和Tuple_3也将是死元组。
+`Tuple_3`：
 
-### 5.3.4 空闲空间映射表
+* `t_xmin`被设置为100。
+* `t_xmax`被设置为0。
+* `t_cid`被设置为1。
+* `t_ctid`被设置为`(0,3)`。
 
-插入堆或索引元组时，PostgreSQL使用相应表或索引的FSM来选择可插入的页面。
+与删除操作类似，如果`txid=100`的事务已经提交，那么`Tuple_1`和`Tuple_2`就成为了死元组，而如果`txid=100`的事务中止，`Tuple_2`和`Tuple_3`就成了死元组。
 
-如1、2、3节所述，表和索引都有各自的FSM。每个FSM存储相应的表或索引文件中的每个相关页面的可用空间容量的信息。
+### 5.3.4 空闲空间映射
 
-所有FSM都以后缀‘fsm’存储，如有必要，它们将被加载到共享内存中。
+插入堆或索引元组时，PostgreSQL使用表与索引相应的**FSM**来选择可供插入的页面。
+
+如1.2.3节所述，表和索引都有各自的FSM。每个FSM存储着相应表或索引文件中每个页面可用空间容量的信息。
+
+所有FSM都以后缀`fsm`存储，在需要时它们会被加载到共享内存中。
 
 > #### `pg_freespacemap`
 >
-> 扩展`pg_freespacemap`提供指定表、索引的自由空间映射信息。以下查询显示指定表中每个页面的自由空间比率。
+> 扩展`pg_freespacemap`能提供特定表或索引上的空闲空间信息。以下查询列出了特定表中每个页面的空闲率。
 >
 > ```bash
 > testdb=# CREATE EXTENSION pg_freespacemap;
@@ -280,52 +284,54 @@ Tuple_3：
 
 ## 5.4 提交日志（clog）
 
-​	PostgreSQL在**提交日志（Commit Log，提交日志）**中保存事务的状态。提交日志（通常称为clog）被分配在共享内存中，并在整个事务处理过程中使用。
+PostgreSQL在**提交日志（Commit Log, clog）**中保存事务的状态。提交日志（通常称为**clog**）分配于共享内存中，并用于事务处理过程的全过程。
 
-​	本节介绍PostgreSQL中事务的状态，以及clog的操作与维护。
+本节将介绍PostgreSQL中事务的状态，clog的工作方式与维护过程。
 
 ### 5.4.1 事务状态
 
-​	PostgreSQL定义了四种事务状态，即`IN_PROGRESS`，`COMMITTED`，`ABORTED`和`SUB_COMMITTED`。
+PostgreSQL定义了四种事务状态，即：`IN_PROGRESS`，`COMMITTED`，`ABORTED`和`SUB_COMMITTED`。
 
-前三种状态的意义是显而易见的。例如，当事务正在进行时，其状态为`IN_PROGRESS`等。
+前三种状态涵义显而易见。例如当事务正在进行时，其状态为`IN_PROGRESS`，依此类推。
 
-`SUB_COMMITTED`用于子事务，本书中省略了与其相关描述。
+`SUB_COMMITTED`状态用于子事务，本文省略了与子事务相关的描述。
 
 ### 5.4.2 提交日志如何工作
 
-Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个数组。数组的索引对应于相应的事务id，并且数组中的每个项保存相应事务的状态。图5.7显示了clog及其工作过程。
+提交日志（下称clog）在逻辑上是一个数组，由共享内存中一系列8KB页面组成。数组的序号索引对应着相应事务的标识，而其内容则是相应事务的状态。clog的工作方式如图5.7所示。
 
-**图5.7 Clog如何运作**
+**图5.7 clog如何工作**
 
 ![](img/fig-5-07.png)
 
-> T1：txid 200次提交; txid 200的状态从`IN_PROGRESS`变为`COMMITTED`。
-> T2：txid 201中止; txid 201的状态从`IN_PROGRESS`变为`ABORTED`。
+> **T1**：`txid 200`提交；`txid 200`的状态从`IN_PROGRESS`变为`COMMITTED`。
+> **T2**：`txid 201`中止；`txid 201`的状态从`IN_PROGRESS`变为`ABORTED`。
 
-当前的txid向前迭代并且提交日志存储空间耗尽，会追加一个新页面。
+`txid`不断前进，当clog空间耗尽无法存储新的事务状态时，就会追加分配一个新的页面。
 
-当需要事务的状态时，将调用相应内部函数。这些函数读取clog并返回所请求事务的状态。（另请参见第5.7.1节中的“提示位”。）
+当需要获取事务的状态时，PostgreSQL将调用相应内部函数读取clog，并返回所请求事务的状态。（参见第5.7.1节中的**提示位（Hint Bits）**）
 
-### 5.4.3 clog的维护
+### 5.4.3 提交日志的维护
 
-​	当PostgreSQL关闭或检查点进程运行时，clog数据将写入到`pg_clog`子目录下的文件中。（请注意，在版本10中，pg_clog将重命名为`pg_xact`。）这些文件名为0000，0001等。最大文件大小为256 KB。例如，当clog使用八个页面（从第一页到第八页，总大小为64 KB）时，其数据写入到0000（64 KB）中，另外若使用37页（296 KB），数据写入到0000和0001中，其大小分别为256 KB和40 KB。
+当PostgreSQL关机或执行存档过程时，clog数据会写入至`pg_clog`子目录下的文件中（注意在10版本中，`pg_clog`被重命名为`pg_xact`）。这些文件被命名为`0000`，`0001`等等。文件的最大尺寸为256 KB。例如当clog使用八个页面时，从第一页到第八页的总大小为64 KB，这些数据会写入到文件`0000`（64 KB）中；而当clog使用37个页面时（296 KB），数据则会写入到`0000`和`0001`两个文件中，其大小分别为256 KB和40 KB。
 
-​	当PostgreSQL启动时，加载存储在pg_clog文件（pg_xact文件）中的数据以初始化clog。
+当PostgreSQL启动时会加载存储在`pg_clog`（`pg_xact`）中的文件，用其数据初始化clog。
 
-​	clog的大小会不断增加，因为只要填满了clog，就会附加新的页面。但是，并非所有数据都是必要的。第6章中描述的清理过程定期删除这些旧数据（clog页面和文件）。有关删除clog数据的详细信息，请参见第6.4节。
+clog的大小会不断增长，因为只要clog一填满就会追加新的页面。但并非所有数据都是必需的。[第6章](ch6.md)中描述的清理过程会定期删除这些不需要的旧数据（clog页面和文件），有关删除clog数据的详情请参见第6.4节。
+
+
 
 ## 5.5 事务快照
 
-**事务快照**是一个数据集，用于在单个事务的特定时间点存储所有相关事务是否处于活动状态的信息。这里的活动事务意味着正在进行中或尚未开始的事务。
+**事务快照（transaction snapshot）**是一个数据集，存储着某个特定事务在某个特定时间点所看到的事务状态信息：哪些事务处于活跃状态。这里活跃状态意味着事务正在进行中，或还没有开始。
 
-​	在PostgreSQL内部，将事务快照的文本表示格式定义为`100:100:`。例如，‘100:100 :’表示txid小于等于99的事务未激活，并且大于等于100的事务处于活动状态”。在以下描述中，将使用这种方便的表示形式。如果您不熟悉它，请参阅下文。
+事务快照在PostgreSQL内部的文本表示格式定义为`100:100:`。举个例子，这里`100:100:`意味着`txid < 100`的事务处于非活跃状态，而`txid ≥ 100`的事务处于活跃状态。下文都将使用这种便利形式来表示。如果读者还不熟悉这种形式，请参阅下文。
 
 > ### 内置函数`txid_current_snapshot`及其文本表示
 >
 > 函数`txid_current_snapshot`显示当前事务的快照。
 >
-> ```
+> ```sql
 > testdb=# SELECT txid_current_snapshot();
 >  txid_current_snapshot 
 > -----------------------
@@ -337,186 +343,207 @@ Clog包含共享内存中的一或多个8KB页面。 clog逻辑上形成一个�
 >
 > * **`xmin`**
 >
->   最早仍然活跃的事务的txid。比其更早事务，它都已经提交且可见了，或者回滚并且死亡了。
+>   最早仍然活跃的事务的`txid`。所有比它更早的事务`txid < xmin`要么已经提交并可见，要么已经回滚并生成死元组。
 >
 > * **`xmax`**
 >
->   第一个尚未分配的txid。所有大于或等于此txid的事务在获取快照时，尚未启动，因此不可见。
+>   第一个尚未分配的`txid`。所有`txid ≥ xmax`的事务在获取快照时尚未启动，因而其结果对当前事务不可见。
 >
 > * **`xip_list`**
 >
->   获取快照时的活动事务的txid列表。该列表仅包括xmin和xmax之间的活动txid。
->   例如，在快照‘100：104：100,102’中，xmin是‘100’，xmax是‘104’，且xip_list为‘100，102’。
+>   获取快照时**活跃事务**的`txid`列表。该列表仅包括`xmin`与`xmax`之间的`txid`。
+>
+>   例如，在快照`100:104:100,102`中，`xmin`是`100`，`xmax`是`104`，而`xip_list`为`100,102`。
 >
 > 以下显示了两个具体的示例：
 >
-> **图5.8 事务快照的表示示例**
+> **图5.8 事务快照的表示样例**
 >
 > ![](img/fig-5-08.png)
 >
-> 第一个例子是100：100：。此快照表示以下内容（图5.8（a））：
+> 第一个例子是`100:100:`，如图图5.8(a)所示，此快照表示：
 >
-> * 由于xmin为100，因此txid<=99的事务不活动。
-> * txid>=100的事务是活动的，因为xmax是100。
+> * 因为`xmin`为100，因此`txid < 100`的事务是非活跃的
+> * 因为`xmax`为100，因此`txid ≥ 100`的事务是活跃的
 >
-> 第二个例子是100：104：100,102。此快照表示以下内容（图5.8（b））：
+> 第二个例子是`100:104:100,102`，如图5.8(b)所示，此快照表示：
 >
-> * txid<=99的事务不活动了。
-> * txid>=104的事务是活动的。
-> * txid等于100和102的事务是活动的，因为它们存在于xip列表中，而txid等于 101和103的事务不活动。
+> * `txid < 100`的事务不活跃。
+> * `txid ≥ 104`的事务是活跃的。
+> * `txid`等于100和102的事务是活跃的，因为它们在`xip_list`中，而`txid`等于101和103的事务不活跃。
 
-​	事务管理器提供事务快照。在`READ COMMITTED`隔离级别，只要执行SQL命令，事务就会获得快照；否则（`REPEATABLE READ`或`SERIALIZABLE`），事务只在执行第一个SQL命令时获取快照。获取的事务快照用于元组的可见性检查，如第5.7节所述。
+事务快照是由事务管理器提供的。在`READ COMMITTED`隔离级别，事务在执行每条SQL时都会获取快照；其他情况下（`REPEATABLE READ`或`SERIALIZABLE`隔离级别），事务只会在执行第一条SQL命令时获取一次快照。获取的事务快照用于元组的可见性检查，如第5.7节所述。
 
-​	使用获取的快照进行可见性检查时，即使实际上，已经提交或中止快照中的活动事务，也必须将其视为正在进行中。此规则很重要，因为它会导致`READ COMMITTED`和`REPEATABLE READ`（或`SERIALIZABLE`）之间的行为不同。我们在以下部分中反复参考此规则。
+使用获取的快照进行可见性检查时，所有**活跃**的事务都必须被当成`IN PROGRESS`的事务等同对待，无论它们实际上是否已经提交或中止。这条规则非常重要，因为它正是`READ COMMITTED`和`REPEATABLE READ/SERIALIZABLE`隔离级别中表现差异的根本来源，我们将在接下来几节中频繁回到这条规则上来。
 
-​	在本节的剩余部分中，我们基于特定场景，如图5.9，来描述事务管理器和事务。
+在本节的剩余部分中，我们会通过一个具体的场景来描述事务与事务管理器，如图5.9所示。
 
 **图5.9 事务管理器与事务**
 
 ![](img/fig-5-09.png)
 
-事务管理器始终保存着当前运行的事务的有关信息。假设三个事务一个接一个地开始，并且Transaction_A和Transaction_B的隔离级别是`READ COMMITTED`，Transaction_C的隔离级别是REPEATABLE READ。
+事务管理器始终保存着当前运行的事务的有关信息。假设三个事务一个接一个地开始，并且`Transaction_A`和`Transaction_B`的隔离级别是`READ COMMITTED`，`Transaction_C`的隔离级别是`REPEATABLE READ`。
 
 * T1：
-  Transaction_A启动并执行第一个SELECT命令。执行第一个命令时，Transaction_A请求此刻的txid和快照。在这种情况下，事务管理器分配txid=200，并返回事务快照‘200：200：’。
+  `Transaction_A`启动并执行第一条`SELECT`命令。执行第一个命令时，`Transaction_A`请求此刻的`txid`和快照。在这种情况下，事务管理器分配`txid=200`，并返回事务快照`200:200:`。
+
 * T2：
-  Transaction_B启动并执行第一个SELECT命令。事务管理器分配txid=201，并返回事务快照‘200：200：’，因为Transaction_A（txid=200）正在进行中。因此，无法从Transaction_B中看到Transaction_A。
+  `Transaction_B`启动并执行第一条`SELECT`命令。事务管理器分配`txid=201`，并返回事务快照`200:200:`，因为`Transaction_A(txid=200)`正在进行中。因此无法从`Transaction_B`中看到`Transaction_A`。
+
 * T3：
-  Transaction_C启动并执行第一个SELECT命令。事务管理器分配txid=202，并返回事务快照‘200：200：’，因此，不能从Transaction_C中看到Transaction_A和Transaction_B。
+  `Transaction_C`启动并执行第一条`SELECT`命令。事务管理器分配`txid=202`，并返回事务快照`200:200:`，因此不能从`Transaction_C`中看到`Transaction_A`和`Transaction_B`。
+
 * T4：
-  Transaction_A已提交。事务管理器删除有关此事务的信息。
+  `Transaction_A`已提交。事务管理器删除有关此事务的信息。
+
 * T5：
-  Transaction_B和Transaction_C执行它们各自的SELECT命令。
-  Transaction_B需要一个事务快照，因为它处于READ COMMITTED级别。在这种情况下，Transaction_B获取新快照‘201：201：’，因为Transaction_A（txid=200）已提交。因此，Transaction_A不再是Transaction_B中不可见的。
-  Transaction_C不需要事务快照，因为它处于REPEATABLE READ级别并使用已获得的快照，即‘200：200：’。因此，Transaction_A仍然是Transaction_C不可见的。
+  `Transaction_B`和`Transaction_C`执行它们各自的`SELECT`命令。
+
+  `Transaction_B`需要一个新的事务快照，因为它使用了`READ COMMITTED`隔离等级。在这种情况下，`Transaction_B`获取新快照`201:201:`，因为`Transaction_A(txid=200)`已提交。因此`Transaction_A`的变更对`Transaction_B`可见了。
+
+  `Transaction_C`不需要新的事务快照，因为它处于`REPEATABLE READ`隔离等级，并继续使用已获取的快照，即`200:200:`。因此，`Transaction_A`的变更仍然对`Transaction_C`不可见。
 
 ## 5.6 可见性检查规则
 
-可见性检查规则是使用元组的t_xmin和t_xmax，clog以及获取的事务快照来确定每个元组是可见还是不可见的一组规则。这些规则太复杂，无法详细解释。因此，本书只展示了后续描述所需的规则最小子集。在下文中，我们省略了与子事务相关的规则，并忽略了关于t_ctid的讨论，比如我们不考虑在事务中已更新两次以上的元组。
+可见性检查规则是一组规则，用于确定一条元组是否对一个事务可见，可见性检查规则会用到元组的`t_xmin`和`t_xmax`，提交日志clog，以及已获取的事务快照。这些规则太复杂，无法详细解释，故本书只列出了理解后续内容所需的最小规则子集。在下文中省略了与子事务相关的规则，并忽略了关于`t_ctid`的讨论，比如我们不会考虑在同一个事务中对一条元组多次重复更新的情况。
 
-所选规则的数量有10个，并且可以分为三种情况。
+所选规则有十条，可以分类为三种情况。
 
-### 5.6.1  t_xmin的状态为ABORTED
+### 5.6.1  `t_xmin`的状态为`ABORTED`
 
-t_xmin状态为ABORTED的元组始终不可见（Rule 1），因为插入此元组的事务已中止。
+ `t_xmin`状态为`ABORTED`的元组始终不可见（规则1），因为插入此元组的事务已中止。
 
-```sql
- /* t_xmin status = ABORTED */
-Rule 1: IF t_xmin status is ABORTED THEN
-                  RETURN Invisible
+```pseudocode
+			/* 创建元组的事务已经中止 */
+Rule 1:     IF t_xmin status is ABORTED THEN
+                RETURN Invisible
             END IF
 ```
 
 该规则明确表示为以下数学表达式。
 
-* **Rule  1:** If Status(t_xmin) = ABORTED ⇒ Invisible
+* **规则1**： `If Status(t_xmin) = ABORTED ⇒ Invisible`
 
-### 5.6.2  t_xmin的状态为IN_PROGRESS
+### 5.6.2  `t_xmin`的状态为`IN_PROGRESS`
 
-t_xmin状态为IN_PROGRESS的元组基本上是不可见的（Rule 3和4），但在一个条件下除外。
+`t_xmin`状态为`IN_PROGRESS`的元组基本上是不可见的（规则3和4），但在一个条件下除外。
 
-```SQL
- /* t_xmin status = IN_PROGRESS */
-              IF t_xmin status is IN_PROGRESS THEN
-            	   IF t_xmin = current_txid THEN
-Rule 2:              IF t_xmax = INVALID THEN
-			      RETURN Visible
-Rule 3:              ELSE  /* this tuple has been deleted or updated by the current transaction itself. */
-			      RETURN Invisible
-                         END IF
-Rule 4:        ELSE   /* t_xmin ≠ current_txid */
-		          RETURN Invisible
-                   END IF
-             END IF
+```pseudocode
+            /* 创建元组的事务正在进行中 */
+            IF t_xmin status is IN_PROGRESS THEN
+                /* 当前事务自己创建了本元组 */
+            	IF t_xmin = current_txid THEN
+                    /* 该元组没有被标记删除，则应当看见本事务自己创建的元组 */
+Rule 2:             IF t_xmax = INVALID THEN 
+                        RETURN Visible /* 例外，被自己创建的未删元组可见 */
+Rule 3:             ELSE  
+                    /* 这条元组被当前事务自己创建后又删除掉了，故不可见 */
+                        RETURN Invisible
+                    END IF
+Rule 4:         ELSE   /* t_xmin ≠ current_txid */
+                    /* 其他运行中的事务创建了本元组 */
+		            RETURN Invisible
+                END IF
+            END IF
 ```
 
-如果这个元组被另一个事务插入并且t_xmin的状态是IN_PROGRESS，则该元组显然是不可见的（Rule 4）。
+如果该元组被另一个进行中的事务插入（`t_xmin`对应事务状态为`IN_PROGRESS`），则该元组显然是不可见的（规则4）。
 
-如果t_xmin等于当前txid（即，当前事务插入了该元组）并且t_xmax有效，则该元组是不可见的，因为它已被当前事务更新或删除（Rule 3）。
+如果`t_xmin`等于当前事务的`txid`（即，是当前事务插入了该元组），且`t_xmax ≠ 0`，则该元组是不可见的，因为它已被当前事务更新或删除（规则3）。
 
-例外条件是当前事务插入此元组并且t_xmax无效的情况。 在这种情况下，此元组在当前事务中可见（Rule 2）。
+例外是，当前事务插入此元组且`t_xmax`无效（`t_xmax = 0`）的情况。 在这种情况下，此元组对当前事务中可见（规则2）。
 
-- **Rule  2:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax = INVAILD ⇒ Visible
-- **Rule  3:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax ≠ INVAILD ⇒ Invisible
-- **Rule  4:** If Status(t_xmin) = IN_PROGRESS ∧ t_xmin ≠ current_txid ⇒ Invisible
+- **规则2**： `If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax = INVAILD ⇒ Visible`
+- **规则3**：`If Status(t_xmin) = IN_PROGRESS ∧ t_xmin = current_txid ∧ t_xmax ≠ INVAILD ⇒ Invisible`
+- **规则4**： `If Status(t_xmin) = IN_PROGRESS ∧ t_xmin ≠ current_txid ⇒ Invisible`
 
-### 5.6.3  t_xmin的状态为COMMITTED
+### 5.6.3  `t_xmin`的状态为`COMMITTED`
 
-t_xmin状态为COMMITTED的元组是可见的（Rule 6，8和9），但在三个条件下除外。
+`t_xmin`状态为`COMMITTED`的元组是可见的（规则 6，8和9），但在三个条件下除外。
 
-```sql
- /* t_xmin status = COMMITTED */
+```pseudocode
+            /* 创建元组的事务已经提交 */
             IF t_xmin status is COMMITTED THEN
-Rule 5:      IF t_xmin is active in the obtained transaction snapshot THEN
+            	/* 创建元组的事务在获取的事务快照中处于活跃状态，创建无效，不可见 */
+Rule 5:         IF t_xmin is active in the obtained transaction snapshot THEN
                       RETURN Invisible
-Rule 6:      ELSE IF t_xmax = INVALID OR status of t_xmax is ABORTED THEN
+                /* 元组被删除，但删除元组的事务中止了，删除无效，可见 */
+                /* 创建元组的事务已提交，且非活跃，元组也没有被标记为删除，则可见 */
+Rule 6:         ELSE IF t_xmax = INVALID OR status of t_xmax is ABORTED THEN
                       RETURN Visible
-            	 ELSE IF t_xmax status is IN_PROGRESS THEN
-Rule 7:           IF t_xmax =  current_txid THEN
-                            RETURN Invisible
-Rule 8:           ELSE  /* t_xmax ≠ current_txid */
-                            RETURN Visible
-                      END IF
-            	 ELSE IF t_xmax status is COMMITTED THEN
-Rule 9:           IF t_xmax is active in the obtained transaction snapshot THEN
-                            RETURN Visible
-Rule 10:         ELSE
-                            RETURN Invisible
-                      END IF
+                /* 元组被删除，但删除元组的事务正在进行中，分情况 */
+            	ELSE IF t_xmax status is IN_PROGRESS THEN
+                    /* 如果恰好是被本事务自己删除的，删除有效，不可见 */
+Rule 7:             IF t_xmax =  current_txid THEN
+                        RETURN Invisible
+                    /* 如果是被其他事务删除的，删除无效，可见 */
+Rule 8:             ELSE  /* t_xmax ≠ current_txid */
+                        RETURN Visible
+                    END IF
+                /* 元组被删除，且删除元组的事务已经提交 */
+            	ELSE IF t_xmax status is COMMITTED THEN
+                    /* 删除元组的事务在获取的事务快照中处于活跃状态，删除无效，不可见 */
+Rule 9:             IF t_xmax is active in the obtained transaction snapshot THEN
+                        RETURN Visible
+Rule 10:            ELSE /* 删除有效，可见 */
+                        RETURN Invisible
+                    END IF
             	 END IF
             END IF
 ```
 
-Rule 6是显而易见的，因为t_xmax无效的或者已经中止。三个例外条件以及Rule 8和9的描述如下。
+规则6是显而易见的，因为`t_xmax`为`INVALID`，或者`t_xmax`对应事务已经中止，相应元组可见。三个例外条件及规则8与规则9的描述如下。
 
-第一个例外情况是t_xmin在获取的事务快照中处于活动状态（Rule 5）。在这种情况下，这个元组是不可见的，因为t_xmin应该被视为正在进行中。
+第一个例外情况是`t_xmin`在获取的事务快照中处于**活跃**状态（规则5）。在这种情况下，这条元组是不可见的，因为`t_xmin`应该被视为正在进行中（取快照时创建该元组的事务尚未提交，因此对于`REPEATABLE READ`以及更高隔离等级而言，即使在判断时创建该元组的事务已经提交，但其结果仍然不可见）。
 
-第二个例外情况是t_xmax是当前的txid（Rule 7）。在这种情况下，与Rule 3一样，此元组是不可见的，因为它已被此事务本身更新或删除。
+第二个例外情况是`t_xmax`是当前的`txid`（规则7）。这种情况与规则3类似，此元组是不可见的，因为它已经被此事务本身更新或删除。
 
-相反，如果t_xmax的状态是IN_PROGRESS并且t_xmax不是当前的txid（Rule 8），则元组是可见的，因为它尚未被删除。
+相反，如果`t_xmax`的状态是`IN_PROGRESS`并且`t_xmax`不是当前的`txid`（规则8），则元组是可见的，因为它尚未被删除（因为删除该元组的事务尚未提交）。
 
-第三个例外情况是t_xmax的状态为COMMITTED，并且t_xmax在获取的事务快照中不是活动的（Rule 10）。在这种情况下，此元组是不可见的，因为它已被另一个事务更新或删除。
+第三个例外情况是`t_xmax`的状态为`COMMITTED`，且`t_xmax`在获取的事务快照中是**非活跃**的（规则10）。在这种情况下该元组不可见，因为它已被另一个事务更新或删除。
 
-相反，如果t_xmax的状态为COMMITTED，但t_xmax在获取的事务快照中处于活动状态（Rule 9），则元组可见，因为t_xmax应被视为正在进行中。
+相反，如果`t_xmax`的状态为`COMMITTED`，但`t_xmax`在获取的事务快照中处于活跃状态（规则9），则元组可见，因为`t_xmax`对应的事务应被视为正在进行中，删除尚未提交生效。
 
-* **Rule  5:** If Status(t_xmin) = COMMITTED ∧ Snapshot(t_xmin) = active ⇒ Invisible
-* **Rule  6:** If Status(t_xmin) = COMMITTED ∧ (t_xmax = INVALID ∨ Status(t_xmax) = ABORTED) ⇒ Visible
-* **Rule  7:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax = current_txid ⇒ Invisible
-* **Rule  8:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax ≠ current_txid ⇒ Visible
-* **Rule  9:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) = active ⇒ Visible
-* **Rule  10:** If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) ≠ active ⇒ Invisible
+* **规则5**：`If Status(t_xmin) = COMMITTED ∧ Snapshot(t_xmin) = active ⇒ Invisible`
+* **规则6**：`If Status(t_xmin) = COMMITTED ∧ (t_xmax = INVALID ∨ Status(t_xmax) = ABORTED) ⇒ Visible`
+* **规则7**： `If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax = current_txid ⇒ Invisible`
+* **规则8**：`If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = IN_PROGRESS ∧ t_xmax ≠ current_txid ⇒ Visible`
+* **规则9**： `If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) = active ⇒ Visible`
+* **规则10**：`If Status(t_xmin) = COMMITTED ∧ Status(t_xmax) = COMMITTED ∧ Snapshot(t_xmax) ≠ active ⇒ Invisible`
 
 ## 5.7 可见性检查
 
-本节描述PostgreSQL如何执行可见性检查，即如何选择给定事务中适当版本的堆元组。本节还介绍了PostgreSQL如何防止ANSI SQL-92标准中定义的异常：脏读，可重读和幻读。
+本节描述了PostgreSQL执行可见性检查的流程。**可见性检查（Visiblity Check）**，即如何为给定事务挑选堆元组的恰当版本。本节还介绍了PostgreSQL如何防止ANSI SQL-92标准中定义的异常：脏读，可重读和幻读。
 
 ### 5.7.1 可见性检查
 
-图5.10中的场景描述了可见性检查。
+图5.10中的场景描述了可见性检查的过程。
 
-**图5.10 描述可见性检查的场景**
+**图5.10 可见性检查场景一例**
 
 ![](img/fig-5-10.png)
 
-在图5.10所示的场景中，SQL命令按以下时间顺序执行。
+在图5.10所示的场景中，SQL命令按以下时序执行。
 
-* T1：启动事务（txid=200）
-* T2：启动事务（txid=201）
-* T3：执行txid=200和201的事务的SELECT命令
-* T4：执行txid=200的事务的UPDATE命令
-* T5：执行txid=200和201的事务的SELECT命令
-* T6：提交txid=200的事务
-* T7：执行txid=201的事务的SELECT命令
+* T1：启动事务`(txid=200)`
+* T2：启动事务`(txid=201)`
+* T3：执行`txid=200`和201的事务的`SELECT`命令
+* T4：执行`txid=200`的事务的`UPDATE`命令
+* T5：执行`txid=200`和201的事务的`SELECT`命令
+* T6：提交`txid=200`的事务
+* T7：执行`txid=201`的事务的`SELECT`命令
 
-为了简化描述，假设只有两个事务，即txid=200和201的事务。txid=200的事务的隔离级别是READ COMMITTED，并且txid=201的事务的隔离级别是READ COMMITTED或REPEATABLE READ。
+为了简化描述，假设这里只有两个事务，即`txid=200`和`201`的事务。`txid=200`的事务的隔离级别是`READ COMMITTED`，而`txid=201`的事务的隔离级别是`READ COMMITTED`或`REPEATABLE READ`。
 
-我们将探索SELECT命令如何为每个元组执行可见性检查。
+我们将研究`SELECT`命令是如何为每条元组执行可见性检查的。
 
-**T3的SELECT命令：**
+**T3的`SELECT`命令：**
 
-在T3时刻，表tbl中只有一个Tuple_1，基于Rule 6，它是可见；因此，两个事务中的SELECT命令都返回‘Jekyll’。
+在T3时间点，表`tbl`中只有一条元组`Tuple_1`，按照规则6，这条元组是可见的，因此两个事务中的`SELECT`命令都返回`"Jekyll"`。
 
-- Rule 6(Tuple_1) ⇒ Status(t_xmin:199) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible
+- `Rule 6(Tuple_1) ⇒ Status(t_xmin:199) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible`
+
+  创建元组`Tuple_1`的事务199已经提交，且该元组并未被标记删除，因此根据规则6，对当前事务可见。
 
 ```sql
 testdb=# -- txid 200
@@ -536,12 +563,17 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-**T5的SELECT命令**
+**T5的`SELECT`命令**
 
-首先，我们探讨由txid=200的事务执行的SELECT命令。由Rule 7，Tuple_1不可见，由Rule 2，Tuple_2可见；因此，此SELECT命令返回‘Hyde’。
+首先来看一下由`txid=200`的事务所执行的`SELECT`命令。根据规则7，`Tuple_1`不可见，根据规则2，`Tuple_2`可见；因此该`SELECT`命令返回`"Hyde"`。
 
-- Rule 7(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 = current_txid:200 ⇒ Invisible
-- Rule 2(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 = current_txid:200 ∧ t_xmax = INVAILD ⇒ Visible
+- `Rule 7(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 = current_txid:200 ⇒ Invisible`
+
+  创建元组`Tuple_1`的事务199已经提交，且该元组被当前事务标记删除，根据规则7，`Tuple_1`对当前事务不可见。
+
+- `Rule 2(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 = current_txid:200 ∧ t_xmax = INVAILD ⇒ Visible`
+
+  创建元组`Tuple_2`的事务200正在进行，而且就是当前事务自己，根据规则2，`Tuple_2`对当前事务可见。
 
 ```sql
 testdb=# -- txid 200
@@ -552,10 +584,15 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-另一方面，在由txid=201的事务执行的SELECT命令中，Tuple_1由Rule 8可见，而Tuple_2，由Rule 4不可见；因此，此SELECT命令返回‘Jekyll’。
+另一方面，在由`txid=201`的事务所执行的`SELECT`命令中，`Tuple_1`基于规则8确定可见，而`Tuple_2`基于规则4不可见；因此该`SELECT`命令返回`"Jekyll"`。
 
-- Rule 8(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 ≠ current_txid:201 ⇒ Visible
-- Rule 4(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 ≠ current_txid:201 ⇒ Invisible
+- `Rule 8(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = IN_PROGRESS ∧ t_xmax:200 ≠ current_txid:201 ⇒ Visible`
+
+   元组`Tuple_1`由已提交事务199创建，由活跃事务200标记删除，但删除效果对当前事务201不可见。因此根据规则8，`Tuple_1`可见。
+
+- `Rule 4(Tuple_2): Status(t_xmin:200) = IN_PROGRESS ∧ t_xmin:200 ≠ current_txid:201 ⇒ Invisible`
+
+   元组`Tuple_2`由活跃事务200创建，且不是由当前事务自己创建的，故根据规则4，`Tuple_2`不可见。
 
 ```sql
 testdb=# -- txid 201
@@ -566,19 +603,23 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-如果更新的元组在提交之前从其他事务中可见，则它们被称为脏读（Dirty Reads），也称为写读冲突（wr-conflicts）。 但是，如上所示，PostgreSQL中的任何隔离级别都不会出现脏读。
+如果更新的元组在本事务提交之前被其他事务看见，这种现象被称为**脏读（Dirty Reads）**，也称为**写读冲突（wr-conflicts）**。 但如上所示，PostgreSQL中任何隔离级别都不会出现脏读。
 
-**T7的SELECT命令**
+**T7的`SELECT`命令**
 
-在下文中，描述了T7的SELECT命令在两个隔离级别中的行为。
+在下文中，描述了T7的`SELECT`命令在两个隔离级别中的行为。
 
-首先，我们探讨txid=201的事务何时处于READ COMMITTED级别。 在这种情况下，txid=200的事务被视为COMMITTED，因为事务快照是‘201：201：’。因此，由Rule 10，Tuple_1不可见，由Rule 6，Tuple_2可见，SELECT命令返回‘Hyde’。
+首先来研究`txid=201`的事务处于`READ COMMITTED`隔离级别时的情况。 在这种情况下，`txid=200`的事务被视为已提交，因为在这个时间点获取的事务快照是`201:201:`。因此`Tuple_1`根据规则10不可见，`Tuple_2`根据规则6可见，`SELECT`命令返回`"Hyde"`。
 
-- Rule 10(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) ≠ active ⇒ Invisible
-- Rule 6(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible
+- `Rule 10(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) ≠ active ⇒ Invisible`
+
+   元组`Tuple_1`由已提交事务199创建，由非活跃的已提交事务200标记删除，`Tuple_1`按照规则10不可见。
+
+- `Rule 6(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ t_xmax = INVALID ⇒ Visible`
+
+  元组`Tuple_2`由已提交事务200创建，且未被标记为删除，故`Tuple_2`按照规则6可见。
 
 ```sql
-
 testdb=# -- txid 201 (READ COMMITTED)
 testdb=# SELECT * FROM tbl;
  name 
@@ -587,12 +628,19 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-注意，在提交txid=200的事务中，前后执行的SELECT命令的结果是不同的。 这通常称为不可重复读取。
+这里需要注意，事务201中的`SELECT`命令，在`txid=200`的事务提交前后中时的执行结果是不一样的，这种现象通常被称作**不可重复读（Non-Repeatable Read）**。
 
-相反，当txid=201的事务处于REPEATABLE READ级别时，txid=200的事务必须被视为IN_PROGRESS，因为事务快照是‘200：200：’。 因此，由Rule9，可以看到Tuple_1，由Rule5看不到Tuple_2，SELECT命令返回‘Jekyll’。 请注意，在REPEATABLE READ（和SERIALIZABLE）级别中不会发生不可重复读取。
+相反的是，当`txid=201`的事务处于`REPEATABLE READ`级别时，即使在T7时刻`txid=200`的事务实际上已经提交，它也必须被视作仍在进行，因而获取到的事务快照是`200:200:`。 根据规则9，`Tuple_1`是可见的，根据规则5，`Tuple_2`不可见，所以最后`SELECT`命令会返回`"Jekyll"`。 请注意在`REPEATABLE READ`（和`SERIALIZABLE`）级别中不会发生不可重复读。
 
-- Rule9(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) = active ⇒ Visible
-- Rule5(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ Snapshot(t_xmin:200) = active ⇒ Invisible
+- `Rule9(Tuple_1): Status(t_xmin:199) = COMMITTED ∧ Status(t_xmax:200) = COMMITTED ∧ Snapshot(t_xmax:200) = active ⇒ Visible`
+
+  元组`Tuple_1`由已提交事务199创建，由已提交事务200标记删除，但因为事务200位于当前事物的活跃事务快照中（也就是在当前事物201开始执行并获取事务级快照时，事物200还未提交），因此删除对当前事务尚未生效，根据规则9，`Tuple_1`可见。
+
+  `Tuple_1`按照规则10不可见。
+
+- `Rule5(Tuple_2): Status(t_xmin:200) = COMMITTED ∧ Snapshot(t_xmin:200) = active ⇒ Invisible`
+
+  元组`Tuple_2`由已提交事务200创建，但该事务在本事务快照中属于活跃事务（即在本事务开始前还未提交），因此事务200的变更对本事务尚不可见，按照规则5，`Tuple_2`不可见。
 
 ```sql
 testdb=# -- txid 201 (REPEATABLE READ)
@@ -603,256 +651,198 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-> 提示位（Hint Bits）
+> #### 提示位（Hint Bits）
 >
-> 为了获得事务的状态，PostgreSQL内部提供了三个函数，即TransactionIdIsInProgress，TransactionIdDidCommit和TransactionIdDidAbort。 例如clog缓存等，这些功能是为了减少clog的频繁访问。 但是，如果在检查每个元组时执行它们，则会成为性能瓶颈。
+> PostgreSQL在内部提供了三个函数`TransactionIdIsInProgress`，`TransactionIdDidCommit`和`TransactionIdDidAbort`，用于获取事务的状态。这些函数被设计为尽可能减少对clog的频繁访问。 尽管如此，如果在检查每条元组时都执行这些函数，那这里很可能会成为一个性能瓶颈。
 >
-> 为了解决这个问题，PostgreSQL使用了提示位，如下所示。
+> 为了解决这个问题，PostgreSQL使用了**提示位（hint bits）**，如下所示。
 >
 > ```sql
-> #define HEAP_XMIN_COMMITTED       0x0100   /* t_xmin committed */
-> #define HEAP_XMIN_INVALID         0x0200   /* t_xmin invalid/aborted */
-> #define HEAP_XMAX_COMMITTED       0x0400   /* t_xmax committed */
-> #define HEAP_XMAX_INVALID         0x0800   /* t_xmax invalid/aborted */
+> #define HEAP_XMIN_COMMITTED       0x0100   /* 元组xmin对应事务已提交 */
+> #define HEAP_XMIN_INVALID         0x0200   /* 元组xmin对应事务无效/中止 */
+> #define HEAP_XMAX_COMMITTED       0x0400   /* 元组xmax对应事务已提交 */
+> #define HEAP_XMAX_INVALID         0x0800   /* 元组xmax对应事务无效/中止 */
 > ```
 >
-> 在读取或写入元组时，如果可能，PostgreSQL会将提示位设置到元组的t_informask中。 例如，假设PostgreSQL检查了元组的t_xmin的状态以及COMMITTED状态。 在这种情况下，PostgreSQL将一个提示位HEAP_XMIN_COMMITTED设置为元组的t_infomask。 如果已经设置了提示位，则不再需要调用TransactionIdDidCommit和TransactionIdDidAbort。 因此，PostgreSQL可以高效地检查每个元组的t_xmin和t_xmax的状态。
+> 在读取或写入元组时，PostgreSQL会择机将提示位设置到元组的`t_informask`字段中。 举个例子，假设PostgreSQL检查了元组的`t_xmin`对应事务的状态，结果为`COMMITTED`。 在这种情况下，PostgreSQL会在元组的`t_infomask`中置位一个`HEAP_XMIN_COMMITTED`标记，表示创建这条元组的事务已经提交了。 如果已经设置了提示位，则不再需要调用`TransactionIdDidCommit`和`TransactionIdDidAbort`来获取事务状态了。 因此PostgreSQL能高效地检查每个元组`t_xmin`和`t_xmax`对应事务的状态。
 
 ### 5.7.2 PostgreSQL可重复读等级中的幻读
 
-ANSI SQL-92标准中定义的`REPEATABLE READ`允许**幻读（Phantom Reads）**。 但是，PostgreSQL的实现中不允许它们发生。 原则上SI不允许幻读。
+ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读（Phantom Reads）**， 但PostgreSQL实现的`REPEATABLE READ`隔离等级不允许发生幻读。 在原则上，快照隔离中不允许出现幻读。
 
-假设两个事务，即Tx_A和Tx_B，同时运行。 它们的隔离级别为`READ COMMITTED`和`REPEATABLE READ`，它们的txid分别为100和101。 首先，Tx_A插入一个元组。 然后提交。 插入的元组的t_xmin为100。接着，Tx_B执行SELECT命令；但是，按照Rule 5，Tx_A插入的元组是不可见的。因此，不会发生幻读。
+假设两个事务`Tx_A`和`Tx_B`同时运行。 它们的隔离级别分别为`READ COMMITTED`和`REPEATABLE READ`，它们的`txid`分别为100和101。两个事务一前一后接连开始，首先`Tx_A`插入一条元组，并提交。 插入的元组的`t_xmin`为100。接着，`Tx_B`执行`SELECT`命令；但根据规则5，`Tx_A`插入的元组对`Tx_B`是不可见的。因此不会发生幻读。
 
-- Rule5(new tuple): Status(t_xmin:100) = COMMITTED ∧ Snapshot(t_xmin:100) = active ⇒ Invisible
+- `Rule5(new tuple): Status(t_xmin:100) = COMMITTED ∧ Snapshot(t_xmin:100) = active ⇒ Invisible`
 
-```sql
-testdb=# -- Tx_A: txid 100
-testdb=# START TRANSACTION
-testdb-#  ISOLATION LEVEL READ COMMITTED;
-START TRANSACTION
+  新元组由已提交的事务`Tx_A`创建，但`Tx_A`在`Tx_B`的事务快照中处于活跃状态，因此根据规则5，新元组对`Tx_B`不可见。
 
+  | `Tx_A: txid = 100`                                  | `Tx_B: txid = 101`                                   |
+  | --------------------------------------------------- | ---------------------------------------------------- |
+  | `START TRANSACTION ISOLATION LEVEL READ COMMITTED;` | `START TRANSACTION ISOLATION LEVEL REPEATABLE READ;` |
+  | `INSERT tbl(id, data) `                             |                                                      |
+  | `COMMIT;`                                           |                                                      |
+  |                                                     | `SELECT * FROM tbl WHERE id=1;`                      |
+  |                                                     | `(0 rows)`                                           |
+  |                                                     |                                                      |
 
-testdb=# INSERT tbl(id, data) 
-                VALUES (1,phantom);
-INSERT 1
- 
-testdb=# COMMIT;
-COMMIT
-```
+  ## 5.8 防止丢失更新
 
-```sql
-testdb=# -- Tx_B: txid 101
-testdb=# START TRANSACTION
-testdb-#  ISOLATION LEVEL REPEATABLE READ;
-START TRANSACTION
-testdb=# SELECT txid_current();
- txid_current
---------------
-          101
-(1 row)
+**丢失更新（Lost Update）**，又被称作**写-写冲突（ww-conflict）**，是事务并发更新同一行时所发生的异常，`REPEATABLE READ`和`SERIALIZABLE`隔离等级必须阻止该异常的出现。 本节将会介绍PostgreSQL是如何防止丢失更新的，并举一些例子来说明。
 
-testdb=# SELECT * FROM tbl WHERE id=1;
- id | data 
-----+------
-(0 rows)
-```
+### 5.8.1 并发`UPDATE`命令的行为
 
-## 5.8 防止丢失更新
+执行`UPDATE`命令时，内部实际上调用了`ExecUpdate`函数。 `ExecUpdate`的伪代码如下所示：
 
-丢失更新（也称为写写冲突）是并发事务更新相同行时发生的异常，必须在REPEATABLE READ和SERIALIZABLE级别中防止它。 本节介绍PostgreSQL如何防止丢失更新并展示一个示例。
-
-### 5.8.1 并发更新命令的行为
-
-执行UPDATE命令时，将在内部调用ExecUpdate函数。 ExecUpdate的伪代码如下所示：
-
-> 执行*ExecUpdate*伪代码
+> ##### 伪代码：`ExecUpdate`
 >
-> ```sql
-> (1)  FOR each row that will be updated by this UPDATE command
-> (2)       WHILE true
+> ```pseudocode
+> (1) FOR row in 本UPDATE命令待更新的所有行集
+> (2)     WHILE true
+>             /* 第一部分 */
+> (3)         IF 目标行 正在 被更新 THEN
+> (4)	            等待 更新目标行的事务 结束(提交或中止)
 > 
->                /* 第一部分 */
-> (3)            IF 目标行正在被更新 THEN
-> (4)	              等待更新目标行的事务终止
+> (5)	            IF (更新目标行的事务已提交)
+>    	                AND (当前事务隔离级别是 可重复读或可串行化) THEN
+> (6)	                    中止当前事务  /* 以先更新者为准 */
+> 	            ELSE 
+> (7)                     跳转步骤（2）
+> 	            END IF
 > 
-> (5)	              IF (更新目标行事务状态是 COMMITTED)
->    	                   AND (当前事务隔离级别是 REPEATABLE READ 或 SERIALIZABLE) THEN
-> (6)	                       ABORT 当前事务  /* First-Updater-Win */
-> 	              ELSE 
-> (7)                           GOTO step (2)
-> 	              END IF
-> 
->                /* 第二部分 */
-> (8)            ELSE IF 目标行被另一个并行事务更新 THEN
-> (9)	              IF (当前事务的隔离级别是 READ COMMITTED) THEN
-> (10)	                       UPDATE 目标行
-> 	              ELSE
-> (11)	                       ABORT 当前事务  /* First-Updater-Win */
-> 	              END IF
-> 
->                /* 第三部分 */
->                 ELSE  /* 目标行没有被更改，或者没有已经终止的事务更新过目标行 */
-> (12)	              UPDATE 目标行
+>             /* 第二部分 */
+> (8)         ELSE IF 目标行 已经 被另一个并发事务所更新 THEN
+> (9)	            IF (当前事务的隔离级别是 读已提交 ) THEN
+> (10)	            更新目标行
+> 	            ELSE
+> (11)	            中止当前事务  /* 先更新者为准 */
 >                 END IF
->            END WHILE 
->       END FOR 
+> 
+>             /* 第三部分 */
+>             /* 目标行没有被修改过，或者被一个 已经结束 的事务所更新 */
+>             ELSE  
+> (12)	            更新目标行
+>             END IF
+>         END WHILE 
+>     END FOR 
 > ```
 >
-> （1）获取将通过此UPDATE命令更新的每一行。
-> （2）重复以下过程，直到更新完目标行（或中止此事务）。
-> （3）如果目标行正在更新，则进入步骤（3）；否则，进入步骤（8）。
-> （4）等待更新目标行的事务终止，因为PostgreSQL在SI中使用first-updater-win方案。
-> （5）如果更新目标行的事务的状态为COMMITTED，并且该事务的隔离级别为REPEATABLE READ（或SERIALIZABLE），则进入步骤（6）；否则，进入步骤（7）。
-> （6）中止此事务以防止丢失更新。
-> （7）继续步骤（2）并尝试更新下一轮中的目标行。
-> （8）如果目标行已被另一个并发事务更新，则进入步骤（9）；否则，进入步骤（12）。
-> （9）如果该交易的隔离级别为READ COMMITTED，则进入步骤（10）；否则，进入步骤（11）。
-> （10）更新目标行，并进入步骤（1）。
-> （11）中止此交易以防止丢失更新。
-> （12）更新目标行，并进入步骤（1），因为目标行尚未被修改或被已终止的事务更新，即存在写写冲突。
->
-> 译者注：
->
-> 终止而不是中止，表示事务已经提交（commited）或者中止（aborted）。
+> 1. 获取被本`UPDATE`命令更新的每一行，并对每一行依次执行下列操作。
+> 2. 重复以下过程，直到目标行更新完成，或本事务中止。
+> 3. 如果目标行**正在**被更新则进入步骤（4），否则进入步骤（8）。
+> 4. 等待正在更新目标行的事务结束，因为PostgreSQL在SI中使用了**以先更新者为准（first-updater-win）**的方案。
+> 5. 如果更新目标行的事务已经提交，且当前事务的隔离等级为可重复读或可串行化则进入步骤（6），否则进入步骤（7）。
+> 6. 中止本事务，以防止丢失更新。（因为另一个事务已经对目标行进行了更新并提交）
+> 7. 跳转回步骤（2），并对目标行进行新一轮的更新尝试。
+> 8. 如果目标行**已被**另一个**并发**事务所更新则进入步骤（9），否则进入步骤（12）。
+> 9. 如果当前事务的隔离级别为**读已提交**则进入步骤（10），否则进入步骤（11）。
+> 10. 更新目标行，并回到步骤（1），处理下一条目标行。
+> 11. 中止当前事务，以防止丢失更新。
+> 12. 更新目标行，并回到步骤（1），因为目标行尚未被修改过，或者虽然已经被更新，但更新它的事务已经结束。已终止的事务更新，即存在写写冲突。
 
-此函数为每个目标行执行更新操作。 它有一个while循环来更新每一行，而while循环的内部根据图5.11所示的条件分支到三个块。
+此函数依次为每个待更新的目标行执行更新操作。 它有一个外层循环来更新每一行，而内部while循环则包含了三个分支，分支条件如图5.11所示。
 
-**图 5.11 `ExecUpdate`内部的三个分支块**
+**图 5.11 `ExecUpdate`内部的三个部分**
 
 ![Fig. 5.11. Three internal blocks in ExecUpdate.](img/fig-5-11.png)
 
-1. 目标行正在更新（图5.11 [1]）
-   “正在更新”意味着该行由另一个并发事务更新，并且该事务尚未终止。在这种情况下，当前事务必须等待更新目标行的事务的终止，因为PostgreSQL的SI使用first-updater-win方案。例如，假设事务Tx_A和Tx_B同时运行，并且Tx_B尝试更新行；但是，Tx_A已更新它并且仍在进行中。在这种情况下，Tx_B会等待Tx_A的终止。
+1. 目标行正在被更新，如图5.11[1]所示
 
-   在更新目标行提交的事务之后，当前事务的更新操作继续进行。如果当前事务处于READ COMMITTED级别，则将更新目标行；否则（REPEATABLE READ或SERIALIZABLE），当前事务立即中止以防止丢失更新。
+   “正在被更新”意味着该行正在被另一个事务同时更新，且另一个事务尚未结束。在这种情况下，当前事务必须等待更新目标行的事务结束，因为PostgreSQL的SI实现采用**以先更新者为准（first-updater-win）**的方案。例如，假设事务`Tx_A`和`Tx_B`同时运行，且`Tx_B`尝试更新某一行；但`Tx_A`已更新了这一行，且仍在进行中。在这种情况下`Tx_B`会等待`Tx_A`结束。
 
-2. 目标行已由并发事务更新（图5.11 [2]）
-   当前事务尝试更新目标元组；但是，另一个并发事务已更新目标行并已提交。在这种情况下，如果当前事务处于READ COMMITTED级别，则将更新目标行；否则，立即中止当前事务以防止丢失更新。
+   在更新目标行的事务提交后，当前事务的更新操作将完成等待继续进行。如果当前事务处于`READ COMMITTED`隔离等级，则会更新目标行；而若处于`REPEATABLE READ`或`SERIALIZABLE`隔离等级时，当前事务则会立即中止，以防止丢失更新。
 
-3. 没有冲突（图5.11 [3]）
-   当没有冲突时，当前事务可以更新目标行。
+2. 目标行**已经**被另一个并发事务所更新，如图5.11[2]所示
 
->  *first-updater-win / first-commiter-win*
+   当前事务尝试更新目标元组，但另一个并发事务已经更新了目标行并提交。在这种情况下，如果当前事务处于`READ COMMITTED`级别，则会更新目标行；否则会立即中止以防止丢失更新。
+
+3. 没有冲突，如图5.11[3]所示
+
+   当没有冲突时，当前事务可以直接更新目标行。
+
+>  ##### 以先更新者为准 / 以先提交者为准
 >
-> PostgreSQL基于SI的并发控制使用first-updater-win方案。 相反，如下一节所述，PostgreSQL的SSI使用first-committer-win方案。
+>  PostgreSQL基于SI的并发控制机制采用**以先更新者为准（first-updater-win）**方案。 相反如下一节所述，PostgreSQL的SSI实现使用**以先提交者为准（first-commiter-win）**方案。
 
 ### 5.8.2 例子
 
-以下展示三个示例。 第一个和第二个示例显示目标行**正在**被更新时的行为，第三个示例显示目标行已经被更新的行为。
+以下是三个例子。 第一个和第二个例子展示了目标行**正在**被更新时的行为，第三个例子展示了目标行已经被更新的行为。
 
-**例1：**
+#### 例1
 
-事务Tx_A和Tx_B更新同一个表中的同一行，它们的隔离级别为READ COMMITTED。
+事务`Tx_A`和`Tx_B`更新同一张表中的同一行，它们的隔离等级均为`READ COMMITTED`。
 
-```sql
-testdb=# -- Tx_A
-testdb=# START TRANSACTION
-testdb-#    ISOLATION LEVEL READ COMMITTED;
-START TRANSACTION
-testdb=# UPDATE tbl SET name = Hyde;
-UPDATE 1
-testdb=# COMMIT;
-COMMIT
-```
+| `Tx_A`                                              | `Tx_B`                                              |
+| --------------------------------------------------- | --------------------------------------------------- |
+| `START TRANSACTION ISOLATION LEVEL READ COMMITTED;` |                                                     |
+| *`START TRANSACTION`*                               | `START TRANSACTION ISOLATION LEVEL READ COMMITTED;` |
+|                                                     | *`START TRANSACTION`*                               |
+| `UPDATE tbl SET name = 'Hyde';`                     |                                                     |
+| *`UPDATE 1`*                                        |                                                     |
+|                                                     | `UPDATE tbl SET name = 'Utterson';`                 |
+|                                                     | ↓ *-- 本事务进入阻塞状态，等待`Tx_A`完成*           |
+| `COMMIT;`                                           | ↓ *-- `Tx_A`提交，阻塞解除*                         |
+|                                                     | *`UPDATE 1`*                                        |
 
-```sql
-testdb=# START TRANSACTION
-testdb-#    ISOLATION LEVEL READ COMMITTED;
-START TRANSACTION
-testdb=# UPDATE tbl SET name = Utterson;
-    ↓ 
-    ↓ this transaction is being blocked
-    ↓ 
-UPDATE 1
-```
+`Tx_B`的执行过程如下：
 
-Tx_B执行如下。
+1. 在执行`UPDATE`命令之后，`Tx_B`应该等待`Tx_A`结束，因为目标元组正在被`Tx_A`更新（`ExecUpdate`步骤4）
+2. 在`Tx_A`提交后，`Tx_B`尝试更新目标行（`ExecUpdate`步骤7）
+3. 在`ExecUpdate`内循环第二轮中，目标行被`Tx_B`更新（`ExecUpdate`步骤2,8,9,10）。
 
-1）在执行UPDATE命令之后，Tx_B应该等待Tx_A的终止，因为目标元组正由Tx_A更新（ExecUpdate中的步骤（4））。
-2）在提交Tx_A之后，Tx_B尝试更新目标行（ExecUpdate中的步骤（7））。
-3）在第二轮ExecUpdate中，目标行再次由Tx_B更新（ExecUpdate中的步骤（2），（8），（9），（10））。
-**例2：**
+#### 例2
 
-Tx_A和Tx_B更新同一表中的同一行，它们的隔离级别分别为READ COMMITTED和REPEATABLE READ。
+`Tx_A`和`Tx_B`更新同一张表中的同一行，它们的隔离等级分别为读已提交和可重复读。
 
-```sql
-testdb=# -- Tx_A
-testdb=# START TRANSACTION
-testdb-#    ISOLATION LEVEL READ COMMITTED;
-START TRANSACTION
-testdb=# UPDATE tbl SET name = Hyde;
-UPDATE 1
-testdb=# COMMIT;
-COMMIT
-```
+| `Tx_A`                                              | `Tx_B`                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| `START TRANSACTION ISOLATION LEVEL READ COMMITTED;` |                                                              |
+| *`START TRANSACTION`*                               | `START TRANSACTION ISOLATION LEVEL REPEATABLE READ;`         |
+|                                                     | *`START TRANSACTION`*                                        |
+| `UPDATE tbl SET name = 'Hyde';`                     |                                                              |
+| *`UPDATE 1`*                                        |                                                              |
+|                                                     | `UPDATE tbl SET name = 'Utterson';`                          |
+|                                                     | ↓ *-- 本事务进入阻塞状态，等待`Tx_A`完成*                    |
+| `COMMIT;`                                           | ↓ *-- `Tx_A`提交，阻塞解除*                                  |
+|                                                     | *`ERROR:couldn't serialize access due to concurrent update`* |
 
-```sql
-testdb=# -- Tx_B
-testdb=# START TRANSACTION
-testdb-#    ISOLATION LEVEL REPEATABLE READ;
-START TRANSACTION
-testdb=# UPDATE tbl SET name = Utterson;
-    ↓ 
-    ↓ this transaction is being blocked
-    ↓
-ERROR:couldnt serialize access due to concurrent update
-```
+`Tx_B`的执行过程如下：
 
-Tx_B的行为描述如下。
+1. `Tx_B`在执行`UPDATE`命令后阻塞，等待`Tx_A`终止（`ExecUpdate`步骤4）。
+2. 当`Tx_A`提交后，`Tx_B`会中止以解决冲突。因为目标行已经被更新，且当前事务`Tx_B`的隔离级别为可重复读（`ExecUpdate`步骤5，6）。
 
-1）执行UPDATE命令后，Tx_B应等待Tx_A的终止（ExecUpdate中的步骤（4））。
-2）提交Tx_A后，中止Tx_B以处理冲突，因为目标行已更新且此事务的隔离级别为REPEATABLE READ（ExecUpdate中的步骤（5）和（6））。
-**例3：**
+#### 例3
 
-Tx_B（REPEATABLE READ）尝试更新已被Tx_A更新的目标行，并且Tx_A已经提交。 在这种情况下，中止Tx_B（ExecUpdate中的步骤（2），（8），（9）和（11））。
-
-```sql
-testdb=# -- Tx_A
-testdb=# START TRANSACTION
-testdb-#    ISOLATION LEVEL READ COMMITTED;
-START TRANSACTION
+`Tx_B`（可重复读）尝试更新已经被`Tx_A`更新的目标行，且`Tx_A`已经提交。 在这种情况下，`Tx_B`会中止（`ExecUpdate`中的步骤2,8,9,11）。
 
 
-testdb=# UPDATE tbl SET name = Hyde;
-UPDATE 1
+
+| `Tx_A`                                              | `Tx_B`                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| `START TRANSACTION ISOLATION LEVEL READ COMMITTED;` |                                                              |
+| *`START TRANSACTION`*                               | `START TRANSACTION ISOLATION LEVEL REPEATABLE READ;`         |
+|                                                     | *`START TRANSACTION`*                                        |
+| `UPDATE tbl SET name = 'Hyde';`                     |                                                              |
+| *`UPDATE 1`*                                        |                                                              |
+| `COMMIT;`                                           |                                                              |
+|                                                     | `UPDATE tbl SET name = 'Utterson';`                          |
+|                                                     | *`ERROR:couldn't serialize access due to concurrent update`* |
 
 
-testdb=# COMMIT;
-COMMIT
- 
-```
 
-```sql
+## 5.9 可串行化快照隔离
 
-
-testdb=# -- Tx_B
-testdb=# START TRANSACTION
-testdb-#    ISOLATION LEVEL REPEATABLE READ;
-START TRANSACTION
-testdb=# SELECT * FROM tbl;
-  name  
---------
- Jekyll
-(1 row)
-testdb=# UPDATE tbl SET name = Utterson;
-ERROR:couldnt serialize access due to concurrent update
-```
-
-## 5.9 可序列化快照隔离
-
-从版本9.1开始，可序列化快照隔离（SSI）已嵌入到SI中，以实现真正的SERIALIZABLE隔离级别。由于SSI的解释太复杂，因此本书中仅解释概要。 有关详细信息，请参阅文献[2]。
+从版本9.1开始，可串行化快照隔离（SSI）已嵌入到SI中，以实现真正的SERIALIZABLE隔离级别。由于SSI的解释太复杂，因此本书中仅解释概要。 有关详细信息，请参阅文献[2]。
 
 在下文中，使用了下面的技术术语而没有定义。 如果您不熟悉这些术语，请参阅[1，3]。
 
-+ 优先级图（也称为依赖图和序列化图）
-+ 序列化异常（例如，Write-Skew）	
++ 优先级图（也称为依赖图和串行化图）
++ 串行化异常（例如，Write-Skew）	
 
 ### 5.9.1 SSI实现的基本策略
 
-如果优先级图中存在由某些冲突生成的环，则会出现序列化异常。 这里用最简单的异常来解释的，即Write-Skew。
+如果优先级图中存在由某些冲突生成的环，则会出现串行化异常。 这里用最简单的异常来解释的，即Write-Skew。
 
-图5.12（1）显示了一个调度表。 这里，Transaction_A读取Tuple_B，Transaction_B读取Tuple_A。 然后，Transaction_A写入Tuple_A，Transaction_B写入Tuple_B。 在这种情况下，存在两个读写冲突（rw-conflict），它们在该调度表的优先级图中形成一个环，如图5.12（2）所示。 因此，该调度具有序列化异常，即Write-Skew。
+图5.12（1）显示了一个调度表。 这里，Transaction_A读取Tuple_B，Transaction_B读取Tuple_A。 然后，Transaction_A写入Tuple_A，Transaction_B写入Tuple_B。 在这种情况下，存在两个读写冲突（rw-conflict），它们在该调度表的优先级图中形成一个环，如图5.12（2）所示。 因此，该调度具有串行化异常，即Write-Skew。
 
 **图 5.12 Write-Skew调度及其优先级图。**
 
@@ -864,7 +854,7 @@ PostgreSQL采用以下策略进行SSI实现：
 
 1. 将事务访问的所有对象（元组，页面，关系）记录为SIREAD Lock。
 2. 每当写入任何堆或索引元组时，使用SIREAD Lock检测读写冲突。
-3. 如果通过检查读写冲突，检测到序列化异常，则中止事务。
+3. 如果通过检查读写冲突，检测到串行化异常，则中止事务。
 
 ### 5.9.2 PostgreSQL中的SSI实现
 
@@ -879,7 +869,7 @@ PostgreSQL采用以下策略进行SSI实现：
 
 SIREAD Lock有三个级别：tuple，page和relation。如果创建了单个页面中所有元组的SIREAD Lock，则会将它们聚合到该页的单个SIREAD Lock中，并释放（删除）相关元组的所有SIREAD Lock，以减少内存空间。对于所有读取的页面也是如此。
 
-为索引创建SIREAD Lock时，一开始创建页级SIREAD Lock。使用顺序扫描时，无论是否存在索引和（或）WHERE子句，一开始都会创建关系级别的SIREAD Lock。请注意，在某些情况下，此实现可能会导致序列化异常的误报。详细细节在第5.9.4节中描述。
+为索引创建SIREAD Lock时，一开始创建页级SIREAD Lock。使用顺序扫描时，无论是否存在索引和（或）WHERE子句，一开始都会创建关系级别的SIREAD Lock。请注意，在某些情况下，此实现可能会导致串行化异常的误报。详细细节在第5.9.4节中描述。
 
 **rw-conflict**：
 rw-conflict是SIREAD Lock和两个读写SIREAD Lock的txid组成的三元组。
@@ -888,7 +878,7 @@ rw-conflict是SIREAD Lock和两个读写SIREAD Lock的txid组成的三元组。
 
 例如，假设txid=100的事务读取Tuple_1，然后txid=101的事务更新Tuple_1。在这种情况下，由txid=101的事务中的UPDATE命令调用的CheckTargetForConflictsIn函数，检测到txid=100，101与Tuple_1的存在rw-conflict，然后创建rw-conflict{r = 100，w = 101，{Tuple_1}}。
 
-CheckTargetForConflictOut和CheckTargetForConflictIn函数，以及在SERIALIZABLE模式下执行COMMIT命令时调用的PreCommit_CheckForSerializationFailure函数，都会使用创建的rw-conflict，检查序列化异常。如果它们检测到异常，则仅提交第一个提交的事务，并中止其他事务（通过first-committer-win策略）。
+CheckTargetForConflictOut和CheckTargetForConflictIn函数，以及在SERIALIZABLE模式下执行COMMIT命令时调用的PreCommit_CheckForSerializationFailure函数，都会使用创建的rw-conflict，检查串行化异常。如果它们检测到异常，则仅提交第一个提交的事务，并中止其他事务（通过first-committer-win策略）。
 
 ### 5.9.3 SSI的原理
 
@@ -944,17 +934,17 @@ CheckTargetForConflictsIn创建rw-conflict：C1，这是Pck_1和Tuple_1在Tx_B�
 T4：
 当执行Tx_B的UPDATE命令时，CheckTargetForConflictsIn会创建rw-conflict：C2，这是Pkey_2和Tuple_2000在Tx_A和Tx_B之间的冲突。
 
-在这种情况下，C1和C2在优先级图中形成一个环；因此，Tx_A和Tx_B处于非可序列化状态。但是，事务Tx_A和Tx_B都未提交，因此CheckTargetForConflictsIn不会中止Tx_B。请注意，这是因为PostgreSQL的SSI实现基于first-committer-win方案。
+在这种情况下，C1和C2在优先级图中形成一个环；因此，Tx_A和Tx_B处于非可串行化状态。但是，事务Tx_A和Tx_B都未提交，因此CheckTargetForConflictsIn不会中止Tx_B。请注意，这是因为PostgreSQL的SSI实现基于first-committer-win方案。
 
 T5：
-当Tx_A尝试提交时，将调用PreCommit_CheckForSerializationFailure。此函数可以检测序列化异常，并且可以执行提交操作（如果可能的话）。在这种情况下，Tx_A已提交，因为Tx_B仍在进行中。
+当Tx_A尝试提交时，将调用PreCommit_CheckForSerializationFailure。此函数可以检测串行化异常，并且可以执行提交操作（如果可能的话）。在这种情况下，Tx_A已提交，因为Tx_B仍在进行中。
 
 T6：
-当Tx_B尝试提交时，PreCommit_CheckForSerializationFailure检测到序列化异常并且Tx_A已经提交；因此，Tx_B被中止。
+当Tx_B尝试提交时，PreCommit_CheckForSerializationFailure检测到串行化异常并且Tx_A已经提交；因此，Tx_B被中止。
 
-此外，如果在提交Tx_A之后，Tx_B执行UPDATE命令（在T5），则立即中止Tx_B，因为Tx_B的UPDATE命令调用的CheckTargetForConflictsIn检测到序列化异常（图5.16（1））。
+此外，如果在提交Tx_A之后，Tx_B执行UPDATE命令（在T5），则立即中止Tx_B，因为Tx_B的UPDATE命令调用的CheckTargetForConflictsIn检测到串行化异常（图5.16（1））。
 
-如果在T6执行SELECT命令而不是COMMIT，则Tx_B立即中止，因为Tx_B的SELECT命令调用的CheckTargetForConflictsOut检测到序列化异常（图5.16（2））。
+如果在T6执行SELECT命令而不是COMMIT，则Tx_B立即中止，因为Tx_B的SELECT命令调用的CheckTargetForConflictsOut检测到串行化异常（图5.16（2））。
 
 **图5.16 其他Write-Skew场景**
 
@@ -964,13 +954,13 @@ T6：
 
 ### 5.9.4 假阳性的串行化异常
 
-在SERIALIZABLE模式下，因为永远不会检测到假阴性序列化异常，PostgreSQL始终完全保证并发事务的可串行性。 但是，在某些情况下，可以检测到假阳性异常；因此，用户在使用SERIALIZABLE模式时应牢记这一点。 在下文中，描述了PostgreSQL检测到假阳性异常的情况。
+在SERIALIZABLE模式下，因为永远不会检测到假阴性串行化异常，PostgreSQL始终完全保证并发事务的可串行性。 但是，在某些情况下，可以检测到假阳性异常；因此，用户在使用SERIALIZABLE模式时应牢记这一点。 在下文中，描述了PostgreSQL检测到假阳性异常的情况。
 
-图5.17显示了发生假阳性序列化异常的情况。
+图5.17显示了发生假阳性串行化异常的情况。
 
-**图5.17。 发生假阳性序列化异常的场景。**
+**图5.17。 发生假阳性串行化异常的场景。**
 
-![假阳性序列化异常的场景](img/fig-5-17.png)
+![假阳性串行化异常的场景](img/fig-5-17.png)
 
 当使用顺序扫描时，如SIREAD Lock的解释中所述，PostgreSQL创建了一个关系级SIREAD Lock。 图5.18（1）显示了PostgreSQL使用顺序扫描时的SIREAD Lock和rw-conflict。 在这种情况下，创建了与tbl的SIREAD Lock相关联的rw-conflict：C1和C2，并且它们在优先级图中形成一个环。 因此，检测到假阳性的Write-Skew异常（即使没有冲突，Tx_A或Tx_B也将被中止）。
 
