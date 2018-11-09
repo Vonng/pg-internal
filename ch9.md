@@ -131,7 +131,7 @@ PostgreSQL可以通过按时间顺序重放写在WAL段文件中的XLOG记录来
 
 > ### WAL段文件尺寸
 >
-> 在版本11以后，WAL段文件的大小可以通过[--wal-segsize](https://www.postgresql.org/docs/11/static/app-initdb.html)选项在使用`initdb`创建数据库时配置。
+> 从版本11开始，WAL段文件的大小可以通过[`--wal-segsize`](https://www.postgresql.org/docs/11/static/app-initdb.html)选项在使用`initdb`创建数据库时配置。
 
 **图9.6 事务日志与WAL段文件**
 
@@ -267,7 +267,7 @@ typedef struct XLogRecord
 } XLogRecord;
 ```
 
-> 9.4版本中的XLogRecord结构定义在[src/include/access/xlog.h](https://github.com/postgres/postgres/blob/REL9_4_STABLE/src/include/access/xlog.h)中，9.5及以后的定义在[src/include/access/xlogrecord.h](https://github.com/postgres/postgres/blob/master/src/include/access/xlogrecord.h)。`heap_xlog_insert`与`heap_xlog_update`定义在[src/backend/access/heap/heapam.c](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/heapam.c) ；而函数`xact_redo_commit`定义在[src/backend/access/transam/xact.c](https://github.com/postgres/postgres/blob/master/src/backend/access/transam/xact.c)中
+> 9.4版本中的`XLogRecord`结构定义在[`src/include/access/xlog.h`](https://github.com/postgres/postgres/blob/REL9_4_STABLE/src/include/access/xlog.h)中，9.5及以后的定义在[`src/include/access/xlogrecord.h`](https://github.com/postgres/postgres/blob/master/src/include/access/xlogrecord.h)。`heap_xlog_insert`与`heap_xlog_update`定义在[`src/backend/access/heap/heapam.c`](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/heapam.c) ；而函数`xact_redo_commit`定义在[`src/backend/access/transam/xact.c`](https://github.com/postgres/postgres/blob/master/src/backend/access/transam/xact.c)中
 
 
 
@@ -287,9 +287,9 @@ XLOG记录的数据部分可以分为两类：备份区块（完整的页面）�
 
 1. 首部部分，`XLogRecord`结构体
 2. 结构体`BkpBlock`
-3. 除去FreeSpace的完整页面。
+3. 除去空闲空间的完整页面。
 
-BkpBlock包括了用于在数据库集簇目录中定位该页面的变量（比如，包含该页面的关系表的`RelFileNode`与`ForkNumber`，以及文件内的区块号`BlockNumber`），以及当前页面FreeSpace的开始位置与长度。
+`BkpBlock`包括了用于在数据库集簇目录中定位该页面的变量（比如，包含该页面的关系表的`RelFileNode`与`ForkNumber`，以及文件内的区块号`BlockNumber`），以及当前页面空闲空间的开始位置与长度。
 
 ```c
 # @include/access/xlog_internal.h
@@ -352,7 +352,7 @@ typedef struct xl_heap_insert
 
 > 在结构体`xl_heap_header`的代码注释中解释了移除插入元组中若干字节的原因：
 >
-> 我们并没有在WAL中存储被插入或被更新元组的固定部分（即HeapTupleHeaderData，堆元组首部），我们可以在需要时从WAL中的其它部分重建这几个字段，以此节省一些字节。或者根本就无需重建。
+> 我们并没有在WAL中存储被插入或被更新元组的固定部分（即`HeapTupleHeaderData`，堆元组首部），我们可以在需要时从WAL中的其它部分重建这几个字段，以此节省一些字节。或者根本就无需重建。
 
 这里还有一个例子值得一提，如图9.8(c)所示，检查点的XLOG记录相当简单，它由如下所示的两个数据结构组成：
 
@@ -536,9 +536,9 @@ typedef struct xl_heap_insert
 2. `XLogRecordDataHeaderShort`结构，包含了主数据的长度。
 3. 结构体`CheckPoint`（主数据）
 
-> `xl_heap_header`定义于[src/include/access/htup.h](https://github.com/postgres/postgres/blob/master/src/include/access/htup.h)中，而`CheckPoint`结构定义于[src/include/catalog/pg_control.h](https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_control.h).
+> `xl_heap_header`定义于[`src/include/access/htup.h`](https://github.com/postgres/postgres/blob/master/src/include/access/htup.h)中，而`CheckPoint`结构定义于[`src/include/catalog/pg_control.h`](https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_control.h).
 
-尽管对我们来说新格式稍显复杂，但它对于资源管理器的解析而言，设计更为合理，而且许多类型的XLOG记录的大小都比先前要小。主要的结构如图9.8和图9.10所示，你可以计算并相互比较这些记录的大小。（新版CheckPoint记录的尺寸要比旧版本大一些，但它也包含了更多的变量）。
+尽管对我们来说新格式稍显复杂，但它对于资源管理器的解析而言，设计更为合理，而且许多类型的XLOG记录的大小都比先前要小。主要的结构如图9.8和图9.10所示，你可以计算并相互比较这些记录的大小。（新版`CheckPoint`记录的尺寸要比旧版本大一些，但它也包含了更多的变量）。
 
 ## 9.5 WAL记录的写入
 
@@ -595,7 +595,7 @@ exec_simple_query() @postgres.c
 
 如果出现上述情况之一，无论其事务是否已提交，WAL缓冲区上的所有WAL记录都将写入WAL段文件中。
 
-​	DML（数据操作语言，Data Manipulation Language）操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如上所述，`COMMIT`操作会写入包含着提交的事务ID的XLOG记录。另一个例子是`Checkpoint`操作会写入关于该存档概述信息的XLOG记录。此外，尽管不是很常见，`SELECT`语句在一些特殊情况下也会创建XLOG记录。例如在SELECT语句处理的过程中，如果因为HOT（Heap Only Tuple）需要删除不必要元组并拼接必要的元组时，修改对应页面的XLOG记录就会写入WAL缓冲区。
+​	DML操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如上所述，`COMMIT`操作会写入包含着提交的事务ID的XLOG记录。另一个例子是`Checkpoint`操作会写入关于该存档概述信息的XLOG记录。此外，尽管不是很常见，`SELECT`语句在一些特殊情况下也会创建XLOG记录。例如在SELECT语句处理的过程中，如果因为HOT（Heap Only Tuple）需要删除不必要元组并拼接必要的元组时，修改对应页面的XLOG记录就会写入WAL缓冲区。
 
 
 
@@ -688,13 +688,13 @@ typedef struct CheckPoint
 
 ​	在本节之前，我们已经多次讨论过数据库恢复，所以这里将会描述两个与恢复有关，但尚未解释过的事情。
 
-​	第一件事是PostgreSQL如何启动恢复过程。当PostgreSQL启动时，它首先读取pg_control文件。以下是从那时起恢复处理的细节。参见图9.14和以下描述。
+​	第一件事是PostgreSQL如何启动恢复过程。当PostgreSQL启动时，它首先读取`pg_control`文件。以下是从那时起恢复处理的细节。参见图9.14和以下描述。
 
 **图9.14 恢复过程的细节**
 
 ![](img/fig-9-14.png)
 
-1. PostgreSQL在启动时读取pg_control文件的所有项。如果`state`项是`in production`，PostgreSQL将进入恢复模式，因为这意味着数据库没有正常停止；如果是'shut down'，它就会进入正常的启动模式。
+1. PostgreSQL在启动时读取`pg_control`文件的所有项。如果`state`项是`in production`，PostgreSQL将进入恢复模式，因为这意味着数据库没有正常停止；如果是`shut down`，它就会进入正常的启动模式。
 2. PostgreSQL从合适的WAL段文件中读取最近的检查点，该记录的位置写在`pg_control`文件中，并从该检查点中获得重做点。如果最新的检查点是无效的，PostgreSQL会读取前一个检查点。如果两个记录都不可读，它就会放弃自我恢复（注意在PostgreSQL11中不会存储前一个检查点）。
 3. 使用合适的资源管理器按顺序读取并重放XLOG记录，从重做点开始，直到最新WAL段文件的最后位置。当遇到一条属于备份区块的XLOG记录时，无论其LSN如何，它都会覆写相应表的页面。其他情况下，只有当此记录的LSN大于相应页面的`pd_lsn`时，才会重放该（非备份区块的）XLOG记录。
 
@@ -708,8 +708,8 @@ typedef struct CheckPoint
 
 
 
-1. PostgreSQL将一个元组插入表A，并将一个XLOG记录写入LSN_1。
-2. 后台写入者进程将表A的页面写入存储。此时，此页面的`pd_lsn`为LSN_1。
+1. PostgreSQL将一个元组插入表A，并将一个XLOG记录写入`LSN_1`。
+2. 后台写入者进程将表A的页面写入存储。此时，此页面的`pd_lsn`为`LSN_1`。
 
 3. PostgreSQL在表A中插入一个新元组，并在`LSN_2`处写入一条XLOG记录。修改后的页面尚未写入存储。
 
@@ -726,7 +726,7 @@ typedef struct CheckPoint
 
 
 1. PostgreSQL加载第一条XLOG记录和表A的页面，但不重放它，因为该记录的LSN不大于表A的LSN（两个值都是`LSN_1`）。实际上一目了然，没有重放该记录的必要性。
-2. 接下来，PostgreSQL会重放第二条XLOG记录，因为该记录的LSN（LSN_2）大于当前表A的LSN（LSN_1）。
+2. 接下来，PostgreSQL会重放第二条XLOG记录，因为该记录的LSN（`LSN_2`）大于当前表A的LSN（`LSN_1`）。
 
 从这个例子中可以看出，如果非备份区块的重放顺序不正确，或者多次重放非备份区块，数据库集群将不再一致。简而言之，非备份区块的重做（重放）操作不是**幂等（idempotent）**的。因此，为了确保正确的重放顺序，非备份区块中的记录当且仅当其LSN大于相应页面的`pd_lsn`时，才执行重放。
 
