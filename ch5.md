@@ -741,7 +741,7 @@ ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读�
 
 此函数依次为每个待更新的目标行执行更新操作。 它有一个外层循环来更新每一行，而内部while循环则包含了三个分支，分支条件如图5.11所示。
 
-**图 5.11 `ExecUpdate`内部的三个部分**
+**图5.11 `ExecUpdate`内部的三个部分**
 
 ![Fig. 5.11. Three internal blocks in ExecUpdate.](img/fig-5-11.png)
 
@@ -831,58 +831,60 @@ ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读�
 
 ## 5.9 可串行化快照隔离
 
-从版本9.1开始，可串行化快照隔离（SSI）已嵌入到SI中，以实现真正的SERIALIZABLE隔离级别。由于SSI的解释太复杂，因此本书中仅解释概要。 有关详细信息，请参阅文献[2]。
+从版本9.1开始，可串行化快照隔离（SSI）已经嵌入到快照隔离（SI）中，用以实现真正的可串行化隔离等级。SSI解释起来过于复杂，故本书仅解释其概要，详细信息请参阅文献[2]。
 
-在下文中，使用了下面的技术术语而没有定义。 如果您不熟悉这些术语，请参阅[1，3]。
+下文使用了以下技术术语而未加定义。 如果读者不熟悉这些术语，请参阅[1,3]。
 
-+ 优先级图（也称为依赖图和串行化图）
-+ 串行化异常（例如，Write-Skew）	
++ **前趋图（precedence graph）**，亦称作**依赖图（dependency graph）**或**串行化图（serialization graph）**
++ **串行化异常（serialization anomalies）**（例如，**写偏差（Write-Skew）**）	
 
 ### 5.9.1 SSI实现的基本策略
 
-如果优先级图中存在由某些冲突生成的环，则会出现串行化异常。 这里用最简单的异常来解释的，即Write-Skew。
+如果前趋图中存在由某些冲突构成的环，则会出现串行化异常。 这里使用一种最简单的异常来解释，即**写偏差（Write-Skew）**。
 
-图5.12（1）显示了一个调度表。 这里，Transaction_A读取Tuple_B，Transaction_B读取Tuple_A。 然后，Transaction_A写入Tuple_A，Transaction_B写入Tuple_B。 在这种情况下，存在两个读写冲突（rw-conflict），它们在该调度表的优先级图中形成一个环，如图5.12（2）所示。 因此，该调度具有串行化异常，即Write-Skew。
+图5.12(1)展示了一种调度方式。 这里`Transaction_A`读取了`Tuple_B`，`Transaction_B`读取了`Tuple_A`。 然后`Transaction_A`写`Tuple_A`，`Transaction_B`写`Tuple_B`。 在这种情况下存在两个**读-写冲突（rw-conflict）**，它们在该调度的前趋图中构成了一个环，如图5.12(2)所示。 故该调度存在串行化异常，即写偏差。
 
-**图 5.12 Write-Skew调度及其优先级图。**
+**图5.12 存在写偏差的调度及其前趋图**
 
 ![Fig. 5.11. Three internal blocks in ExecUpdate.](img/fig-5-12.png)
 
-从概念上讲，存在三种类型的冲突：写读冲突（Dirty Reads），写写冲突（Lost Updates）和读写冲突。 但是，不需要考虑写读和写写冲突，因为如前面部分所示，PostgreSQL可以防止此类冲突。 因此，PostgreSQL中的SSI实现只需要考虑读写冲突。
+从概念上讲，存在三种类型的冲突：**写-读冲突（wr-conflicts）**（脏读），**写-写冲突（ww-conflicts）**（丢失更新），以及**读写冲突（rw-conflicts）**。 但是这里无需考虑写-读冲突与写-写冲突，因为如前所述，PostgreSQL可以防止此类冲突。 因此PostgreSQL中的SSI实现只需要考虑读-写冲突。
 
-PostgreSQL采用以下策略进行SSI实现：
+PostgreSQL在SSI实现中采用以下策略：
 
-1. 将事务访问的所有对象（元组，页面，关系）记录为SIREAD Lock。
-2. 每当写入任何堆或索引元组时，使用SIREAD Lock检测读写冲突。
-3. 如果通过检查读写冲突，检测到串行化异常，则中止事务。
+1. 使用SIREAD锁记录事务访问的所有对象（元组，页面，关系）。
+2. 当写入任何堆元组/索引元组时，使用SIREAD锁检测读-写冲突。
+3. 如果从读-写冲突中检测出串行化异常，则中止事务。
 
-### 5.9.2 PostgreSQL中的SSI实现
+### 5.9.2 PostgreSQL的SSI实现
 
-为了实现上述策略，PostgreSQL实现了许多功能和数据结构。 但是，这里我们只使用两种数据结构：SIREAD Lock和rw-confilict来描述SSI机制。 它们存储在共享内存中。
+为了实现上述策略，PostgreSQL实现了很多数据结构与函数。 但这里我们只会使用两种数据结构：SIREAD锁与读-写冲突来描述SSI机制。它们都储存在共享内存中。
 
-> 为简单起见，本文档中省略了一些重要的数据结构，例如SERIALIZABLEXACT。 因此，比如CheckTargetForConflictOut，CheckTargetForConflictIn和PreCommit_CheckForSerializationFailure等函数的解释也极为简化。比如，我们指出哪些函数能检测到冲突；但是，没有详细解释如何检测冲突。 如果您想了解详细信息，请参阅源代码：predicate.c。
+> 为简单起见，本文省略了一些重要的数据结构，例如`SERIALIZABLEXACT`。 因此对`CheckTargetForConflictOut`，`CheckTargetForConflictIn`和`PreCommit_CheckForSerializationFailure`等函数的解释也极为简化。比如本文虽然指出哪些函数能检测到冲突；但并没有详细解释如何检测冲突。 如果读者想了解详细信息，请参阅源代码：[predicate.c](https://github.com/postgres/postgres/blob/master/src/backend/storage/lmgr/predicate.c)。
 
-**SIREAD Lock**：
-内部称为**谓词锁**的SIREAD Lock是对象和若干（虚拟）事务ID的组合，用于存储谁访问了哪个对象的信息。注意，省略了对虚拟txid的描述。这里使用txid而不是虚拟txid来简化以下说明。
+#### SIREAD锁
 
-只要在SERIALIZABLE模式下执行一个DML命令，就会通过CheckTargetForConflictsOut函数创建SIREAD Lock。例如，如果txid=100的事务读取给定表的Tuple_1，则会创建SIREAD锁{Tuple_1，{100}}。如果是其他事务，例如txid=101，读取Tuple_1，SIREAD锁更新为{Tuple_1，{100,101}}。请注意，读取索引页时也会创建SIREAD Lock，因为仅在使用了第7.2节中描述的**仅索引扫描**时，才**只**读取索引页而不读取表页。
+SIREAD锁，在内部又被称为**谓词锁（predicate lock）**，是一个由对象与（虚拟）事务标识构成的二元组，存储着哪个事务访问了哪个对象的相关信息。注意这里省略了对虚拟事务标识的描述，使用`txid`而非虚拟`txid`能大幅简化说明。
 
-SIREAD Lock有三个级别：tuple，page和relation。如果创建了单个页面中所有元组的SIREAD Lock，则会将它们聚合到该页的单个SIREAD Lock中，并释放（删除）相关元组的所有SIREAD Lock，以减少内存空间。对于所有读取的页面也是如此。
+在`SERIALIZABLE`模式下只要执行DML命令，就会通过`CheckTargetForConflictsOut`函数创建出SIREAD锁。举个例子，如果`txid=100`的事务读取给定表的`Tuple_1`，则会创建一个SIREAD锁`{Tuple_1,{100}}`。如果是其他事务，例如`txid=101`读取了`Tuple_1`，则SIREAD锁会更新为`{Tuple_1,{100,101}}`。请注意，读取索引页时也会创建SIREAD锁，因为在使用了第7.2节中将描述的**仅索引扫描（Index-Only Scan）**时，数据库只会读取索引页而不读取表页。
 
-为索引创建SIREAD Lock时，一开始创建页级SIREAD Lock。使用顺序扫描时，无论是否存在索引和（或）WHERE子句，一开始都会创建关系级别的SIREAD Lock。请注意，在某些情况下，此实现可能会导致串行化异常的误报。详细细节在第5.9.4节中描述。
+SIREAD锁有三个级别：元组，页面，以及关系。如果单个页面内所有元组的SIREAD锁都被创建，则它们会聚合为该页上的单个SIREAD锁，原有相关元组上的SIREAD锁都会被释放（删除），以减少内存空间占用。对读取的页面也是同理。
 
-**rw-conflict**：
-rw-conflict是SIREAD Lock和两个读写SIREAD Lock的txid组成的三元组。
+当为索引创建SIREAD锁时，一开始会创建页级别的SIREAD锁。当使用顺序扫描时，无论是否存在索引，是否存在`WHERE`子句，一开始都会创建关系级别的SIREAD锁。请注意在某些情况下，这种实现可能会导致串行化异常的误报（**假阳性（false-positive）**），细节将在第5.9.4节中描述。
 
-只要在SERIALIZABLE模式下执行INSERT，UPDATE或DELETE命令，就会调用CheckTargetForConflictsIn函数，并且通过检查SIREAD Lock，来检测是否有冲突，如果有，那么创建一个rw-conflict。
+#### 读-写冲突
 
-例如，假设txid=100的事务读取Tuple_1，然后txid=101的事务更新Tuple_1。在这种情况下，由txid=101的事务中的UPDATE命令调用的CheckTargetForConflictsIn函数，检测到txid=100，101与Tuple_1的存在rw-conflict，然后创建rw-conflict{r = 100，w = 101，{Tuple_1}}。
+读-写冲突是一个三元组，由SIREAD锁，以及两个分别读写该SIREAD锁的事务`txid`构成。
 
-CheckTargetForConflictOut和CheckTargetForConflictIn函数，以及在SERIALIZABLE模式下执行COMMIT命令时调用的PreCommit_CheckForSerializationFailure函数，都会使用创建的rw-conflict，检查串行化异常。如果它们检测到异常，则仅提交第一个提交的事务，并中止其他事务（通过first-committer-win策略）。
+当在可串行化模式下执行`INSERT`，`UPDATE`或`DELETE`命令时，函数`CheckTargetForConflictsIn`会被调用，并检查SIREAD锁来检测是否存在冲突，如果有就创建一个读-写冲突。
+
+举个例子，假设`txid = 100`的事务读取了`Tuple_1`，然后`txid=101`的事务更新了`Tuple_1`。在这种情况下，`txid=101`的事务中的`UPDATE`命令会调用`CheckTargetForConflictsIn`函数，并检测到在`Tuple_1`上存在`txid=100,101`之间的读-写冲突，并创建`rw-conflict{r = 100, w = 101, {Tuple_1}}`。
+
+`CheckTargetForConflictOut`、`CheckTargetForConflictIn`函数，以及在可串行化模式中执行`COMMIT`命令会触发的`PreCommit_CheckForSerializationFailure`函数，都会使用创建的读写冲突来检查串行化异常。如果它们检测到异常，则只有先提交的事务会真正提交，其他事务会中止（依据**以先提交者为准（first-committer-win）**策略）。
 
 ### 5.9.3 SSI的原理
 
-在这里，我们描述了SSI如何解决Write-Skew异常。 我们使用如下所示的简单表tbl来进行阐述：
+本节将描述SSI如何解决写偏差异常，下面将使用一个简单的表`tbl`为例。
 
 ```sql
 testdb=# CREATE TABLE tbl (id INT primary key, flag bool DEFAULT false);
@@ -890,87 +892,79 @@ testdb=# INSERT INTO tbl (id) SELECT generate_series(1,2000);
 testdb=# ANALYZE tbl;
 ```
 
-事务Tx_A和Tx_B执行以下命令（图5.13）。
+事务`Tx_A`和`Tx_B`执行以下命令，如图5.13所示。
 
-**图 5.13 Write-Skew 现象.**
+**图5.13 写偏差场景一例**
 
 ![写偏](img/fig-5-13.png)
 
-假设所有命令都使用索引扫描。 因此，当执行命令时，它们会读取堆元组和索引页，每个索引页都包含指向相应堆元组的索引元组。 见图5.14。
+假设所有命令都使用索引扫描。 因此当执行命令时，它们会同时读取堆元组与索引页，每个索引页都包含指向相应堆元组的索引元组，如图5.14所示。
 
-**图5.14 所示场景中索引与表之间的关系。**
+**图5.14 例子中索引与表的关系**
 
 ![索引和表的关系](img/fig-5-14.png)
 
-T1：Tx_A执行SELECT命令。 此命令读取堆元组（Tuple_2000）和主键的一页（Pkey_2）。
-T2：Tx_B执行SELECT命令。 此命令读取堆元组（Tuple_1）和主键的一页（Pkey_1）。
-T3：Tx_A执行UPDATE命令以更新Tuple_1。
-T4：Tx_B执行UPDATE命令以更新Tuple_2000。
-T5：Tx_A提交。
-T6：Tx_B提交; 然而，由于Write-Skew异常，它被中止。
-图5.15显示了PostgreSQL如何检测和解决上述场景中描述的Write-Skew异常。
+* **T1**：`Tx_A`执行`SELECT`命令，该命令读取堆元组`Tuple_2000`，以及包含主键的索引页`Pkey_2`。
+* **T2**：`Tx_B`执行`SELECT`命令。 此命令读取堆元组`Tuple_1`，以及包含主键的索引页`Pkey_1`。
+* **T3**：`Tx_A`执行`UPDATE`命令，更新`Tuple_1`。
+* **T4**：`Tx_B`执行`UPDATE`命令，更新`Tuple_2000`。
+* **T5**：`Tx_A`提交。
+* **T6**：`Tx_B`提交，然而由于写偏差异常而被中止。
 
-**图 5.15 SIREAD Lock和rw-conflict，以及图5.13所示场景的调度表**
+图5.15展示了PostgreSQL如何检测和解决上述场景中描述的鞋偏差异常。
 
-![SIREAD Lock和rw-conflict](img/fig-5-15.png)
+**图5.15 SIREA锁与读-写冲突，图5.13场景中的调度方式**
 
-T1：
-执行Tx_A的SELECT命令时，CheckTargetForConflictsOut会创建SIREAD Lock。在这种情况下，该函数创建两个SIREAD Lock：L1和L2。
+![SIREAD锁和rw-conflict](img/fig-5-15.png)
 
-L1和L2分别与Pkey_2和Tuple_2000相关联。
+* **T1**：
+  执行`Tx_A`的`SELECT`命令时，`CheckTargetForConflictsOut`会创建SIREAD锁。在本例中该函数会创建两个SIREAD锁：`L1`与`L2`。`L1`和`L2`分别与`Pkey_2`和`Tuple_2000`相关联。
+* **T2**：
+  执行`Tx_B`的`SELECT`命令时，`CheckTargetForConflictsOut`会创建两个SIREAD锁：`L3`和`L4`。`L3`和`L4`分别与`Pkey_1`和`Tuple_1`相关联。
 
-T2：
-执行Tx_B的SELECT命令时，CheckTargetForConflictsOut会创建两个SIREAD Lock：L3和L4。
+* **T3**：
+  执行`Tx_A`的`UPDATE`命令时，`CheckTargetForConflictsOut`和`CheckTargetForConflictsIN`会分别在`ExecUpdate`执行前后被调用。在本例中，`CheckTargetForConflictsOut`什么都不做。而`CheckTargetForConflictsIn`则会创建读-写冲突`C1`，这是`Tx_B`和`Tx_A`在`Pkey_1`和`Tuple_1`上的冲突，因为`Pkey_1`和`Tuple_1`都由`Tx_B`读取并被`Tx_A`写入。
 
-L3和L4分别与Pkey_1和Tuple_1相关联。
+* **T4**：
+  执行`Tx_B`的`UPDATE`命令时，`CheckTargetForConflictsIn`会创建读-写冲突`C2`，这是`Tx_A`与`Tx_B`在`Pkey_2`和`Tuple_2000`上的冲突。
 
-T3：
-执行Tx_A的UPDATE命令时，在ExecUpdate之前和之后调用CheckTargetForConflictsOut和CheckTargetForConflictsIN。
+  在这种情况下，`C1`和`C2`在前趋图中构成一个环；因此`Tx_A`和`Tx_B`处于不可串行化状态。但事务`Tx_A`和`Tx_B`都尚未提交，因此`CheckTargetForConflictsIn`不会中止`Tx_B`。注意这是因为PostgreSQL的SSI实现采用先提交者为准方案。
 
-在本例中，CheckTargetForConflictsOut什么都不做。
+* **T5**：
+  当`Tx_A`尝试提交时，将调用`PreCommit_CheckForSerializationFailure`。此函数可以检测串行化异常，并在允许的情况下执行提交操作。在这里因为`Tx_B`仍在进行中，`Tx_A`成功提交。
 
-CheckTargetForConflictsIn创建rw-conflict：C1，这是Pck_1和Tuple_1在Tx_B和Tx_A之间的冲突，因为Pkey_1和Tuple_1都由Tx_B读取并由Tx_A写入。
+* **T6**：
+  当`Tx_B`尝试提交时，`PreCommit_CheckForSerializationFailure`检测到串行化异常，且`Tx_A`已经提交；因此`Tx_B`被中止。
 
-T4：
-当执行Tx_B的UPDATE命令时，CheckTargetForConflictsIn会创建rw-conflict：C2，这是Pkey_2和Tuple_2000在Tx_A和Tx_B之间的冲突。
+此外，如果在`Tx_A`提交之后（T5时刻），`Tx_B`执行了`UPDATE`命令，则`Tx_B`会立即中止。因为`Tx_B`的`UPDATE`命令会调用`CheckTargetForConflictsIn`，并检测到串行化异常，如图5.16(1)所示。
 
-在这种情况下，C1和C2在优先级图中形成一个环；因此，Tx_A和Tx_B处于非可串行化状态。但是，事务Tx_A和Tx_B都未提交，因此CheckTargetForConflictsIn不会中止Tx_B。请注意，这是因为PostgreSQL的SSI实现基于first-committer-win方案。
+如果`Tx_B`在T6时刻执行`SELECT`命令而不是`COMMIT`命令，则`Tx_B`也会立即中止。因为`Tx_B`的`SELECT`命令调用的`CheckTargetForConflictsOut`会检测到串行化异常，如图5.16(2)所示。
 
-T5：
-当Tx_A尝试提交时，将调用PreCommit_CheckForSerializationFailure。此函数可以检测串行化异常，并且可以执行提交操作（如果可能的话）。在这种情况下，Tx_A已提交，因为Tx_B仍在进行中。
-
-T6：
-当Tx_B尝试提交时，PreCommit_CheckForSerializationFailure检测到串行化异常并且Tx_A已经提交；因此，Tx_B被中止。
-
-此外，如果在提交Tx_A之后，Tx_B执行UPDATE命令（在T5），则立即中止Tx_B，因为Tx_B的UPDATE命令调用的CheckTargetForConflictsIn检测到串行化异常（图5.16（1））。
-
-如果在T6执行SELECT命令而不是COMMIT，则Tx_B立即中止，因为Tx_B的SELECT命令调用的CheckTargetForConflictsOut检测到串行化异常（图5.16（2））。
-
-**图5.16 其他Write-Skew场景**
+**图5.16 其他写偏差场景**
 
 ![其他写偏](img/fig-5-16.png)
 
-> 这个[Wiki](https://wiki.postgresql.org/wiki/SSI)解释了几个更复杂的异常现象。
+> 这里的[Wiki](https://wiki.postgresql.org/wiki/SSI)解释了几种更为复杂的异常。
 
 ### 5.9.4 假阳性的串行化异常
 
-在SERIALIZABLE模式下，因为永远不会检测到假阴性串行化异常，PostgreSQL始终完全保证并发事务的可串行性。 但是，在某些情况下，可以检测到假阳性异常；因此，用户在使用SERIALIZABLE模式时应牢记这一点。 在下文中，描述了PostgreSQL检测到假阳性异常的情况。
+在可串行化模式下，因为永远不会检测到**假阴性（false-negative，发生异常但未检测到）**串行化异常，PostgreSQL能始终完全保证并发事务的可串行性。 但相应的是在某些情况下，可能会检测到假阳性异常（没有发生异常但误报发生），用户在使用`SERIALIZABLE`模式时应牢记这一点。 下文会描述PostgreSQL检测到假阳性异常的情况。
 
-图5.17显示了发生假阳性串行化异常的情况。
+图5.17展示了发生假阳性串行化异常的情况。
 
-**图5.17。 发生假阳性串行化异常的场景。**
+**图5.17 发生假阳性串行化异常的场景**
 
 ![假阳性串行化异常的场景](img/fig-5-17.png)
 
-当使用顺序扫描时，如SIREAD Lock的解释中所述，PostgreSQL创建了一个关系级SIREAD Lock。 图5.18（1）显示了PostgreSQL使用顺序扫描时的SIREAD Lock和rw-conflict。 在这种情况下，创建了与tbl的SIREAD Lock相关联的rw-conflict：C1和C2，并且它们在优先级图中形成一个环。 因此，检测到假阳性的Write-Skew异常（即使没有冲突，Tx_A或Tx_B也将被中止）。
+当使用顺序扫描时，如SIREAD锁的解释中所述，PostgreSQL创建了一个关系级的SIREAD锁。 图5.18(1)展示了PostgreSQL使用顺序扫描时的SIREAD锁和读-写冲突。 在这种情况下，产生了与`tbl`表上SIREAD锁相关联的读-写冲突：`C1`和`C2`，并且它们在前趋图中构成了一个环。 因此会检测到假阳性的写偏差异常（即，虽然实际上没有冲突，但`Tx_A`与`Tx_B`两者之一也将被中止）。
 
-**图 5.18 假阳性异常（1） - 使用顺序扫描。**
+**图 5.18 假阳性异常(1) - 使用顺序扫描**
 
 ![使用顺序扫描](img/fig-5-18.png)
 
-即使使用索引扫描，如果事务Tx_A和Tx_B都获得相同的索引SIREAD Lock，PostgreSQL也会误报。 图5.19显示了这种情况。 假设索引页Pkey_1包含两个索引项，其中一个指向Tuple_1，另一个指向Tuple_2。 当Tx_A和Tx_B执行相应的`SELECT`和`UPDATE`命令时，Pck_1由Tx_A和Tx_B读取和写入。 在这种情况下，会创建与Pkey_1相关联的rw-conflict：C1和C2，在优先级图中形成一个环， 因此，检测到假阳性Write-Skew异常。 （如果Tx_A和Tx_B获取不同索引页的SIREAD Lock，则不会误报，并且可以提交两个事务。）
+即使使用索引扫描，如果事务`Tx_A`和`Tx_B`都获取里相同的索引SIREAD锁，PostgreSQL也会误报假阳性异常。 图5.19展示了这种情况。 假设索引页`Pkey_1`包含两条索引项，其中一条指向`Tuple_1`，另一条指向`Tuple_2`。 当`Tx_A`和`Tx_B`执行相应的`SELECT`和`UPDATE`命令时，`Pkey_1`同时被`Tx_A`和`Tx_B`读取与写入。 这时候会产生`Pkey_1`相关联的读-写冲突：`C1`和`C2`，并在前趋图中构成一个环，因而检测到假阳性写偏差异常（如果`Tx_A`和`Tx_B`获取不同索引页上的SIREAD锁则不会误报，并且两个事务都可以提交）。
 
-**图5.19。 假阳性异常（2） - 使用相同索引页的索引扫描。**
+**图5.19 假阳性异常(2) - 使用相同索引页的索引扫描**
 
 ![使用相同索引页的索引扫描](img/fig-5-19.png)
 
@@ -978,34 +972,34 @@ T6：
 
 PostgreSQL的并发控制机制需要以下维护过程。
 
-1. 删除死元组和指向死元组的索引元组
-2. 去除不必要的**提交日志（clog）**部分
-3. 冻结旧的**事务ID（txid）**
-4. 更新FSM，VM和统计信息
+1. 删除死元组及指向死元组的索引元组
+2. 移除**提交日志（clog）**中非必需的部分
+3. 冻结旧的**事务标识（txid）**
+4. 更新FSM，VM，以及统计信息
 
-第5.3.2和5.4.3节分别解释了为什么需要第一个和第二个过程。第三个过程与事务ID回卷问题有关，在下一小节中将对此进行简要描述。
+第5.3.2和5.4.3节分别解释了为什么需要第一个和第二个过程。第三个过程与事务标识回卷问题有关，本小节将概述**事务标识回卷（txid wrap around）**问题。
 
-在PostgreSQL中，**VACUUM**处理负责这些过程。**清理过程（VACUUM）**在第6章中描述。
+在PostgreSQL中，清理过程（**`VACUUM`**）负责这些过程。**清理过程（VACUUM）**在[第6章](ch6.md)中描述。
 
-### 5.10.1  FREEZE过程
+### 5.10.1  冻结处理
 
-在这里我们将描述事务ID回卷问题。
+接下来将介绍**事务标识回卷（txid wrap around）**问题。
 
-假设插入元组`Tuple_1`时txid为100，即`Tuple_1`的`t_xmin`为`100`。服务器已运行很长时间，且`Tuple_1`尚未被修改。当前的`txid`为21亿+100，执行SELECT命令。此时，因为txid 100是位于过去的，Tuple_1可见。然后，执行相同的SELECT命令，当前的txid是21亿+ 101。但是，因为txid=100是位于将来的，Tuple_1不再可见（图5.20）。这就是PostgreSQL中所谓的事务回卷问题。
+假设元组`Tuple_1`是由`txid = 100`事务创建的，即`Tuple_1`的`t_xmin = 100`。服务器运行了很长时间，但`Tuple_1`一直未曾被修改。假设`txid`已经前进到了$2^{31}+100$，这时候正好执行了一条`SELECT`命令。此时，因为对当前事务而言`txid = 100`的事务属于过去的事务，因而`Tuple_1`对当前事务可见。然后再执行相同的`SELECT`命令，此时`txid`步进至$2^{31}+101$。但因对当前事务而言，`txid = 100`的事务是属于未来的，因此`Tuple_1`不再可见（图5.20）。这就是PostgreSQL中所谓的事务回卷问题。
 
 **图5.20 回卷问题**
 
 ![](img/fig-5-20.png)
 
-​	为了解决这个问题，PostgreSQL引入了一个**冻结事务ID（Frozen txid）**的概念，并实现了一个名为`FREEZE`的过程。
+为了解决这个问题，PostgreSQL引入了一个**冻结事务标识（Frozen txid）**的概念，并实现了一个名为`FREEZE`的过程。
 
-​	在PostgreSQL中，定义了一个冻结的`txid`，它是一个特殊的保留`txid=2`，它总是比所有其他txid都旧。换句话说，冻结的`txid`始终处于非活动状态且可见。
+在PostgreSQL中定义了一个冻结的`txid`，它是一个特殊的保留值`txid = 2`，在参与事务标识大小比较时，它总是比所有其他`txid`都旧。换句话说，冻结的`txid`始终处于**非活跃状态**，且其结果对其他事务始终可见。
 
-清理过程调用冻结过程。冻结过程将扫描所有表文件，如果元组的t_xmin比**当前txid-vacuum_freeze_min_age**（默认值为5000万）更老，则将元组的t_xmin重写为冻结事务ID。在第6章中会有更详细的解释。
+**清理过程（`VACUUM`）**会调用冻结过程（**`FREEZE`**）。冻结过程将扫描所有表文件，如果元组的`t_xmin`比当前`txid - vacuum_freeze_min_age`（默认值为5000万）更老，则将该元组的`t_xmin`重写为冻结事务标识。在[第6章](ch6.md)中会有更详细的解释。
 
-例如，如图5.21（a）所示，当前txid为5000万，此时通过`VACUUM`命令调用冻结过程。在这种情况下，Tuple_1和Tuple_2的t_xmin都被重写为2。
+举个例子，如图5.21(a)所示，当前`txid`为5000万，此时通过`VACUUM`命令调用冻结过程。在这种情况下，`Tuple_1`和`Tuple_2`的`t_xmin`都被重写为2。
 
-在版本9.4或更高版本中，XMIN_FROZEN位设置在元组的t_infomask字段中，而不是将元组的t_xmin重写为冻结的txid（图5.21 b）。
+在版本9.4或更高版本中使用元组`t_infomask`字段中的`XMIN_FROZEN`标记位来标识冻结元组，而不是将元组的`t_xmin`重写为冻结的`txid`，如图5.21(b)所示。
 
 **图5.21 冻结过程**
 
