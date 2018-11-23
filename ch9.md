@@ -149,7 +149,7 @@ $$
 >
 > PostgreSQL的WAL有**时间线标识（TimelineID，四字节无符号整数）**的概念，用于[第十章](ch10.md)中所述的**时间点恢复（PITR）**。不过在本章中时间线标识将固定为`0x00000001`，因为接下来的几节里还不需要这个概念。	
 
-​	第一个WAL段文件名是`000000010000000000000001`，如果第一个段被XLOG记录写满了，就会创建第二个段`000000010000000000000002`，后续的文件名将使用升序。在`0000000100000000000000FF`被填满之后，就会使用下一个文件`000000010000000100000000`。通过这种方式，每当最后两位数字要进位时，中间8位数字就会加一。与之类似，在`0000000100000001000000FF`被填满后，就会开始使用`000000010000000200000000`，依此类推。
+​	第一个WAL段文件名是$00000001\color{blue}{00000000}000000\color{blue}{01}$，如果第一个段被XLOG记录写满了，就会创建第二个段$00000001\color{blue}{00000000}000000\color{blue}{02}$，后续的文件名将使用升序。在$00000001\color{blue}{00000000}000000\color{blue}{FF}$被填满之后，就会使用下一个文件$00000001\color{blue}{00000001}000000\color{blue}{00}$。通过这种方式，每当最后两位数字要进位时，中间8位数字就会加一。与之类似，在$00000001\color{blue}{00000001}000000\color{blue}{FF}$被填满后，就会开始使用$00000001\color{blue}{00000002}000000\color{blue}{00}$，依此类推。
 
 
 
@@ -177,7 +177,7 @@ $$
 
 ![图9.7 WAL段文件内部布局](img/fig-9-07.png)
 
-`XLogLongPageHeaderData`与`XLogPageHeaderData`结构定义在 [src/include/access/xlog_internal.h](https://github.com/postgres/postgres/blob/master/src/include/access/xlog_internal.h)中。这两个结构的具体说明就不在此展开了，因为对于后续小节并非必需的。
+`XLogLongPageHeaderData`与`XLogPageHeaderData`结构定义在 [`src/include/access/xlog_internal.h`](https://github.com/postgres/postgres/blob/master/src/include/access/xlog_internal.h)中。这两个结构的具体说明就不在此展开了，因为对于后续小节并非必需的。
 
 ```c
 typedef struct XLogPageHeaderData
@@ -234,14 +234,14 @@ typedef struct XLogRecord
 
 ​	除了两个变量，大多数变量的意思非常明显，无需多言。`xl_rmid`与`xl_info`都是与**资源管理器（resource manager）**相关的变量，它是一些与WAL功能（写入，重放XLOG记录）相关的操作集合。资源管理器的数目随着PostgreSQL不断增加，第10版包括这些：
 
-|                | 资源管理器                                                 |
-| :------------- | :--------------------------------------------------------- |
-| 堆元组操作     | RM_HEAP, RM_HEAP2                                          |
-| 索引操作       | RM_BTREE, RM_HASH, RM_GIN, RM_GIST, RM_SPGIST, RM_BRIN     |
-| 序列号操作     | RM_SEQ                                                     |
-| 事务操作       | RM_XACT, RM_MULTIXACT, RM_CLOG, RM_XLOG, RM_COMMIT_TS      |
-| 表空间操作     | RM_SMGR, RM_DBASE, RM_TBLSPC, RM_RELMAP                    |
-| 复制与热备操作 | RM_STANDBY, RM_REPLORIGIN, RM_GENERIC_ID, RM_LOGICALMSG_ID |
+|                | 资源管理器                                                   |
+| :------------- | :----------------------------------------------------------- |
+| 堆元组操作     | `RM_HEAP, RM_HEAP2`                                          |
+| 索引操作       | `RM_BTREE, RM_HASH, RM_GIN, RM_GIST, RM_SPGIST, RM_BRIN`     |
+| 序列号操作     | `RM_SEQ`                                                     |
+| 事务操作       | `RM_XACT, RM_MULTIXACT, RM_CLOG, RM_XLOG, RM_COMMIT_TS`      |
+| 表空间操作     | `RM_SMGR, RM_DBASE, RM_TBLSPC, RM_RELMAP`                    |
+| 复制与热备操作 | `RM_STANDBY, RM_REPLORIGIN, RM_GENERIC_ID, RM_LOGICALMSG_ID` |
 
 下面是一些有代表性的例子，展示了资源管理器工作方式。
 
@@ -249,7 +249,7 @@ typedef struct XLogRecord
 * `UPDATE`语句与之类似，首部变量中的`xl_info`会被设置为`XLOG_HEAP_UPDATE`，而在数据库恢复时就会选用资源管理器`RM_HEAP`的函数`heap_xlog_update()`进行重放。
 * 当事务提交时，相应XLOG记录首部的变量`xl_rmid`与`xl_info`会被相应地设置为`RM_XACT`与`XLOG_XACT_COMMIT`。当数据库恢复时，`RM_XACT`的`xact_redo_commit()`就会执行本记录的重放。
 
-在9.5及之后的版本，首部结构[XLogRecord](https://github.com/postgres/postgres/blob/9d4649ca49416111aee2c84b7e4441a0b7aa2fac/src/include/access/xlogrecord.h)移除了一个字段`xl_len`，精简了XLOG记录的格式，省了几个字节。
+在9.5及之后的版本，首部结构[`XLogRecord`](https://github.com/postgres/postgres/blob/9d4649ca49416111aee2c84b7e4441a0b7aa2fac/src/include/access/xlogrecord.h)移除了一个字段`xl_len`，精简了XLOG记录的格式，省了几个字节。
 
 ```c
 typedef struct XLogRecord
@@ -359,7 +359,7 @@ typedef struct xl_heap_insert
 1. `XLogRecord`结构（首部部分）
 2. 包含检查点信息的`CheckPoint`结构体（参见[9.7节](#9.7)）
 
-> `xl_heap_header`结构定义在[src/include/access/htup.h](https://github.com/postgres/postgres/blob/master/src/include/access/htup.h)中，而`CheckPoint`结构体定义在[src/include/catalog/pg_control.h](https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_control.h)中。
+> `xl_heap_header`结构定义在[`src/include/access/htup.h`](https://github.com/postgres/postgres/blob/master/src/include/access/htup.h)中，而`CheckPoint`结构体定义在[`src/include/catalog/pg_control.h`](https://github.com/postgres/postgres/blob/master/src/include/catalog/pg_control.h)中。
 
 
 
@@ -501,7 +501,7 @@ typedef struct XLogRecordBlockCompressHeader
 
 `XLogRecordDataHeaderShort`存储了`xl_heap_insert`结构的长度，该结构是当前记录的主数据部分（见下）。
 
-> ​	除了某些特例外（例如逻辑解码与推测插入（speculative insertion）），包含整页镜像的XLOG记录的**主数据**不会被使用。它们会在记录重放时被忽略，属于冗余数据，未来可能会对其改进。
+> ​	除了某些特例外（例如逻辑解码与**推测插入（speculative insertion）**），包含整页镜像的XLOG记录的**主数据**不会被使用。它们会在记录重放时被忽略，属于冗余数据，未来可能会对其改进。
 >
 > ​	此外，备份区块记录的主数据与创建它们的语句相关。例如`UPDATE`语句就会追加写入`xl_heap_lock`或`xl_heap_updated`。
 
@@ -520,10 +520,10 @@ typedef struct XLogRecordBlockCompressHeader
 ​	新版本的`xl_heap_insert`仅包含两个值：当前元组在区块内的偏移量，以及一个可见性标志。该结构变得十分简单，因为`XLogRecordBlockHeader`存储了旧版本中该结构体的绝大多数数据。
 
 ```c
-/* This is what we need to know about insert */
+/* 这里是关于该INSERT操作，我们所需要知道的一切 */
 typedef struct xl_heap_insert
 {
-	OffsetNumber offnum;		/* inserted tuple's offset */
+	OffsetNumber offnum;		/* 被插入元组的偏移量 */
 	uint8		flags;
 
 	/* xl_heap_header & TUPLE DATA in backup block 0 */
@@ -580,8 +580,8 @@ exec_simple_query() @postgres.c
 
 > 上图的XLOG格式是9.4版本的
 
-5. 函数`XLogWrite()`会冲刷WAL缓冲区，并将所有内容写入WAL段文件中。如果`wal_sync_method`参数被配置为`open_sync`或`open_datasync`，记录会被同步写入（译者注：而不是提交才会刷新wal缓冲区），因为函数会使用带有`O_SYNC`或`O_DSYNC`标记的`open()`系统调用。如果该参数被配置为`fsync`，`fsync_writethrough`，`fdatasync`，相应的系统调用就是`fsync()`，带有`F_FULLSYNC`选项的`fcntl()`，以及`fdatasync()`。无论哪一种情况，所有的XLOG记录都会被确保写入存储之中。
-6. 函数`TransactionIdCommitTree()`将CLOG中当前事务的状态从`IN_PROGRESS`更改为`COMMITTED`。
+5. 函数`XLogWrite()`会冲刷WAL缓冲区，并将所有内容写入WAL段文件中。如果`wal_sync_method`参数被配置为`open_sync`或`open_datasync`，记录会被同步写入（译者注：而不是提交才会刷新WAL缓冲区），因为函数会使用带有`O_SYNC`或`O_DSYNC`标记的`open()`系统调用。如果该参数被配置为`fsync`，`fsync_writethrough`，`fdatasync`，相应的系统调用就是`fsync()`，带有`F_FULLSYNC`选项的`fcntl()`，以及`fdatasync()`。无论哪一种情况，所有的XLOG记录都会被确保写入存储之中。
+6. 函数`TransactionIdCommitTree()`将提交日志clog中当前事务的状态从`IN_PROGRESS`更改为`COMMITTED`。
 
 **图9.12 XLOG记录的写入顺序（续图9.11）**
 
@@ -662,11 +662,11 @@ typedef struct CheckPoint
 
 ​	让我们从数据库恢复的角度来总结上面的内容，存档过程会创建包含重做点的检查点，并将存档位置与其他信息存储到`pg_control`文件中。因此，PostgreSQL能够通过从重做点回放WAL数据来进行恢复（重做点是从检查点中获取的）。
 
-### 9.7.2 pg_crontrol文件
+### 9.7.2 `pg_crontrol`文件
 
-​	由于pg_control文件包含了存档的基本信息，因此它对于数据库恢复肯定是必不可少的。如果它被破坏或不可读，因为系统不知道从哪里开始恢复，则恢复过程就无法启动。
+​	由于`pg_control`文件包含了存档的基本信息，因此它对于数据库恢复肯定是必不可少的。如果它被破坏或不可读，因为系统不知道从哪里开始恢复，则恢复过程就无法启动。
 
-尽管pg_control文件存储了40多条数据项，如下三个是接下来和我们讨论内容相关的：
+尽管`pg_control`文件存储了40多条数据项，如下三个是接下来和我们讨论内容相关的：
 
 1. **状态（State）** —— 最近存档过程开始时数据库的状态，总共有七种状态：`start up`表示系统正在启动，`shut down`表示系统被关机命令正常关闭，`in production`表示数据库正在运行，诸如此类。
 2. **最新存档位置（Latest Checkpoint Location）** —— 最新检查点的LSN位置
@@ -824,8 +824,8 @@ archive_command = 'cp %p /home/postgres/archives/%f'
 
 当WAL段文件`WAL_7`发生切换时，该文件被拷贝至归档区域，作为归档日志7。
 
-`archive_command`参数可以配置为任意的Unix命令或程序，因此你也能用scp将归档日志发送到其他主机上，或使用任意的文件备份工具来替代普通的拷贝命令。
+`archive_command`参数可以配置为任意的Unix命令或程序，因此你也能用`scp`将归档日志发送到其他主机上，或使用任意的文件备份工具来替代普通的拷贝命令。
 
 > PostgreSQL**并不会**清理归档日志，所以在使用该功能时需要管理好这些日志。如果什么都不做，归档日志的数量会不断增长。
 >
-> [pg_archivecleanup](https://www.postgresql.org/docs/current/static/pgarchivecleanup.html)工具是一个管理归档日志的实用工具。
+> [`pg_archivecleanup`](https://www.postgresql.org/docs/current/static/pgarchivecleanup.html)工具是一个管理归档日志的实用工具。
