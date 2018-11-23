@@ -6,9 +6,9 @@
 
 ## 7.1 堆内元组（HOT）
 
-​	在8.3版本中实现的HOT特性，使得更新行的时候可以将新行放在和老行同一个数据页中，从而高效地利用索引和表的数据页；HOT特性减少了没有必要的清理过程。
+​	在8.3版本中实现的HOT特性，使得更新行的时候，可以将新行放置在老行所处的同一个数据页中，从而高效地利用索引与表的数据页；HOT特性减少了不必要的清理过程。
 
-​	在源码的[`README.HOT`](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)中有关于HOT的详细介绍，本章只是简短的介绍HOT。首先7.1.1节描述了在没有HOT特性的时候，更新一行会是怎么样的，以此阐明要解决的问题。接下来在7.1.2中介绍HOT做了什么。
+​	在源码的[`README.HOT`](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)中有关于HOT的详细介绍，本章只是简短的介绍HOT。首先，7.1.1节描述了在没有HOT特性的时候，更新一行是怎样一个过程，以阐明要解决的问题。接下来，在7.1.2中将介绍HOT做了什么。
 
 ### 7.1.1 没有HOT时的行更新
 
@@ -24,7 +24,7 @@ testdb=# \d tbl
 Indexes:
     "tbl_pkey" PRIMARY KEY, btree (id)
 ```
-​	表`tbl`有1000个元组；最后一个元组的`id`是1000，存储在第五个数据页中。最后一个元组被相应的索引元组引用，索引元组的`key`是1000，并且tid是`(5,1)`，如图7.1(a)所示。
+​	表`tbl`有1000条元组；最后一个元组的`id`是1000，存储在第五个数据页中。最后一条元组被相应的索引元组所引用，索引元组的`key`是1000，且`tid`是`(5,1)`，如图7.1(a)所示。
 
 **图 7.1 没有HOT的行更新**
 
@@ -36,7 +36,7 @@ Indexes:
 testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 ```
 
-​	在该场景中，PostgreSQL不仅插入了一个新的表元组，也在索引页中插入了新的索引元组，参考图7.1(b)。索引元组的插入消耗了索引页的空间，并且索引元组的插入和清理都是高开销的操作。而HOT的目的就是降低这种影响。
+​	在该场景中，PostgreSQL不仅要插入一条新的表元组，还需要在索引页中插入新的索引元组，如图7.1(b)所示。索引元组的插入消耗了索引页的空间，而且索引元组的插入和清理都是开销很大的操作。HOT的目的，就是降低这种影响。
 
 ### 7.1.2 HOT如何工作
 ​	当使用HOT特性更新行时，如果被更新的元组存储在老元组所在的页面中，PostgreSQL就不会再插入相应的索引元组，而是分别设置新元组的`HEAP_ONLY_TUPLE`标记位与老元组的`HEAP_HOT_UPDATED`标记位，两个标记位都保存在元组的`t_informask2`字段中。如图7.2和7.3所示；
@@ -63,7 +63,7 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 3. 读取`Tuple_1`
 4. 经由`Tuple_1`的`t_ctid`字段，读取`Tuple_2`。
 
-在这种情况下，PostgreSQL会读取两条元组，`Tuple_1`和`Tuple_2`，并通过第五章所述的并发控制机制来判断哪个元组是可见的；但如果数据页中的**死元组（dead tuple）**已经被清理了，那就有问题了。比如在图7.4(a)中，如果`Tuple_1`由于是死元组而被清理了，就无法通过索引访问`Tuple_2`了。
+在这种情况下，PostgreSQL会读取两条元组，`Tuple_1`和`Tuple_2`，并通过[第5章](ch5.md)所述的并发控制机制来判断哪条元组是可见的；但如果数据页中的**死元组（dead tuple）**已经被清理了，那就有问题了。比如在图7.4(a)中，如果`Tuple_1`由于是死元组而被清理了，就无法通过索引访问`Tuple_2`了。
 
 ​	为了解决这个问题，PostgreSQL会在合适的时候进行行指针重定向：将指向老元组的行指针重新指向新元组的行指针。在PostgreSQL中，这个过程称为**修剪（pruning）**。图7.4(b)说明了PostgreSQL在修剪之后如何访问更新的元组。
 
@@ -72,9 +72,9 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 3. 通过重定向的行指针`[1]`，找到行指针`[2]`；
 4. 通过行指针`[2]`，读取`Tuple_2`
 
-可能的话，剪枝任何时候都有可能会发生，比如 `SELECT` ，`UPDATE`， `INSERT` ，`DELETE`这类SQL命令执行的时候，确切的执行时机不会在本章中描述，因为它太复杂了。细节可以在[README.HOT](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)文件中找到。
+可能的话，剪枝任何时候都有可能会发生，比如 `SELECT` ，`UPDATE`， `INSERT` ，`DELETE`这类SQL命令执行的时候，确切的执行时机不会在本章中描述，因为它太复杂了。细节可以在[`README.HOT`](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)文件中找到。
 
-​	在PostgreSQL执行剪枝时，如果可能，会在恰当的时间清理死元组。在PostgreSQL中这种操作称为**碎片整理（defragmentation）**，在图7.5中描述了HOT中的碎片整理过程。
+​	在PostgreSQL执行剪枝时，如果可能，会挑选合适的时机来清理死元组。在PostgreSQL中这种操作称为**碎片整理（defragmentation）**，图7.5中描述了HOT中的碎片整理过程。
 
 **图 7.5 死元组的碎片整理**
 
@@ -84,14 +84,14 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 ​	需要注意的是，因为碎片整理的工作并不涉及到索引元组的移除，因此碎片整理比起常规的清理开销要小得多。
 
-​	因此，HOT特性降低了索引和表的空间消耗，同样减少了清理过程需要处理的元组数。由于减少了更新操作需要插入的索引元组数量，并减小了清理操作需要处理的元组数，HOT对于性能提高有很好的促进作用。
+​	因此，HOT特性降低了索引和表的空间消耗，同样减少了清理过程需要处理的元组数量。由于减少了更新操作需要插入的索引元组数量，并减小了清理操作需要处理的元组数量，HOT对于性能提高有良好的促进作用。
 
 > #### HOT不可用的场景
 >
 > 为了清晰地理解HOT的工作，这里介绍一些HOT不可用的场景。
 >
 > 1. 当更新的元组在其他的页面时，即和老元组在不在同一个数据页中时，指向该元组的索引元组也会被添加至索引页中，如图7.6(a)所示。
-> 2. 当索引的键更新时，会在索引页中插入一条新的索引元组，如图7.6(b)所示。
+> 2. 当索引的**键**更新时，会在索引页中插入一条新的索引元组，如图7.6(b)所示。
 >
 > **图7.6 HOT不适用的情况**
 >
@@ -109,7 +109,7 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 + 表定义
 
-  我们有一个tbl表，如下所示：
+  我们有一个`tbl`表，其定义如下所示：
 
   ```sql
   testdb=# \d tbl
@@ -125,7 +125,7 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 + 索引
 
-  表`tbl`有一个索引`tbl_idx`，包含两个列：`id`和`name`。
+  表`tbl`有一个索引`tbl_idx`，包含两列：`id`和`name`。
 
 + 元组
 
