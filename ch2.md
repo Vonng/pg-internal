@@ -13,7 +13,7 @@
 * **postgres服务器进程（Postgres Server Process）**是所有数据库集簇管理进程的父进程。
 * 每个**后端进程（Backend Process）** 负责处理客户端发出的查询和语句。
 
-* 各种**后台进程（Background Process）** 负责执行各种数据库管理任务（例如清理过程与存档过程）。
+* 各种**后台进程（Background Process）** 负责执行各种数据库管理任务（例如清理过程与检查点过程）。
 
 * 各种**复制相关（Replication Associated Process）**的进程负责流复制，流复制的细节会在[第11章](ch11.md)中介绍。
 * **后台工作进程（Background Worker Process）** 在9.3版被引入，它能执行任意由用户实现的处理逻辑。这里不详述，请参阅[官方文档](https://www.postgresql.org/docs/current/static/bgworker.html)。

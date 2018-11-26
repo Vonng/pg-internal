@@ -88,9 +88,9 @@ typedef struct RelFileNode
 
 ### 8.1.5 刷写脏页
 
-​	脏页最终应该被刷入存储，但缓冲区管理器执行这个任务需要额外帮助。 在PostgreSQL中，两个后台进程：**存档器（checkpointer）**和**后台写入器（background writer）**负责此任务。
+​	脏页最终应该被刷入存储，但缓冲区管理器执行这个任务需要额外帮助。 在PostgreSQL中，两个后台进程：**检查点进程（checkpointer）**和**后台写入器（background writer）**负责此任务。
 
-8.6节描述了存档器和后台写入器。
+8.6节描述了检查点进程和后台写入器。
 
 > #### 直接I/O（Direct I/O）
 >
@@ -155,7 +155,7 @@ PostgreSQL缓冲区管理器由三层组成，即**缓冲表层**，**缓冲区�
 #define BM_IO_ERROR             (1 << 4)    /* 先前的I/O失败 */
 #define BM_JUST_DIRTIED         (1 << 5)    /* 写之前已经脏了 */
 #define BM_PIN_COUNT_WAITER     (1 << 6)    /* 有人等着钉页面 */
-#define BM_CHECKPOINT_NEEDED    (1 << 7)    /* 必需在存档时写入 */
+#define BM_CHECKPOINT_NEEDED    (1 << 7)    /* 必需在检查点时写入 */
 #define BM_PERMANENT            (1 << 8)    /* 永久缓冲(不是unlogged) */
 
 /* BufferDesc -- 单个共享缓冲区的共享描述符/共享状态
@@ -373,7 +373,7 @@ typedef struct sbufdesc
 > #define BM_IO_ERROR				(1U << 27)	/* 先前的I/O失败 */
 > #define BM_JUST_DIRTIED			(1U << 28)	/* 写之前已经脏了 */
 > #define BM_PIN_COUNT_WAITER		(1U << 29)	/* 有人等着钉页面 */
-> #define BM_CHECKPOINT_NEEDED	(1U << 30)	/* 必需在存档时写入 */
+> #define BM_CHECKPOINT_NEEDED	(1U << 30)	/* 必需在检查点时写入 */
 > #define BM_PERMANENT			(1U << 31)	/* 永久缓冲 */
 > 
 > 
@@ -617,17 +617,17 @@ typedef struct sbufdesc
 
 ## 8.6 脏页刷盘
 
-​	除了置换受害者页面之外，**存档器（Checkpointer）**进程和后台写入器进程也会将脏页刷写至存储中。尽管两个进程都具有相同的功能（刷写脏页），但它们有着不同的角色和行为。
+​	除了置换受害者页面之外，**检查点进程（Checkpointer）**进程和后台写入器进程也会将脏页刷写至存储中。尽管两个进程都具有相同的功能（刷写脏页），但它们有着不同的角色和行为。
 
-​	存档器进程将**检查点记录（checkpoint record）**写入WAL段文件，并在检查点开始时进行脏页刷写。[9.7节](ch9.md)介绍了检查点，以及检查点开始的时机。
+​	检查点进程将**检查点记录（checkpoint record）**写入WAL段文件，并在检查点开始时进行脏页刷写。[9.7节](ch9.md)介绍了检查点，以及检查点开始的时机。
 
 ​	后台写入器的目的是通过少量多次的脏页刷盘，减少检查点带来的密集写入的影响。后台写入器会一点点地将脏页落盘，尽可能减小对数据库活动造成的影响。默认情况下，后台写入器每200毫秒被唤醒一次（由参数[`bgwriter_delay`](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-DELAY)定义），且最多刷写[`bgwriter_lru_maxpages`](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-LRU-MAXPAGES)个页面（默认为100个页面）。
 
 
 
-#### 为什么存档器与后台写入器相分离？
+#### 为什么检查点进程与后台写入器相分离？
 
-> 在9.1版及更早版本中，后台写入器会规律性的执行检查点过程。在9.2版本中，存档器进程从后台写入器进程中被单独剥离出来。原因在一篇题为”[将存档器与后台写入器相分离](https://www.postgresql.org/message-id/CA%2BU5nMLv2ah-HNHaQ%3D2rxhp_hDJ9jcf-LL2kW3sE4msfnUw9gA%40mail.gmail.com)“的提案中有介绍。下面是一些摘录：
+> 在9.1版及更早版本中，后台写入器会规律性的执行检查点过程。在9.2版本中，检查点进程从后台写入器进程中被单独剥离出来。原因在一篇题为”[将检查点进程与后台写入器相分离](https://www.postgresql.org/message-id/CA%2BU5nMLv2ah-HNHaQ%3D2rxhp_hDJ9jcf-LL2kW3sE4msfnUw9gA%40mail.gmail.com)“的提案中有介绍。下面是一些摘录：
 >
 > > 当前（在2011年）后台写入器进程既执行后台写入，又负责检查点，还处理一些其他的职责。这意味着我们没法在不停止后台写入的情况下执行检查点最终的`fsync`。因此，在同一个进程中做两件事会有负面的性能影响。
 > >
