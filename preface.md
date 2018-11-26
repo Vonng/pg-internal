@@ -1,50 +1,59 @@
-[Preface]
-
-
+# 序
 
 中国的PostgreSQL用户们，你们好！
 
-本书详细解释了PostgreSQL的内部工作细节，目标读者为DBA和系统开发者。尽管理解数据库内部机制很有挑战，愿本书在您精通PostgreSQL的道路上能有所帮助。
+本书详细解释了PostgreSQL的内部工作细节，目标读者为DBA与系统开发人员。理解数据库内部机制很有挑战，愿本书能在您精通PostgreSQL的道路上有所助益。
 
-This book explains the internal workings of PostgreSQL in detail for database administrators and system developers. Although understanding of its internal mechanism is difficult, this book will help you learn and master PostgreSQL.
+本书能出中文版，我真的感到非常高兴，我这样认为是有原因的。
 
+这是我的书中，第一本被翻译成外语的。当自己的书出版时，心情愉悦自不必说，而自己的一部作品能翻译成外语出版，更是一件非常令人激动的事情。
 
+首先, 这是我翻译的第一本书。不用说, 当我的一本书出版的时候, 总是让人高兴的。此外, 让我的一部作品翻译成外语是一件非常令人激动的事情。
 
-I am really glad that this book is published in Chinese. I will explain the reasons why I think this.
+其次，我收到了来自世界各地的电子邮件，请求将这本书翻译成各种外语。实际上，至少有一半的邮件来自中国。许多邮件跟我说”这本书对中国PostgreSQL用户很有必要“，因此，我很高兴终于能对他们的要求作出回应。
 
-First, this is the first book I have ever translated. Needless to say, it is always pleasing when one of my books is published. Moreover, having one of my works translated into a foreign language is a very exciting thing.
+而最重要的原因与我的家族史有关。先父于多年前去世，他在中国的哈尔滨住过好几年。此后他回到日本，而我出生了。他患心脏病已经很长时间了，因此脾气很差。我对他的印象很差，除了一件事。当我还是孩子的时候，父亲每晚睡觉前都会给我和妹妹讲他在中国的经历。在讲这些时，他总是显得非常高兴，经常说中国人民帮助了他。
 
-Second, I have been receiving many emails requesting translations of this book into foreign languages from around the world. Actually, at least half of the emails are from China. Many emails tell me that "This book is necessary for Chinese PostgreSQL users". Therefore, I am pleased to finally respond to their requests.
+他的故事给我留下了深刻的印象，当然也影响了我的人生。因为这些故事，我从小就对这个世界和未知的事物有强烈的好奇心，而我的好奇心也引领我走向软件工程的道路。而现在，我已经在中国出版了我的第一本书。简而言之，这是一个关于日本家庭与中国之间让爱接力传递的故事。
 
-And the most important reason relates to my family history. My late father, who passed away many years ago, lived in Harbin, China for a few years. After that, he returned to Japan and I was born. He had been suffering from heart disease for a long time, therefore, he was always in a bad mood and I do not have good memories of him except one, which I will explain below.
+我很高兴终于能把这份情还给中国人民了。当然，这本书是一份很小的礼物。然而，我愿充满感激之情地将它献给您。
 
-When I was a child, my father told stories about his experiences in China to me and my younger sister before we went to bed every night. When talking, he always looked very happy and said often that the Chinese people helped him.
+2017年，我有幸访问中国，亲眼目睹了中国令人惊叹的发展。对我而言，这是一次非常难忘的经历。我希望能再去中国，如果有机会，我也想在中国工作。
 
-His stories impressed me and certainly affected my life. Because I heard his stories, I grew up with a strong sense of curiosity about the world and the unknown, and my curiosity also pushed me to learn software engineering. And now, I have published my first book in China. In short, this is a story of a pay-it-forward chain which involving a Japanese family and China.
-
-I am very happy that I could finally return the favor to the Chinese people. Of course, this book is a very small gift, however, I would like to dedicate it to you with my gratitude. 
-
-In 2017, I had an opportunity to go to China and could directly see that China is surprisingly developing. It was a very impressive experience to me. I hope to go to China again, and also I would like to work in China if I have an opportunity.
-
-Anyway, let's enjoy PostgreSQL!
+无论如何，让我们享受PostgreSQL吧！
 
 
-November, 2018
+
+2018年11月
 
 
-[Acknowledges]
 
-This book has been published by the publisher staff and the translator With their great efforts. I deeply appreciate them all.
+------
 
-[Author]
+## 致谢
 
-Hironobu Suzuki
-In Japanese: 鈴木 啓修
+本书的出版离不开出版社工作人员与译者们巨大的努力与付出，对此我深表感激。
 
-I graduated from graduate school of information engineering (M.S. in Information Engineering), have worked for several companies as a software developer and technical manager/director. I published seven books in the fields of database and system integration (3 PostgreSQL books and 3 MySQL books).
+## 作者
 
-As a director of the Japan PostgreSQL Users Group (2010-2016), I organized the largest (non-commercial) technical seminar/lecture of PostgreSQL in Japan for more than six years, and also served as the program committee chair of the Japan PostgreSQL Conference in 2013 and as a member in 2008 and 2009.
+**Hironobu Suzuki**
+**日语：鈴木 啓修**
 
-When I was young, I lived in Ecuador for two years, and sometimes I go back to there.
+我毕业于信息工程研究生院 （信息工程硕士），曾在多家公司担任软件开发人员和技术经理/技术主管。我在数据库和系统集成领域出版了七本书（3本PostgreSQL书和3本MySQL书）。
 
-I currently live in Dublin, Ireland. 
+作为日本PostgreSQL用户组的主任（2010-2016），我连续六年组织了日本规模最大的 （非商业）PostgreSQL技术研讨会，并担任日本2013年PostgreSQL大会的委员会主席，以及2008年和2009年的委员会成员。
+
+当我年轻时，曾在厄瓜多尔住了两年，有时我会回到那里去。
+
+目前我住在爱尔兰，都柏林。
+
+
+
+
+
+
+
+
+
+
+
