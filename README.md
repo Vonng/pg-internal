@@ -43,21 +43,3 @@ PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于�
 
 
 
-
-## 进度
-
-| 章节 | 状态 |     进度      |
-| :--: | :--: | :-----------: |
-|  序  | 精翻 | Done by Vonng |
-| 译序 | 初稿 | Done by Vonng |
-| ch1  | 精翻 | Done by Vonng |
-| ch2  | 精翻 | Done by Vonng |
-| ch3  | 精翻 | Done by Vonng |
-| ch4  | 精翻 | Done by Vonng |
-| ch5  | 精翻 | Done by Vonng |
-| ch6  | 精翻 | Done by Vonng |
-| ch7  | 精翻 | Done by Vonng |
-| ch8  | 精翻 | Done by Vonng |
-| ch9  | 精翻 | Done by Vonng |
-| ch10 | 精翻 | Done by Vonng |
-| ch11 | 精翻 | Done by Vonng |
