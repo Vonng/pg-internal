@@ -136,9 +136,12 @@ params:
       repoId: "MDEwOlJlcG9zaXRvcnkzOTQ1MTM4NDE="
       category: "Announcements"
       categoryId: "DIC_kwDOF4PNsc4CtkWO"
-      mapping: pathname                # 建议显式写上
+      mapping: pathname
+      strict: 0
       reactionsEnabled: 1
+      emitMetadata: 0
       inputPosition: bottom
+      lang: zh-CN
       theme: preferred_color_scheme
 
       # repo: imfing/hextra
