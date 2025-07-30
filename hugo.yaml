@@ -1,5 +1,5 @@
 baseURL: 'https://pg-internal.vonng.com/'
-languageCode: 'zh'
+languageCode: 'zh-CN'
 title: 'PostgreSQL 技术内幕'
 
 
@@ -66,6 +66,11 @@ menu:
       name: "PG Extensions ↗"
       url: "https://ext.pgsty.com"
       weight: 3
+    - identifier: pgint14
+      name: "PG 14 Internal ↗"
+      url: "https://postgres-internals.cn/"
+      weight: 4
+
 
 params:
   description: PostgreSQL 技术内幕是一本深入浅出、全面系统的 PostgreSQL 数据库技术书籍，旨在帮助读者深入理解 PostgreSQL 的内部机制和最佳实践。
@@ -74,8 +79,8 @@ params:
     displayTitle: true
     displayLogo: true
     logo:
-      path: images/logo.svg
-      dark: images/logo-dark.svg
+      path: /postgresql.svg
+      dark: /postgresql.svg
       # width: 40
       # height: 20
       # link: /

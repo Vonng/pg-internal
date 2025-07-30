@@ -2,6 +2,7 @@
 title: PostgreSQL技术内幕
 cascade:
   type: docs
+breadcrumbs: false
 ---
 
 
