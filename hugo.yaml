@@ -42,58 +42,30 @@ markup:
 
 menu:
   main:
-    - identifier: documentation
-      name: Documentation
-      pageRef: /docs
-      weight: 1
-    - identifier: versions
-      name: Versions
-      weight: 2
-    - identifier: blog
-      name: Blog
-      pageRef: /blog
-      weight: 3
-    - identifier: about
-      name: About
-      pageRef: /about
-      weight: 4
-    - identifier: showcase
-      name: Showcase
-      pageRef: /showcase
-      weight: 5
     - name: Search
-      weight: 6
+      weight: 1
       params:
         type: search
     - name: GitHub
-      weight: 7
-      url: "https://github.com/imfing/hextra"
+      weight: 2
+      url: "https://github.com/Vonng/pg-internal"
       params:
         icon: github
-    - identifier: development
-      name: Development ↗
-      url: https://imfing.github.io/hextra/versions/latest/
-      parent: versions
-    - identifier: v0.9
-      name: v0.9 ↗
-      url: https://imfing.github.io/hextra/versions/v0.9/
-      parent: versions
 
   sidebar:
     - identifier: more
-      name: More
+      name: 友情链接
       params:
         type: separator
       weight: 1
-    - identifier: about
-      name: "About"
-      pageRef: "/about"
+    - identifier: pigsty
+      name: "Pigsty Docs ↗"
+      url: "https://doc.pgsty.com"
       weight: 2
-    - identifier: hugoDocs
-      name: "Hugo Docs ↗"
-      url: "https://gohugo.io/documentation/"
+    - identifier: pgext
+      name: "PG Extensions ↗"
+      url: "https://ext.pgsty.com"
       weight: 3
-
 
 params:
   description: PostgreSQL 技术内幕是一本深入浅出、全面系统的 PostgreSQL 数据库技术书籍，旨在帮助读者深入理解 PostgreSQL 的内部机制和最佳实践。
@@ -121,12 +93,12 @@ params:
   footer:
     enable: true
     displayCopyright: true
-    displayPoweredBy: true
+    displayPoweredBy: false
     width: normal
 
   # Display the last modification date
   displayUpdatedDate: true
-  dateFormat: "January 2, 2006"
+  dateFormat: "2006-01-02"
 
   # Search
   # flexsearch is enabled by default
@@ -155,15 +127,20 @@ params:
       display: hover
 
   comments:
-    enable: false
+    enable: true
     type: giscus
 
     # https://giscus.app/
     giscus:
-      repo: imfing/hextra
-      repoId: R_kgDOJ9fJag
-      category: General
-      categoryId: DIC_kwDOJ9fJas4CY7gW
+      repo: "Vonng/pg-internal"
+      repoId: "MDEwOlJlcG9zaXRvcnkzOTQ1MTM4NDE="
+      category: "Announcements"
+      categoryId: "DIC_kwDOF4PNsc4CtkWO"
+
+      # repo: imfing/hextra
+      # repoId: R_kgDOJ9fJag
+      # category: General
+      # categoryId: DIC_kwDOJ9fJas4CY7gW
       # mapping: pathname
       # strict: 0
       # reactionsEnabled: 1
