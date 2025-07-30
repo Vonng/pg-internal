@@ -1,0 +1,10 @@
+{
+  "origins": [
+    "https://vonng.github.com/pg-internal",
+    "https://pg-internal.vonng.com",
+    "http://localhost:1313"
+  ],
+  "originsRegex": [
+    "http://localhost:[0-9]+"
+  ]
+}
