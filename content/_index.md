@@ -40,5 +40,14 @@ PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于�
 [第十一章 流复制](/ch11)
 
 
+## 作者
+
+**Hironobu Suzuki**
+**日语：鈴木 啓修**
 
 
+## 译者
+
+[**冯若航**](https://github.com/Vonng)，刘阳明，张文升
+
+探探 PostgreSQL DBA Team

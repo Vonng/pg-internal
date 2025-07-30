@@ -1,7 +1,7 @@
 ## PG Internals
 
 [![pgint.vonng.com](https://img.shields.io/badge/Website-pgint.vonng.com-slategray?style=flat&logo=cilium&logoColor=white)](https://pgint.vonng.com)
-[![Github Pages](https://img.shields.io/badge/GHPages-vonng.github.io/pg-internal-slategray?style=flat&logo=cilium&logoColor=white)](https://vonng.github.io/pg-internal/)
+[![Github Pages](https://img.shields.io/badge/GH_Pages-vonng.github.io/pg--internal-slategray?style=flat&logo=cilium&logoColor=white)](https://vonng.github.io/pg-internal/)
 
 
 PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于各种目的。它是一个由多个子系统集成而来的巨大系统，每个子系统都包含着特殊的复杂功能，并与其它子系统相互协调工作。
@@ -36,5 +36,14 @@ PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于�
 [第十一章 流复制](content/ch11)
 
 
+## 作者
+
+**Hironobu Suzuki**
+**日语：鈴木 啓修**
 
 
+## 译者
+
+[**冯若航**](https://github.com/Vonng)，刘阳明，张文升
+
+探探 PostgreSQL DBA Team
