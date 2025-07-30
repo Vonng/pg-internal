@@ -1,0 +1,7 @@
+.code
+.idea
+.claude
+public/
+temp/
+.hugo_build.lock
+

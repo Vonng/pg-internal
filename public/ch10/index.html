@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh"><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon shortcut" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+<link fetchpriority="low" href="/site.webmanifest" rel="manifest" />
+<title>10. 基础备份与时间点恢复 – PG技术内幕</title>
+  <meta name="description" content="​	在线数据库备份大致可分为两类：逻辑备份和物理备份。它们有着各自的优点和缺点。尽管各有优劣，但逻辑备份有一个缺点：执行需要花费太多时间。特别是对于大型数据库而言，需要花费很长时间进行备份，而从备份数据中恢复数据库可能需要更长的时间。相反的是，物理备份可以在相对较短的时间内备份和恢复大型数据库，因此在实际系统中，它是一个非常重要而实用的功能。" /><link rel="canonical" href="http://localhost:1313/ch10/" itemprop="url" />
+
+<meta property="og:title" content="10. 基础备份与时间点恢复" />
+<meta property="og:description" content="​	在线数据库备份大致可分为两类：逻辑备份和物理备份。它们有着各自的优点和缺点。尽管各有优劣，但逻辑备份有一个缺点：执行需要花费太多时间。特别是对于大型数据库而言，需要花费很长时间进行备份，而从备份数据中恢复数据库可能需要更长的时间。相反的是，物理备份可以在相对较短的时间内备份和恢复大型数据库，因此在实际系统中，它是一个非常重要而实用的功能。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://localhost:1313/ch10/" /><meta property="article:section" content="" />
+
+
+
+  <meta itemprop="name" content="10. 基础备份与时间点恢复">
+  <meta itemprop="description" content="​	在线数据库备份大致可分为两类：逻辑备份和物理备份。它们有着各自的优点和缺点。尽管各有优劣，但逻辑备份有一个缺点：执行需要花费太多时间。特别是对于大型数据库而言，需要花费很长时间进行备份，而从备份数据中恢复数据库可能需要更长的时间。相反的是，物理备份可以在相对较短的时间内备份和恢复大型数据库，因此在实际系统中，它是一个非常重要而实用的功能。">
+  <meta itemprop="wordCount" content="6292">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="10. 基础备份与时间点恢复">
+  <meta name="twitter:description" content="​	在线数据库备份大致可分为两类：逻辑备份和物理备份。它们有着各自的优点和缺点。尽管各有优劣，但逻辑备份有一个缺点：执行需要花费太多时间。特别是对于大型数据库而言，需要花费很长时间进行备份，而从备份数据中恢复数据库可能需要更长的时间。相反的是，物理备份可以在相对较短的时间内备份和恢复大型数据库，因此在实际系统中，它是一个非常重要而实用的功能。">
+
+    <link href="/css/compiled/main.css" rel="stylesheet" />
+
+
+
+  <link href="/css/custom.css" rel="stylesheet" />
+
+
+  <script>
+     
+    const defaultTheme = 'system';
+
+    const setDarkTheme = () => {
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+    }
+    const setLightTheme = () => {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
+    }
+
+    if ("color-theme" in localStorage) {
+      localStorage.getItem("color-theme") === "dark" ? setDarkTheme() : setLightTheme();
+    } else {
+      defaultTheme === "dark" ? setDarkTheme() : setLightTheme();
+      if (defaultTheme === "system") {
+        window.matchMedia("(prefers-color-scheme: dark)").matches ? setDarkTheme() : setLightTheme();
+      }
+    }
+  </script>
+
+  
+</head>
+<body dir="ltr"><div class="nav-container hx-sticky hx-top-0 hx-z-20 hx-w-full hx-bg-transparent print:hx-hidden">
+  <div class="nav-container-blur hx-pointer-events-none hx-absolute hx-z-[-1] hx-h-full hx-w-full hx-bg-white dark:hx-bg-dark hx-shadow-[0_2px_4px_rgba(0,0,0,.02),0_1px_0_rgba(0,0,0,.06)] contrast-more:hx-shadow-[0_0_0_1px_#000] dark:hx-shadow-[0_-1px_0_rgba(255,255,255,.1)_inset] contrast-more:dark:hx-shadow-[0_0_0_1px_#fff]"></div>
+
+  <nav class="hx-mx-auto hx-flex hx-items-center hx-justify-end hx-gap-2 hx-h-16 hx-px-6 hx-max-w-[90rem]">
+    <a class="hx-flex hx-items-center hover:hx-opacity-75 ltr:hx-mr-auto rtl:hx-ml-auto" href="/">
+        <img class="hx-mr-2 hx-block dark:hx-hidden" src="/images/logo.svg" alt="PG技术内幕" height="20" width="20" />
+        <img class="hx-mr-2 hx-hidden dark:hx-block" src="/images/logo-dark.svg" alt="PG技术内幕" height="20" width="20" />
+        <span class="hx-mr-2 hx-font-extrabold hx-inline hx-select-none" title="PG技术内幕">PG技术内幕</span>
+    </a><a
+            title="Documentation"
+            href="/docs"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">Documentation</span>
+          </a><a
+            title="Versions"
+            href=""
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">Versions</span>
+          </a><a
+            title="Blog"
+            href="/blog"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">Blog</span>
+          </a><a
+            title="About"
+            href="/about"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">About</span>
+          </a><a
+            title="Showcase"
+            href="/showcase"
+            
+            class="hx-text-sm contrast-more:hx-text-gray-700 contrast-more:dark:hx-text-gray-100 hx-relative -hx-ml-2 hx-hidden hx-whitespace-nowrap hx-p-2 md:hx-inline-block hx-text-gray-600 hover:hx-text-gray-800 dark:hx-text-gray-400 dark:hover:hx-text-gray-200"
+          >
+            <span class="hx-text-center">Showcase</span>
+          </a><div class="search-wrapper hx-relative md:hx-w-64">
+  <div class="hx-relative hx-flex hx-items-center hx-text-gray-900 contrast-more:hx-text-gray-800 dark:hx-text-gray-300 contrast-more:dark:hx-text-gray-300">
+    <input
+      placeholder="Search..."
+      class="search-input hx-block hx-w-full hx-appearance-none hx-rounded-lg hx-px-3 hx-py-2 hx-transition-colors hx-text-base hx-leading-tight md:hx-text-sm hx-bg-black/[.05] dark:hx-bg-gray-50/10 focus:hx-bg-white dark:focus:hx-bg-dark placeholder:hx-text-gray-500 dark:placeholder:hx-text-gray-400 contrast-more:hx-border contrast-more:hx-border-current"
+      type="search"
+      value=""
+      spellcheck="false"
+    />
+    <kbd
+      class="hx-absolute hx-my-1.5 hx-select-none ltr:hx-right-1.5 rtl:hx-left-1.5 hx-h-5 hx-rounded hx-bg-white hx-px-1.5 hx-font-mono hx-text-[10px] hx-font-medium hx-text-gray-500 hx-border dark:hx-border-gray-100/20 dark:hx-bg-dark/50 contrast-more:hx-border-current contrast-more:hx-text-current contrast-more:dark:hx-border-current hx-items-center hx-gap-1 hx-transition-opacity hx-pointer-events-none hx-hidden sm:hx-flex"
+    >
+      CTRL K
+    </kbd>
+  </div>
+
+  <div>
+    <ul
+      class="search-results hextra-scrollbar hx-hidden hx-border hx-border-gray-200 hx-bg-white hx-text-gray-100 dark:hx-border-neutral-800 dark:hx-bg-neutral-900 hx-absolute hx-top-full hx-z-20 hx-mt-2 hx-overflow-auto hx-overscroll-contain hx-rounded-xl hx-py-2.5 hx-shadow-xl hx-max-h-[min(calc(50vh-11rem-env(safe-area-inset-bottom)),400px)] md:hx-max-h-[min(calc(100vh-5rem-env(safe-area-inset-bottom)),400px)] hx-inset-x-0 ltr:md:hx-left-auto rtl:md:hx-right-auto contrast-more:hx-border contrast-more:hx-border-gray-900 contrast-more:dark:hx-border-gray-50 hx-w-screen hx-min-h-[100px] hx-max-w-[min(calc(100vw-2rem),calc(100%+20rem))]"
+      style="transition: max-height 0.2s ease 0s;"
+    ></ul>
+  </div>
+</div>
+
+          <a class="hx-p-2 hx-text-current" target="_blank" rel="noreferrer" href="https://github.com/imfing/hextra" title="GitHub"><svg height=24 fill="currentColor" viewBox="3 3 18 18">
+  <path d="M12 3C7.0275 3 3 7.12937 3 12.2276C3 16.3109 5.57625 19.7597 9.15374 20.9824C9.60374 21.0631 9.77249 20.7863 9.77249 20.5441C9.77249 20.3249 9.76125 19.5982 9.76125 18.8254C7.5 19.2522 6.915 18.2602 6.735 17.7412C6.63375 17.4759 6.19499 16.6569 5.8125 16.4378C5.4975 16.2647 5.0475 15.838 5.80124 15.8264C6.51 15.8149 7.01625 16.4954 7.18499 16.7723C7.99499 18.1679 9.28875 17.7758 9.80625 17.5335C9.885 16.9337 10.1212 16.53 10.38 16.2993C8.3775 16.0687 6.285 15.2728 6.285 11.7432C6.285 10.7397 6.63375 9.9092 7.20749 9.26326C7.1175 9.03257 6.8025 8.08674 7.2975 6.81794C7.2975 6.81794 8.05125 6.57571 9.77249 7.76377C10.4925 7.55615 11.2575 7.45234 12.0225 7.45234C12.7875 7.45234 13.5525 7.55615 14.2725 7.76377C15.9937 6.56418 16.7475 6.81794 16.7475 6.81794C17.2424 8.08674 16.9275 9.03257 16.8375 9.26326C17.4113 9.9092 17.76 10.7281 17.76 11.7432C17.76 15.2843 15.6563 16.0687 13.6537 16.2993C13.98 16.5877 14.2613 17.1414 14.2613 18.0065C14.2613 19.2407 14.25 20.2326 14.25 20.5441C14.25 20.7863 14.4188 21.0746 14.8688 20.9824C16.6554 20.364 18.2079 19.1866 19.3078 17.6162C20.4077 16.0457 20.9995 14.1611 21 12.2276C21 7.12937 16.9725 3 12 3Z"></path>
+</svg>
+<span class="hx-sr-only">GitHub</span>
+          </a><button type="button" aria-label="Menu" class="hamburger-menu -hx-mr-2 hx-rounded hx-p-2 active:hx-bg-gray-400/20 md:hx-hidden"><svg height=24 fill="none" viewBox="0 0 24 24" stroke="currentColor"><g><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8H20"></path></g><g><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16H20"></path></g></svg></button>
+  </nav>
+</div>
+
+  <div class='hx-mx-auto hx-flex max-w-full'>
+    <div class="mobile-menu-overlay [transition:background-color_1.5s_ease] hx-fixed hx-inset-0 hx-z-10 hx-bg-black/80 dark:hx-bg-black/60 hx-hidden"></div>
+<aside class="sidebar-container hx-flex hx-flex-col print:hx-hidden md:hx-top-16 md:hx-shrink-0 md:hx-w-64 md:hx-self-start max-md:[transform:translate3d(0,-100%,0)] md:hx-sticky">
+  
+  <div class="hx-px-4 hx-pt-4 md:hx-hidden">
+    <div class="search-wrapper hx-relative md:hx-w-64">
+  <div class="hx-relative hx-flex hx-items-center hx-text-gray-900 contrast-more:hx-text-gray-800 dark:hx-text-gray-300 contrast-more:dark:hx-text-gray-300">
+    <input
+      placeholder="Search..."
+      class="search-input hx-block hx-w-full hx-appearance-none hx-rounded-lg hx-px-3 hx-py-2 hx-transition-colors hx-text-base hx-leading-tight md:hx-text-sm hx-bg-black/[.05] dark:hx-bg-gray-50/10 focus:hx-bg-white dark:focus:hx-bg-dark placeholder:hx-text-gray-500 dark:placeholder:hx-text-gray-400 contrast-more:hx-border contrast-more:hx-border-current"
+      type="search"
+      value=""
+      spellcheck="false"
+    />
+    <kbd
+      class="hx-absolute hx-my-1.5 hx-select-none ltr:hx-right-1.5 rtl:hx-left-1.5 hx-h-5 hx-rounded hx-bg-white hx-px-1.5 hx-font-mono hx-text-[10px] hx-font-medium hx-text-gray-500 hx-border dark:hx-border-gray-100/20 dark:hx-bg-dark/50 contrast-more:hx-border-current contrast-more:hx-text-current contrast-more:dark:hx-border-current hx-items-center hx-gap-1 hx-transition-opacity hx-pointer-events-none hx-hidden sm:hx-flex"
+    >
+      CTRL K
+    </kbd>
+  </div>
+
+  <div>
+    <ul
+      class="search-results hextra-scrollbar hx-hidden hx-border hx-border-gray-200 hx-bg-white hx-text-gray-100 dark:hx-border-neutral-800 dark:hx-bg-neutral-900 hx-absolute hx-top-full hx-z-20 hx-mt-2 hx-overflow-auto hx-overscroll-contain hx-rounded-xl hx-py-2.5 hx-shadow-xl hx-max-h-[min(calc(50vh-11rem-env(safe-area-inset-bottom)),400px)] md:hx-max-h-[min(calc(100vh-5rem-env(safe-area-inset-bottom)),400px)] hx-inset-x-0 ltr:md:hx-left-auto rtl:md:hx-right-auto contrast-more:hx-border contrast-more:hx-border-gray-900 contrast-more:dark:hx-border-gray-50 hx-w-screen hx-min-h-[100px] hx-max-w-[min(calc(100vw-2rem),calc(100%+20rem))]"
+      style="transition: max-height 0.2s ease 0s;"
+    ></ul>
+  </div>
+</div>
+
+  </div>
+  <div class="hextra-scrollbar hx-overflow-y-auto hx-overflow-x-hidden hx-p-4 hx-grow md:hx-h-[calc(100vh-var(--navbar-height)-var(--menu-height))]">
+    <ul class="hx-flex hx-flex-col hx-gap-1 md:hx-hidden">
+      
+      
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/readme/"
+    
+  >PostgreSQL技术内幕
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/preface/"
+    
+  >作者序
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/preface2/"
+    
+  >译者序
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch1/"
+    
+  >1. 数据库集簇，数据库，数据表
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch2/"
+    
+  >2. 进程和内存架构
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch3/"
+    
+  >3. 查询处理
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch4/"
+    
+  >4. 外部数据包装器与并行查询
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch5/"
+    
+  >5. 并发控制
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch6/"
+    
+  >6. 第六章 清理过程
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch7/"
+    
+  >7. 堆内元组与仅索引扫描
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch8/"
+    
+  >8. 缓冲区管理器
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch9/"
+    
+  >9. 预写式日志
+    </a></li>
+          <li class="open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
+    href="/ch10/"
+    
+  >10. 基础备份与时间点恢复
+    </a>
+  
+    <ul class='hx-flex hx-flex-col hx-gap-1 hx-relative before:hx-absolute before:hx-inset-y-1 before:hx-w-px before:hx-bg-gray-200 before:hx-content-[""] dark:before:hx-bg-neutral-800 ltr:hx-pl-3 ltr:before:hx-left-0 rtl:hx-pr-3 rtl:before:hx-right-0 ltr:hx-ml-3 rtl:hx-mr-3'><li>
+              <a
+                href="#101-%e5%9f%ba%e7%a1%80%e5%a4%87%e4%bb%bd"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >10.1 基础备份</a>
+            </li>
+          <li>
+              <a
+                href="#102-%e6%97%b6%e9%97%b4%e7%82%b9%e6%81%a2%e5%a4%8dpitr%e7%9a%84%e5%b7%a5%e4%bd%9c%e5%8e%9f%e7%90%86"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >10.2 时间点恢复（PITR）的工作原理</a>
+            </li>
+          <li>
+              <a
+                href="#103-%e6%97%b6%e9%97%b4%e7%ba%bf%e4%b8%8e%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >10.3 时间线与时间线历史文件</a>
+            </li>
+          <li>
+              <a
+                href="#104-%e6%97%b6%e9%97%b4%e7%82%b9%e6%81%a2%e5%a4%8d%e4%b8%8e%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6"
+                class="hx-flex hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [word-break:break-word] hx-cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] contrast-more:hx-border hx-gap-2 before:hx-opacity-25 before:hx-content-['#'] hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:hx-text-gray-900 contrast-more:dark:hx-text-gray-50 contrast-more:hx-border-transparent contrast-more:hover:hx-border-gray-900 contrast-more:dark:hover:hx-border-gray-50"
+              >10.4 时间点恢复与时间线历史文件</a>
+            </li>
+          </ul>
+  </li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch11/"
+    
+  >11. 流复制
+    </a></li>
+      <li class="[word-break:break-word] hx-mt-5 hx-mb-2 hx-px-2 hx-py-1.5 hx-text-sm hx-font-semibold hx-text-gray-900 first:hx-mt-0 dark:hx-text-gray-100">
+        <span class="hx-cursor-default">More</span>
+      </li>
+    <li><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/about"
+    
+  >About</a></li>
+    <li><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="https://gohugo.io/documentation/"
+    target="_blank" rel="noreferrer"
+  >Hugo Docs ↗</a></li>
+    
+    </ul>
+
+    <ul class="hx-flex hx-flex-col hx-gap-1 max-md:hx-hidden">
+        
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/readme/"
+    
+  >PostgreSQL技术内幕
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/preface/"
+    
+  >作者序
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/preface2/"
+    
+  >译者序
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch1/"
+    
+  >1. 数据库集簇，数据库，数据表
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch2/"
+    
+  >2. 进程和内存架构
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch3/"
+    
+  >3. 查询处理
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch4/"
+    
+  >4. 外部数据包装器与并行查询
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch5/"
+    
+  >5. 并发控制
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch6/"
+    
+  >6. 第六章 清理过程
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch7/"
+    
+  >7. 堆内元组与仅索引扫描
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch8/"
+    
+  >8. 缓冲区管理器
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch9/"
+    
+  >9. 预写式日志
+    </a></li>
+          <li class="open"><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      sidebar-active-item hx-bg-primary-100 hx-font-semibold hx-text-primary-800 contrast-more:hx-border contrast-more:hx-border-primary-500 dark:hx-bg-primary-400/10 dark:hx-text-primary-600 contrast-more:dark:hx-border-primary-500"
+    href="/ch10/"
+    
+  >10. 基础备份与时间点恢复
+    </a></li>
+          <li class=""><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/ch11/"
+    
+  >11. 流复制
+    </a></li>
+        
+      <li class="[word-break:break-word] hx-mt-5 hx-mb-2 hx-px-2 hx-py-1.5 hx-text-sm hx-font-semibold hx-text-gray-900 first:hx-mt-0 dark:hx-text-gray-100">
+        <span class="hx-cursor-default">More</span>
+      </li>
+    <li><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="/about"
+    
+  >About</a></li>
+    <li><a
+    class="hx-flex hx-items-center hx-justify-between hx-gap-2 hx-cursor-pointer hx-rounded hx-px-2 hx-py-1.5 hx-text-sm hx-transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx-text-gray-500 hover:hx-bg-gray-100 hover:hx-text-gray-900 contrast-more:hx-border contrast-more:hx-border-transparent contrast-more:hx-text-gray-900 contrast-more:hover:hx-border-gray-900 dark:hx-text-neutral-400 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50 contrast-more:dark:hx-text-gray-50 contrast-more:dark:hover:hx-border-gray-50"
+    href="https://gohugo.io/documentation/"
+    target="_blank" rel="noreferrer"
+  >Hugo Docs ↗</a></li>
+    
+      </ul>
+    </div>
+  
+  
+    <div class="  hx-sticky hx-bottom-0 hx-bg-white dark:hx-bg-dark hx-mx-4 hx-py-4 hx-shadow-[0_-12px_16px_#fff] hx-flex hx-items-center hx-gap-2 dark:hx-border-neutral-800 dark:hx-shadow-[0_-12px_16px_#111] contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-shadow-none hx-border-t" data-toggle-animation="show"><div class="hx-flex hx-grow hx-flex-col"><button
+  title="Change theme"
+  data-theme="light"
+  class="theme-toggle hx-group hx-h-7 hx-rounded-md hx-px-2 hx-text-left hx-text-xs hx-font-medium hx-text-gray-600 hx-transition-colors dark:hx-text-gray-400 hover:hx-bg-gray-100 hover:hx-text-gray-900 dark:hover:hx-bg-primary-100/5 dark:hover:hx-text-gray-50"
+  type="button"
+  aria-label="Change theme"
+>
+  <div class="hx-flex hx-items-center hx-gap-2 hx-capitalize"><svg height=12 class="group-data-[theme=light]:hx-hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg><span class="group-data-[theme=light]:hx-hidden">Light</span><svg height=12 class="group-data-[theme=dark]:hx-hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg><span class="group-data-[theme=dark]:hx-hidden">Dark</span></div>
+</button>
+</div></div></aside>
+    
+<nav class="hextra-toc hx-order-last hx-hidden hx-w-64 hx-shrink-0 xl:hx-block print:hx-hidden hx-px-4" aria-label="table of contents">
+    <div class="hextra-scrollbar hx-sticky hx-top-16 hx-overflow-y-auto hx-pr-4 hx-pt-6 hx-text-sm [hyphens:auto] hx-max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] ltr:hx--mr-4 rtl:hx--ml-4"><p class="hx-mb-4 hx-font-semibold hx-tracking-tight">On this page</p><ul>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#101-%e5%9f%ba%e7%a1%80%e5%a4%87%e4%bb%bd">10.1 基础备份
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#1011-pg_start_backup">10.1.1 pg_start_backup
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-8 rtl:hx-pr-8 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#%e5%a4%87%e4%bb%bd%e6%a0%87%e7%ad%be">备份标签
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#1012-pg_stop_backup">10.1.2 pg_stop_backup
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#102-%e6%97%b6%e9%97%b4%e7%82%b9%e6%81%a2%e5%a4%8dpitr%e7%9a%84%e5%b7%a5%e4%bd%9c%e5%8e%9f%e7%90%86">10.2 时间点恢复（PITR）的工作原理
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-8 rtl:hx-pr-8 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e5%8f%af%e4%bb%a5%e7%94%a8%e4%b8%80%e8%88%ac%e5%bd%92%e6%a1%a3%e5%b7%a5%e5%85%b7%e5%81%9a%e5%9f%ba%e7%a1%80%e5%a4%87%e4%bb%bd"> 为什么可以用一般归档工具做基础备份？
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#103-%e6%97%b6%e9%97%b4%e7%ba%bf%e4%b8%8e%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6">10.3 时间线与时间线历史文件
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#1031-%e6%97%b6%e9%97%b4%e7%ba%bf%e6%a0%87%e8%af%86timelineid">10.3.1 时间线标识（TimelineID）
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="ltr:hx-pl-4 rtl:hx-pr-4 hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#1032-%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6">10.3.2 时间线历史文件
+        </a>
+      </li>
+      <li class="hx-my-2 hx-scroll-my-6 hx-scroll-py-6">
+        <a class="hx-font-semibold hx-inline-block hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-300 contrast-more:hx-text-gray-900 contrast-more:hx-underline contrast-more:dark:hx-text-gray-50 hx-w-full hx-break-words" href="#104-%e6%97%b6%e9%97%b4%e7%82%b9%e6%81%a2%e5%a4%8d%e4%b8%8e%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6">10.4 时间点恢复与时间线历史文件
+        </a>
+      </li></ul>
+      <div class="hx-mt-8 hx-border-t hx-bg-white hx-pt-8 hx-shadow-[0_-12px_16px_white] dark:hx-bg-dark dark:hx-shadow-[0_-12px_16px_#111] hx-sticky hx-bottom-0 hx-flex hx-flex-col hx-items-start hx-gap-2 hx-pb-8 dark:hx-border-neutral-800 contrast-more:hx-border-t contrast-more:hx-border-neutral-400 contrast-more:hx-shadow-none contrast-more:dark:hx-border-neutral-400"><a class="hx-text-xs hx-font-medium hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-100 contrast-more:hx-text-gray-800 contrast-more:dark:hx-text-gray-50" href="https://github.com/Vonng/pg-internal/edit/main/content/ch10.md" target="_blank" rel="noreferrer">Edit this page</a>
+        <button aria-hidden="true" id="backToTop" onClick="scrollUp();" class="hx-transition-all hx-duration-75 hx-opacity-0 hx-text-xs hx-font-medium hx-text-gray-500 hover:hx-text-gray-900 dark:hx-text-gray-400 dark:hover:hx-text-gray-100 contrast-more:hx-text-gray-800 contrast-more:dark:hx-text-gray-50">
+          <span>Scroll to top</span>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="hx-inline ltr:hx-ml-1 rtl:hx-mr-1 hx-h-3.5 hx-w-3.5 hx-border hx-rounded-full hx-border-gray-500 hover:hx-border-gray-900 dark:hx-border-gray-400 dark:hover:hx-border-gray-100 contrast-more:hx-border-gray-800 contrast-more:dark:hx-border-gray-50">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+
+    <article class="hx-w-full hx-break-words hx-flex hx-min-h-[calc(100vh-var(--navbar-height))] hx-min-w-0 hx-justify-center hx-pb-8 hx-pr-[calc(env(safe-area-inset-right)-1.5rem)]">
+      <main class="hx-w-full hx-min-w-0 hx-max-w-6xl hx-px-6 hx-pt-4 md:hx-px-12">
+        
+  <div class="hx-mt-1.5 hx-flex hx-items-center hx-gap-1 hx-overflow-hidden hx-text-sm hx-text-gray-500 dark:hx-text-gray-400 contrast-more:hx-text-current"><div class="hx-whitespace-nowrap hx-transition-colors hx-font-medium hx-text-gray-700 contrast-more:hx-font-bold contrast-more:hx-text-current dark:hx-text-gray-100 contrast-more:dark:hx-text-current">10. 基础备份与时间点恢复</div>
+  </div>
+
+        <div class="content">
+          <h1>10. 基础备份与时间点恢复</h1>
+          <p>​	在线数据库备份大致可分为两类：逻辑备份和物理备份。它们有着各自的优点和缺点。尽管各有优劣，但逻辑备份有一个缺点：执行需要花费太多时间。特别是对于大型数据库而言，需要花费很长时间进行备份，而从备份数据中恢复数据库可能需要更长的时间。相反的是，物理备份可以在相对较短的时间内备份和恢复大型数据库，因此在实际系统中，它是一个非常重要而实用的功能。</p>
+<p>​	在PostgreSQL中，自8.0版本开始提供在线的全量物理备份，整个数据库集簇（即物理备份数据）的运行时快照称为<strong>基础备份（base backup）</strong>。</p>
+<p>​	PostgreSQL还在8.0版中引入了<strong>时间点恢复（Point-In-Time Recovery, PITR）</strong>。这一功能可以将数据库恢复至任意时间点，这是通过使用一个<strong>基础备份</strong>和由<a href="/ch9" >持续归档</a>生成的<strong>归档日志</strong>来实现的。例如，即使你犯了一个严重的错误（例如<code>TRUNCATE</code>所有的表），此功能使您可以将数据库恢复至错误发生之前的时刻。</p>
+<p>本章描述了以下主题：</p>
+<ul>
+<li>什么是基础备份</li>
+<li>PITR的工作原理</li>
+<li>时间线标识（TimelineID）是什么</li>
+<li>时间线历史文件是什么</li>
+</ul>
+<blockquote>
+  <p>在7.4或更早版本中，PostgreSQL仅支持逻辑备份（全量逻辑备份、部分逻辑备份，数据导出）。</p>
+</blockquote>
+<h2>10.1 基础备份<span class="hx-absolute -hx-mt-20" id="101-基础备份"></span>
+    <a href="#101-%e5%9f%ba%e7%a1%80%e5%a4%87%e4%bb%bd" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>首先，使用底层命令进行基本备份的标准过程如下所示：</p>
+<ol>
+<li>
+<p>发出<a href="https://www.postgresql.org/docs/current/static/functions-admin.html#FUNCTIONS-ADMIN-BACKUP" target="_blank" rel="noopener"><code>pg_start_backup</code></a>命令</p>
+</li>
+<li>
+<p>使用你想用的归档命令获取数据库集簇的快照</p>
+</li>
+<li>
+<p>发出<a href="https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-BACKUP" target="_blank" rel="noopener"><code>pg_stop_backup</code></a>命令</p>
+</li>
+</ol>
+<p>这个简单的过程对于DBA来说很容易操作，因为它不需要特殊工具，只需要常用工具（如复制命令或类似的归档工具）来创建基本备份。此外，在此过程中，不需要获取表上的锁，所有用户都可以在不受备份操作影响的情况下发起查询。相对于其他开源关系型数据库，这是一个巨大的优势。</p>
+<p>更简单的方式是使用<a href="https://www.postgresql.org/docs/current/static/app-pgbasebackup.html" target="_blank" rel="noopener"><code>pg_basebackup</code></a>命令来做基础备份，不过在它内部也是使用这些底层命令来工作的。</p>
+<p><strong>图10.1 制作基础备份</strong></p>
+<p><img src="/img/fig-10-01.png" alt="" loading="lazy" /></p>
+<p>由于这些命令对显然是理解PITR的关键点之一，我们将在以下小节中探讨它们。</p>
+<blockquote>
+  <p><code>pg_start_backup</code>和<code>pg_stop_backup</code>命令定义在：<a href="https://github.com/postgres/postgres/blob/master/src/backend/access/transam/xlogfuncs.c" target="_blank" rel="noopener"><code>src/backend/access/transam/xlogfuncs.c</code></a>。</p>
+</blockquote>
+<h3>10.1.1 <code>pg_start_backup</code><span class="hx-absolute -hx-mt-20" id="1011-pg_start_backup"></span>
+    <a href="#1011-pg_start_backup" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p><code>pg_start_backup</code>开始为制作基础备份进行准备工作。如<a href="/ch9" >第9.8节</a>所述，恢复过程从重做点开始，因此<code>pg_start_backup</code>必须执行检查点，以便在制作基础备份的开始时刻显式创建一个重做点。此外，这次检查点的检查点位置必须保存在不同于<code>pg_control</code>的其他文件中，因为在备份期间可能会进行多次常规检查点。因此<code>pg_start_backup</code>执行下列四个操作：</p>
+<ol>
+<li>强制进入<strong>整页写入</strong>模式。</li>
+<li>切换到当前的WAL段文件（8.4或更高版本）。</li>
+<li>执行检查点。</li>
+<li>创建<code>backup_label</code>文件 —— 该文件创建于基本目录顶层中，包含有关该基本备份本身的关键信息，例如检查点的检查点位置。</li>
+</ol>
+<p>第三和第四个操作是该命令的核心。第一和第二个操作是为了更可靠地恢复数据库集簇。</p>
+<p>备份标签<code>backup_label</code>文件包含以下六个项目（11或更新版本为七个项目）：</p>
+<ul>
+<li><strong>检查点位置（<code>CHECKPOINT LOCATION</code>）</strong> —— 该命令所创建检查点的LSN位置。</li>
+<li><strong>WAL开始位置（<code>START WAL LOCATION</code>）</strong> —— 这不是给PITR用的，而是为<a href="/ch11" >第11章</a>描述的流复制准备的。它被命名为<code>START WAL LOCATION</code>，因为复制模式下的备用服务器在初始启动时只读取一次该值。</li>
+<li><strong>备份方法（<code>BACKUP METHOD</code>）</strong> —— 这是用于进行此基本备份的方法。 （<code>pg_start_backup</code>或<code>pg_basebackup</code>）</li>
+<li><strong>备份来源（<code>BACKUP FROM</code>）</strong> —— 说明此备份是从主库还是备库拉取。</li>
+<li><strong>开始时间（<code>START TIME</code>）</strong>——  这是执行<code>pg_start_backup</code>时的时间戳。</li>
+<li><strong>备份标签（<code>LABEL</code>）</strong> —— 这是<code>pg_start_backup</code>中指定的标签。</li>
+<li><strong>开始时间线（<code>START TIMELINE</code>）</strong> —— 这是备份开始的时间线。这是为了进行正常性检查，在版本11中被引入。</li>
+</ul>
+<blockquote>
+  <h4>备份标签<span class="hx-absolute -hx-mt-20" id="备份标签"></span>
+    <a href="#%e5%a4%87%e4%bb%bd%e6%a0%87%e7%ad%be" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><p>一个9.6版本中备份标签的实际例子如下所示：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">postgres&gt; cat /usr/local/pgsql/data/backup_label
+</span></span><span class="line"><span class="cl">START WAL LOCATION: 0/9000028 <span class="o">(</span>file 000000010000000000000009<span class="o">)</span>
+</span></span><span class="line"><span class="cl">CHECKPOINT LOCATION: 0/9000060
+</span></span><span class="line"><span class="cl">BACKUP METHOD: pg_start_backup
+</span></span><span class="line"><span class="cl">BACKUP FROM: master
+</span></span><span class="line"><span class="cl">START TIME: 2018-7-9 11:45:19 GMT
+</span></span><span class="line"><span class="cl">LABEL: Weekly Backup</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+</blockquote>
+<p>​	可以想象，当使用此基础备份恢复数据库时，PostgreSQL从<code>backup_label</code>文件中取出检查点位置<code>CHECKPOINT LOCATION</code>，然后从归档日志中的合适位置读取检查点记录，然后从检查点记录中获取重做点的位置，最后从重做点开始进行恢复过程（下一节将介绍细节）。</p>
+<h3>10.1.2 <code>pg_stop_backup</code><span class="hx-absolute -hx-mt-20" id="1012-pg_stop_backup"></span>
+    <a href="#1012-pg_stop_backup" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p><code>pg_stop_backup</code>执行以下五个操作以完成备份。</p>
+<ol>
+<li>如果<code>pg_start_backup</code>打开了<strong>整页写入</strong>，那么关闭<strong>整页写入</strong>。</li>
+<li>写入一条备份结束的XLOG记录。</li>
+<li>切换WAL段文件。</li>
+<li>创建一个备份历史记录文件 —— 此文件包含<code>backup_label</code>文件的内容，以及已执行<code>pg_stop_backup</code>的时间戳。</li>
+<li>删除<code>backup_label</code>文件 —— 从基础备份恢复需要<code>backup_label</code>文件，不过一旦被复制，原始的数据库集簇中就不需要它了。</li>
+</ol>
+<blockquote>
+  <p>备份历史文件的命名方法如下所示：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">{</span><span class="n">WAL段文件名</span><span class="p">}.{</span><span class="err">基础备份开始时的偏移量</span><span class="p">}.</span><span class="n">backup</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+</blockquote>
+<h2>10.2 时间点恢复（PITR）的工作原理<span class="hx-absolute -hx-mt-20" id="102-时间点恢复pitr的工作原理"></span>
+    <a href="#102-%e6%97%b6%e9%97%b4%e7%82%b9%e6%81%a2%e5%a4%8dpitr%e7%9a%84%e5%b7%a5%e4%bd%9c%e5%8e%9f%e7%90%86" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>​	图10.2展示了PITR的基本概念。 PITR模式下的PostgreSQL会在基础备份上重放归档日志中的WAL数据，从<code>pg_start_backup</code>创建的重做点开始，恢复至你想要的位置为止。在PostgreSQL中，要恢复到的位置，被称为<strong>恢复目标（recovery target）</strong>。</p>
+<p><strong>图10.2 PITR的基本概念</strong></p>
+<p><img src="/img/fig-10-02.png" alt="" loading="lazy" /></p>
+<p>​	PITR是这样工作的。假设你在GMT时间<code>2018-07-16 12:05:00</code>搞出了错误。那你应该删掉当前的数据库集簇，并使用之前制作的基础备份恢复一个新的出来。然后，创建一个<code>recovery.conf</code>文件，并在其中将参数<code>recovery_target_time</code>参数配置为你犯错误的时间点（在本例中，也就是12:05 GMT） 。<code>recovery.conf</code>文件如下所示：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="c1"># Place archive logs under /mnt/server/archivedir directory.</span>
+</span></span><span class="line"><span class="cl"><span class="na">restore_command</span> <span class="o">=</span> <span class="s">&#39;cp /mnt/server/archivedir/%f %p&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="na">recovery_target_time</span> <span class="o">=</span> <span class="s">&#34;2018-7-16 12:05 GMT&#34;</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>当PostgreSQL启动的时候，如果数据库集簇中存在<code>recovery.conf</code>和<code>backup_label</code>文件，它就会进入恢复模式。</p>
+<p>PITR过程几乎与<a href="/ch9" >第九章</a>中描述的常规恢复过程一模一样，唯一的区别只有以下两点：</p>
+<ol>
+<li>从哪里读取WAL段/归档日志？
+<ul>
+<li>正常恢复模式 —— 来自基础目录下的<code>pg_xlog</code>子目录（10或更新版本，<code>pg_wal</code>子目录）。</li>
+<li>PITR模式 —— 来自配置参数<code>archive_command</code>中设置的归档目录。</li>
+</ul>
+</li>
+<li>从哪里读取检查点位置？
+<ul>
+<li>正常恢复模式 —— 来自<code>pg_control</code>文件。</li>
+<li>PITR模式 —— 来自<code>backup_label</code>文件。</li>
+</ul>
+</li>
+</ol>
+<p>PITR流程概述如下：</p>
+<ol>
+<li>
+<p>为了找到重做点，PostgreSQL使用内部函数<code>read_backup_label</code>从<code>backup_label</code>文件中读取<code>CHECKPOINT LOCATION</code>的值。</p>
+</li>
+<li>
+<p>PostgreSQL从<code>recovery.conf</code>中读取一些参数值；在此示例中为<code>restore_command</code>和<code>recovery_target_time</code>。</p>
+</li>
+<li>
+<p>PostgreSQL开始从重做点重放WAL数据，重做点的位置可以简单地从<code>CHECKPOINT LOCATION</code>的值中获得。 PostgreSQL执行参数<code>restore_command</code>中配置的命令，将归档日志从归档区域拷贝到临时区域，并从中读取WAL数据（复制到临时区域中的日志文件会在使用后删除）。</p>
+<p>在本例中，PostgreSQL从重做点读取并重放WAL数据，直到时间戳<code>2018-7-16 12:05:00</code>为止，因为参数<code>recovery_target_time</code>被设置为该时间戳。如果<code>recovery.conf</code>中没有配置恢复目标，则PostgreSQL将重放至归档日志的末尾。</p>
+</li>
+<li>
+<p>当恢复过程完成时，会在<code>pg_xlog</code>子目录（10或更高版本为<code>pg_wal</code>子目录）中创建时间线历史文件，例如<code>00000002.history</code>；如果启用了日志归档功能，则还会在归档目录中创建相同的命名文件。以下各节介绍了此文件的内容和作用。</p>
+</li>
+</ol>
+<p>提交和中止操作的记录包含每个操作完成时的时间戳（两个操作的XLOG数据部分分别在<code>xl_xact_commit</code>和<code>xl_xact_abort</code>中定义）。因此，如果将目标时间设置为参数<code>recovery_target_time</code>，只要PostgreSQL重放提交或中止操作的XLOG记录，它可以选择是否继续恢复。当重放每个动作的XLOG记录时，PostgreSQL会比较目标时间和记录中写入的每个时间戳；如果时间戳超过目标时间，PITR过程将完成。</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">xl_xact_commit</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TimestampTz</span>	<span class="n">xact_time</span><span class="p">;</span>              <span class="cm">/* 提交时间 */</span>
+</span></span><span class="line"><span class="cl">        <span class="n">uint32</span>          <span class="n">xinfo</span><span class="p">;</span>              <span class="cm">/* 信息标记位 */</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span>            	<span class="n">nrels</span><span class="p">;</span>              <span class="cm">/* RelFileNodes的数量 */</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span>            	<span class="n">nsubxacts</span><span class="p">;</span>          <span class="cm">/* 子事务XIDs的数量 */</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span>            	<span class="n">nmsgs</span><span class="p">;</span>              <span class="cm">/* 共享失效消息的数量 */</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Oid</span>            	<span class="n">dbId</span><span class="p">;</span>               <span class="cm">/* MyDatabaseId, 数据库Oid */</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Oid</span>            	<span class="n">tsId</span><span class="p">;</span>               <span class="cm">/* MyDatabaseTableSpace, 表空间Oid */</span>
+</span></span><span class="line"><span class="cl">        <span class="cm">/* 在提交时需要丢弃的RelFileNode(s)数组 */</span>
+</span></span><span class="line"><span class="cl">        <span class="n">RelFileNode</span>     <span class="n">xnodes</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>          <span class="cm">/* 变长数组 */</span>
+</span></span><span class="line"><span class="cl">        <span class="cm">/* 紧接着已提交的子事务XIDs数组 */</span>
+</span></span><span class="line"><span class="cl">        <span class="cm">/* 紧接着共享失效消息的数组 */</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">xl_xact_commit</span><span class="p">;</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">xl_xact_abort</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TimestampTz</span>     <span class="n">xact_time</span><span class="p">;</span>          <span class="cm">/* 中止时间 */</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span>            	<span class="n">nrels</span><span class="p">;</span>              <span class="cm">/* RelFileNodes的数量 */</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span>             <span class="n">nsubxacts</span><span class="p">;</span>          <span class="cm">/* 子事务XIDs的数量 */</span>
+</span></span><span class="line"><span class="cl">        <span class="cm">/* 在中止时需要丢弃的RelFileNode(s)数组 */</span>
+</span></span><span class="line"><span class="cl">        <span class="n">RelFileNode</span>     <span class="n">xnodes</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>          <span class="cm">/* 变长数组 */</span>
+</span></span><span class="line"><span class="cl">        <span class="cm">/* 紧接着已提交的子事务XIDs数组 */</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">xl_xact_abort</span><span class="p">;</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<blockquote>
+  <p>函数<code>read_backup_label</code>定义于<a href="https://github.com/postgres/postgres/blob/master/src/backend/access/transam/xlog.c" target="_blank" rel="noopener"><code>src/backend/access/transam/xlog.c</code></a>中。
+结构<code>xl_xact_commit</code>和<code>xl_xact_abort</code>定义于<a href="https://github.com/postgres/postgres/blob/master/src/backend/access/transam/xlog.c" target="_blank" rel="noopener"><code>src/backend/access/transam/xlog.c</code></a>。</p>
+</blockquote>
+<blockquote>
+  <h4> 为什么可以用一般归档工具做基础备份？<span class="hx-absolute -hx-mt-20" id="为什么可以用一般归档工具做基础备份"></span>
+    <a href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e5%8f%af%e4%bb%a5%e7%94%a8%e4%b8%80%e8%88%ac%e5%bd%92%e6%a1%a3%e5%b7%a5%e5%85%b7%e5%81%9a%e5%9f%ba%e7%a1%80%e5%a4%87%e4%bb%bd" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><p>​	尽管数据库集簇可能是不一致的，但恢复过程是使数据库集簇达成一致状态的过程。由于PITR是基于恢复过程的，所以即使基础备份是一堆不一致的文件，它也可以恢复数据库集簇。因此我们可以在没有文件系统快照功能，或其他特殊工具的情况下，使用一般归档工具做基础备份。</p>
+</blockquote>
+<h2>10.3 时间线与时间线历史文件<span class="hx-absolute -hx-mt-20" id="103-时间线与时间线历史文件"></span>
+    <a href="#103-%e6%97%b6%e9%97%b4%e7%ba%bf%e4%b8%8e%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>​	PostgreSQL中的时间线用于区分原始数据库集簇和恢复生成的数据库集簇，它是PITR的核心概念。在本节中，描述了与时间线相关的两件事：<strong>时间线标识（TimelineID）</strong>，以及<strong>时间线历史文件（Timeline History Files）</strong>。</p>
+<h3>10.3.1 时间线标识（<code>TimelineID</code>）<span class="hx-absolute -hx-mt-20" id="1031-时间线标识timelineid"></span>
+    <a href="#1031-%e6%97%b6%e9%97%b4%e7%ba%bf%e6%a0%87%e8%af%86timelineid" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>​	每个时间线都有一个相应的<strong>时间线标识</strong>，一个四字节的无符号整型，从1开始计数。</p>
+<p>​	每个数据库集簇都会被指定一个时间线标识。由<code>initdb</code>命令创建的原始数据库集簇，其时间线标识为1。每当数据库集簇恢复时，时间线标识都会增加1。例如在前一节的例子中，从原始集簇中恢复得到的集簇，其时间线标识为2。</p>
+<p>​	图10.3从时间线标识的角度展示了PITR过程。首先，我们删除当前的数据库集簇，并替换为过去的基础备份，以便返回到恢复的起始点，这一步在图中用红色曲线箭头标识。接下来，我们启动PostgreSQL服务器，它通过跟踪初始时间线（时间线标识<code>1</code>），从<code>pg_start_backup</code>创建的重做点开始，重放归档日志中的WAL数据，直到恢复目标达成，这一步在图中用蓝色直线箭头标识。接下来，恢复得到的数据库集簇将被分配一个新的时间线标识<code>2</code>，而PostgreSQL将运行在新的时间线上。</p>
+<p><strong>图10.3 原始数据库集簇和恢复数据库集簇之间时间线标识的关系</strong></p>
+<p><img src="/img/fig-10-03.png" alt="" loading="lazy" /></p>
+<p>​	正如<a href="/ch9" >第九章</a>中简要提到的，WAL段文件名的前8位数字等于创建这些段文件的数据库集簇的时间线标识。当时间线标识发生变化时，WAL段文件名也会相应改变。</p>
+<p>​	让我们从WAL段文件的角度重新审视恢复过程。假设我们使用两个归档日志文件来恢复数据库：</p>
+<p>$\color{blue}{00000001}0000000000000009$，以及 $\color{blue}{00000001}000000000000000A$。新恢复得到的数据库集簇被分配了时间线标识<code>2</code>，而PostgreSQL就会从 $\color{blue}{00000002}000000000000000A$ 开始创建WAL段。如图10.4所示。</p>
+<p><strong>图10.4 原始数据库集簇和恢复数据库集簇之间WAL段文件的关系</strong></p>
+<p><img src="/img/fig-10-04.png" alt="" loading="lazy" /></p>
+<h3>10.3.2 时间线历史文件<span class="hx-absolute -hx-mt-20" id="1032-时间线历史文件"></span>
+    <a href="#1032-%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>​	当PITR过程完成时，会在归档目录和<code>pg_xlog</code>子目录（10或更高版本为<code>pg_wal</code>子目录）下创建名称为<code>00000002.history</code>的时间线历史文件。该文件记录了当前时间线是从哪条时间线分叉出来的，以及分叉的时间。</p>
+<p>​	该文件的命名规则如下所示：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><pre><code>“8位数字的新时间线标识”.history</code></pre></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>时间线历史文件至少包含一行，每行由以下三项组成：</p>
+<ul>
+<li>时间线标识 —— 曾用于恢复的归档日志的时间线。</li>
+<li>LSN —— 发生WAL段切换的LSN位置。</li>
+<li>原因 —— 可读的时间线发生变化的原因解释。</li>
+</ul>
+<p>具体示例如下所示：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">postgres&gt; cat /home/postgres/archivelogs/00000002.history
+</span></span><span class="line"><span class="cl">1	  0/A000198	before 2018-7-9 12:05:00.861324+00</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>含义如下：</p>
+<blockquote>
+  <p>数据库集簇（时间线标识为2）基于时间线标识为1的基础备份，并在<code>2018-7-9 12:05:00.861324+00</code>之前，通过重放检查点日志，恢复至<code>0/A000198</code>的位置。</p>
+</blockquote>
+<p>​	通过这种方式，每个时间线历史文件都会告诉我们每个恢复所得的数据库集簇的完整历史。二期它也在PITR过程中也有使用。下一节将描述具体细节。</p>
+<blockquote>
+  <p>时间线历史文件的格式在9.3版本中发生变化。9.3前后的格式如下所示，但相对简略。</p>
+<p>9.3及后续版本：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><pre><code>timelineId	LSN	&#34;reason&#34;</code></pre></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>9.2及先前版本</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><pre><code>timelineId	WAL_segment	&#34;reason&#34;</code></pre></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+</blockquote>
+<h2>10.4 时间点恢复与时间线历史文件<span class="hx-absolute -hx-mt-20" id="104-时间点恢复与时间线历史文件"></span>
+    <a href="#104-%e6%97%b6%e9%97%b4%e7%82%b9%e6%81%a2%e5%a4%8d%e4%b8%8e%e6%97%b6%e9%97%b4%e7%ba%bf%e5%8e%86%e5%8f%b2%e6%96%87%e4%bb%b6" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>​	时间线历史文件在第二次及后续PITR过程中起着重要作用。通过尝试第二次恢复，我们将探索如何使用它。</p>
+<p>​	同样，假设您在<code>12:15:00</code>又犯了一个错误，错误发生在时间线ID为2的数据库集簇上。在这种情况下为了恢复数据库集簇，你需要创建一个如下所示的<code>recovery.conf</code>文件：</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="na">restore_command</span> <span class="o">=</span> <span class="s">&#39;cp /mnt/server/archivedir/%f %p&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="na">recovery_target_time</span> <span class="o">=</span> <span class="s">&#34;2018-7-16 12:15:00 GMT&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="na">recovery_target_timeline</span> <span class="o">=</span> <span class="s">2</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+<p>​	参数<code>recovery_target_time</code>被设置为您犯下新错误的时间，而<code>recovery_target_timeline</code>被设置为<code>2</code>，以便沿着这条时间线恢复。</p>
+<p>重启PostgreSQL服务器并进入PITR模式，数据库会沿着时间线标识2进行恢复。如图10.5所示。</p>
+<p><strong>图10.5 沿着时间线2将数据库恢复至12:15的状态</strong></p>
+<p><img src="/img/fig-10-05.png" alt="" loading="lazy" /></p>
+<ol>
+<li>
+<p>PostgreSQL从<code>backup_label</code>文件中读取<code>CHECKPOINT LOCATION</code>的值。</p>
+</li>
+<li>
+<p>从<code>recovery.conf</code>中读取一些参数值；在此示例中为<code>restore_command</code>，<code>recovery_target_time</code>和<code>recovery_target_timeline</code>。</p>
+</li>
+<li>
+<p>PostgreSQL读取时间线历史文件<code>00000002.history</code>，该文件对应参数<code>recovery_target_timeline</code>的值。</p>
+</li>
+<li>
+<p>PostgreSQL通过以下步骤重放WAL数据：</p>
+<ol>
+<li>对于从重做点到<code>LSN 0/A000198</code>（该值写在<code>00000002.history</code>文件中）之间的WAL数据，PostgreSQL会（从合适的归档日志中）读取并重放<code>TimelineID=1</code>的WAL数据。</li>
+<li>对于从<code>LSN 0/A000198</code>，到时间戳<code>2018-7-9 12:15:00</code>之间的WAL数据，PostgreSQL会（从合适的归档日志中）读取并重放<code>TimelineID=2</code>的WAL数据。</li>
+</ol>
+</li>
+<li>
+<p>当恢复过程完成时，当前的时间线标识将增加到3，并在<code>pg_xlog</code>子目录（10及后续版本为<code>pg_wal</code>子目录）和归档目录中创建名为<code>00000003.history</code>的新时间线历史文件。</p>
+<div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">postgres&gt; cat /home/postgres/archivelogs/00000003.history
+</span></span><span class="line"><span class="cl"><span class="m">1</span>         0/A000198     before 2018-7-9 12:05:00.861324+00
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="m">2</span>         0/B000078     before 2018-7-9 12:15:00.927133+00</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+  <button
+    class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+    title="Copy code"
+  >
+    <div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4"></div>
+    <div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4"></div>
+  </button>
+</div>
+</div>
+</li>
+</ol>
+<p>当你进行过超过一次的PITR时，应明确设置时间线标识，以便使用合适的时间线历史文件。</p>
+<p>因此，时间线历史文件不仅仅是数据库集簇的历史日志，还是PITR过程的参考恢复指令。</p>
+
+        </div>
+        <div class="hx-mt-16"></div>
+        <div class="hx-mb-8 hx-flex hx-items-center hx-border-t hx-pt-8 dark:hx-border-neutral-800 contrast-more:hx-border-neutral-400 dark:contrast-more:hx-border-neutral-400 print:hx-hidden"><a
+        href="/ch9/"
+        title="9. 预写式日志"
+        class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-pr-4 rtl:hx-pl-4"
+      ><svg class="hx-inline hx-h-5 hx-shrink-0 ltr:hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>9. 预写式日志</a><a
+        href="/ch11/"
+        title="11. 流复制"
+        class="hx-flex hx-max-w-[50%] hx-items-center hx-gap-1 hx-py-4 hx-text-base hx-font-medium hx-text-gray-600 hx-transition-colors [word-break:break-word] hover:hx-text-primary-600 dark:hx-text-gray-300 md:hx-text-lg ltr:hx-ml-auto ltr:hx-pl-4 ltr:hx-text-right rtl:hx-mr-auto rtl:hx-pr-4 rtl:hx-text-left"
+      >11. 流复制<svg class="hx-inline hx-h-5 hx-shrink-0 rtl:-hx-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+        
+      </main>
+    </article>
+  </div>
+
+      <footer class="hextra-footer hx-bg-gray-100 hx-pb-[env(safe-area-inset-bottom)] dark:hx-bg-neutral-900 print:hx-bg-transparent"><div
+      class="hextra-custom-footer hx-max-w-screen-xl hx-pl-[max(env(safe-area-inset-left),1.5rem)] hx-pr-[max(env(safe-area-inset-right),1.5rem)] hx-text-gray-600 dark:hx-text-gray-400"
+    ></div><div
+        class="hx-max-w-screen-xl hx-mx-auto hx-flex hx-justify-center hx-py-12 hx-pl-[max(env(safe-area-inset-left),1.5rem)] hx-pr-[max(env(safe-area-inset-right),1.5rem)] hx-text-gray-600 dark:hx-text-gray-400 md:hx-justify-start"
+      >
+        <div class="hx-flex hx-w-full hx-flex-col hx-items-center sm:hx-items-start"><div class="hx-font-semibold"><a class="hx-flex hx-text-sm hx-items-center hx-gap-1 hx-text-current" target="_blank" rel="noopener noreferrer" title="Hextra GitHub Homepage" href="https://github.com/imfing/hextra">
+    <span>Powered by Hextra<svg height=1em class="hx-inline-block ltr:hx-ml-1 rtl:hx-mr-1 hx-align-[-2.5px]" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="m 105.50024,22.224647 c -9.59169,-5.537563 -21.40871,-5.537563 -31.000093,0 L 39.054693,42.689119 C 29.463353,48.226675 23.55484,58.460531 23.55484,69.535642 v 40.928918 c 0,11.07542 5.908513,21.3092 15.499853,26.84652 l 35.445453,20.46446 c 9.591313,5.53732 21.408404,5.53732 31.000094,0 l 35.44507,-20.46446 c 9.59131,-5.53732 15.49985,-15.7711 15.49985,-26.84652 V 69.535642 c 0,-11.075111 -5.90854,-21.308967 -15.49985,-26.846523 z M 34.112797,85.737639 c -1.384445,2.397827 -1.384445,5.352099 0,7.749927 l 24.781554,42.922974 c 1.38437,2.39783 3.942853,3.87496 6.711592,3.87496 h 49.563107 c 2.76905,0 5.3273,-1.47713 6.71144,-3.87496 l 24.78194,-42.922974 c 1.38414,-2.397828 1.38414,-5.3521 0,-7.749927 L 121.88049,42.814746 c -1.38414,-2.397828 -3.94239,-3.874964 -6.71144,-3.874964 H 65.605944 c -2.768739,0 -5.327223,1.477059 -6.711592,3.874964 z" style="stroke-width:0.774993" /></svg></span>
+  </a></div><div class="hx-mt-6 hx-text-xs">© 2024 Hextra.</div></div>
+      </div></footer>
+    
+    <script defer src="/js/main.js" integrity=""></script>
+<script defer src="/lib/flexsearch/flexsearch.bundle.min.0425860527cc9968f9f049421c7a56b39327d475e2e3a8f550416be3a9134327.js" integrity="sha256-BCWGBSfMmWj58ElCHHpWs5Mn1HXi46j1UEFr46kTQyc="></script>
+    <script defer src="/zh.search.js" integrity=""></script>
+  </body>
+</html>
