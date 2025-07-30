@@ -72,27 +72,27 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 | `postmaster.opts`      | 记录服务器上次启动的命令行选项                     |
 
 
-| 子目录                              | 描述                                                         |
-| --------------------------------- | ------------------------------------------------------------ |
-| `base/`                           | 每个数据库对应的子目录存储于此                                  |
-| `global/`                         | 数据库集簇范畴的表（例如`pg_database`），以及`pg_control`文件。 |
-| `pg_commit_ts/`                   | 事务提交的时间戳数据（9.5及更新版本）。 |
-| `pg_clog/ (9.6-)` | 事务提交状态数据（9.6及更老版本），在版本10中被重命名为`pg_xact`。CLOG将在[5.4节](/ch5)中描述 |
-| `pg_dynshmem/`                    | 动态共享内存子系统中使用的文件（9.4或更新版本）。 |
-| `pg_logical/`                     | 逻辑解码的状态数据（9.4或更新版本）。          |
-| `pg_multixact/`                   | 多事务状态数据                                       |
-| `pg_notify/`                      | `LISTEN`/`NOTIFY`状态数据                     |
-| `pg_repslot/`                     | 复制槽数据（9.4或更新版本）。           |
-| `pg_serial/`                      | 已提交的可串行化事务相关信息（9.1或更新版本） |
-| `pg_snapshots/`                   | 导出快照（9.2或更新版本）。 PostgreSQL函数`pg_export_snapshot`在此子目录中创建快照信息文件。 |
-| `pg_stat/`                        | 统计子系统的永久文件                        |
-| `pg_stat_tmp/`                    | 统计子系统的临时文件                            |
-| `pg_subtrans/`                    | 子事务状态数据                                   |
-| `pg_tblspc/`                      | 指向表空间的符号链接                             |
-| `pg_twophase/`                    | 两阶段事务（prepared transactions）的状态文件 |
-| `pg_wal/ (10+)` | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。 |
-| `pg_xact/ (10+)` | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](/ch5)中描述。 |
-| pg_xlog/ (9.6-) | **WAL（Write Ahead Logging）**段文件（9.6及更老版本），它在版本10中被重命名为`pg_wal`。 |
+| 子目录               | 描述                                                                |
+|-------------------|-------------------------------------------------------------------|
+| `base/`           | 每个数据库对应的子目录存储于此                                                   |
+| `global/`         | 数据库集簇范畴的表（例如`pg_database`），以及`pg_control`文件。                      |
+| `pg_commit_ts/`   | 事务提交的时间戳数据（9.5及更新版本）。                                             |
+| `pg_clog/ (9.6-)` | 事务提交状态数据（9.6及更老版本），在版本10中被重命名为`pg_xact`。CLOG将在[5.4节](/ch5)中描述     |
+| `pg_dynshmem/`    | 动态共享内存子系统中使用的文件（9.4或更新版本）。                                        |
+| `pg_logical/`     | 逻辑解码的状态数据（9.4或更新版本）。                                              |
+| `pg_multixact/`   | 多事务状态数据                                                           |
+| `pg_notify/`      | `LISTEN`/`NOTIFY`状态数据                                             |
+| `pg_repslot/`     | 复制槽数据（9.4或更新版本）。                                                  |
+| `pg_serial/`      | 已提交的可串行化事务相关信息（9.1或更新版本）                                          |
+| `pg_snapshots/`   | 导出快照（9.2或更新版本）。 PostgreSQL函数`pg_export_snapshot`在此子目录中创建快照信息文件。   |
+| `pg_stat/`        | 统计子系统的永久文件                                                        |
+| `pg_stat_tmp/`    | 统计子系统的临时文件                                                        |
+| `pg_subtrans/`    | 子事务状态数据                                                           |
+| `pg_tblspc/`      | 指向表空间的符号链接                                                        |
+| `pg_twophase/`    | 两阶段事务（prepared transactions）的状态文件                                 |
+| `pg_wal/` (10+)   | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。            |
+| `pg_xact/` (10+)  | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](/ch5)中描述。         |
+| `pg_xlog/` (9.6-) | **WAL（Write Ahead Logging）** 段文件（9.6及更老版本），它在版本10中被重命名为 `pg_wal`。 |
 
 ### 1.2.2 数据库布局
 
@@ -151,7 +151,7 @@ sampledb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'sampl
 
 当表和索引的文件大小超过1GB时，PostgreSQL会创建并使用一个名为`relfilenode.1`的新文件。如果新文件也填满了，则会创建下一个名为`relfilenode.2`的新文件，依此类推。
 
-> 译者注：数据库系统中的**表（Table）**与关系代数中的**关系（Relation）**关系紧密但又不尽相同。在PostgreSQL中，表，索引，TOAST表都归类为关系。
+> 译者注：数据库系统中的 **表（Table）** 与关系代数中的 **关系（Relation）** 关系紧密但又不尽相同。在PostgreSQL中，表，索引，TOAST表都归类为关系。
 
 ```sql
 $ cd $PGDATA

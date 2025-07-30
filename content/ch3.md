@@ -182,7 +182,7 @@ typedef struct Query
 
 简要介绍一下上图中的查询树：
 
-+ `targetlist` 是查询结果中**列（Column）**的列表。在本例中该列表包含两列：`id` 和`data`。如果在输入的查询树中使用了`*`（星号），那么分析器会将其显式替换为所有具体的列。
++ `targetlist` 是查询结果中 **列（Column）** 的列表。在本例中该列表包含两列：`id` 和`data`。如果在输入的查询树中使用了`*`（星号），那么分析器会将其显式替换为所有具体的列。
 + 范围表`rtable`是该查询所用到关系的列表。本例中该变量包含了表`tbl_a`的信息，如该表的表名与`oid`。
 + 连接树`jointree`存储着`FROM`和`WHERE`子句的相关信息。
 + 排序子句`sortClause`是`SortGroupClause`结构体的列表。
@@ -250,7 +250,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 
 
-计划树由许多称为**计划节点（plan node）**的元素组成，这些节点挂在`PlannedStmt`结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
+计划树由许多称为 **计划节点（plan node）** 的元素组成，这些节点挂在`PlannedStmt`结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
 
 每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会按照从终端节点往根节点的顺序依次处理这些节点。
 
@@ -266,7 +266,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 ## 3.2 单表查询的代价估计
 
-PostgreSQL的查询优化是基于**代价（Cost）**的。代价是一个无量纲的值，它并不是一种绝对的性能指标，但可以作为比较各种操作代价时的相对性能指标。
+PostgreSQL的查询优化是基于 **代价（Cost）** 的。代价是一个无量纲的值，它并不是一种绝对的性能指标，但可以作为比较各种操作代价时的相对性能指标。
 
 [`costsize.c`](https://github.com/postgres/postgres/blob/master/src/backend/optimizer/path/costsize.c)中的函数用于估算各种操作的代价。所有被执行器执行的操作都有着相应的代价函数。例如，函数`cost_seqscan()` 和 `cost_index()`分别用于估算顺序扫描和索引扫描的代价。
 
@@ -428,7 +428,8 @@ $$
 $$
 #### 3.2.2.2 运行代价
 
-索引扫描的运行代价是表和索引的CPU代价与IO代价之和。
+索引扫描的运行代价是表和索引的CPU代价与IO代价之和 。
+
 $$
 \begin{align}
  \verb|run_cost| &= (\verb|index_cpu_cost| + \verb|table_cpu_cost|) 
@@ -449,11 +450,11 @@ $$
 $$
 
 
-以上公式中的[`cpu_index_tuple_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-INDEX-TUPLE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)在*postgresql.conf*中配置（默认值分别为0.005和4.0）。$\verb|qual_op_cost|$粗略来说就是索引求值的代价，默认值是0.0025，这里不再展开。**选择率（Selectivity）**是一个0到1之间的浮点数，代表查询指定的`WHERE`子句在索引中搜索范围的比例。举个例子，$(\verb|Selectivity| × N_{\verb|tuple|})$就是需要读取的表元组数量，$(\verb|Selectivity| × N_{\verb|index|,\verb|tuple|})$就是需要读取的索引元组数量，诸如此类。
+以上公式中的[`cpu_index_tuple_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-INDEX-TUPLE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)在*postgresql.conf*中配置（默认值分别为0.005和4.0）。$\verb|qual_op_cost|$粗略来说就是索引求值的代价，默认值是0.0025，这里不再展开。**选择率（Selectivity）** 是一个0到1之间的浮点数，代表查询指定的`WHERE`子句在索引中搜索范围的比例。举个例子，$(\verb|Selectivity| × N_{\verb|tuple|})$就是需要读取的表元组数量，$(\verb|Selectivity| × N_{\verb|index|,\verb|tuple|})$就是需要读取的索引元组数量，诸如此类。
 
-> #### 选择率（Selectivity）
+> #### 选择率
 >
-> 查询谓词的选择率是通过**直方图界值（histogram_bounds）**与**高频值（Most Common Value, MCV）**估计的，这些信息都存储在系统目录`pg_statistics`中，并可通过`pg_stats`视图查询。这里通过一个具体的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
+> 查询谓词的选择率是通过 **直方图界值（histogram_bounds）** 与 **高频值（Most Common Value, MCV）** 估计的，这些信息都存储在系统目录`pg_statistics`中，并可通过`pg_stats`视图查询。这里通过一个具体的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
 >
 > 表中每一列的高频值都在`pg_stats`视图的`most_common_vals`和`most_common_freqs`中成对存储。
 >
@@ -508,7 +509,7 @@ $$
 >
 > 如果高频值不可用，就会使用目标列上的直方图界值来估计代价。
 >
-> + **直方图值（histogram_bounds）**是一系列值，这些值将列上的取值划分为数量大致相同的若干个组。
+> + **直方图值（histogram_bounds）** 是一系列值，这些值将列上的取值划分为数量大致相同的若干个组。
 >
 > 下面是一个具体的例子。这是表`tbl`中`data`列上的直方图界值；
 >
@@ -1258,10 +1259,10 @@ typedef struct IndexOptInfo
 
 计划树的根节点是定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h)中的`PlannedStmt`结构，包含19个字段，其中有4个代表性字段：
 
-+ **`commandType`**存储操作的类型，诸如`SELECT`，`UPDATE`和`INSERT`。
-+ **`rtable`**存储范围表的列表（`RangeTblEntry`的列表）。
-+ **`relationOids`**存储与查询相关表的`oid`。
-+ **`plantree`**存储着一颗由计划节点组成的计划树，每个计划节点对应着一种特定操作，诸如顺序扫描，排序和索引扫描。
++ **`commandType`** 存储操作的类型，诸如`SELECT`，`UPDATE`和`INSERT`。
++ **`rtable`** 存储范围表的列表（`RangeTblEntry`的列表）。
++ **`relationOids`** 存储与查询相关表的`oid`。
++ **`plantree`** 存储着一颗由计划节点组成的计划树，每个计划节点对应着一种特定操作，诸如顺序扫描，排序和索引扫描。
 
 ```c
 /* ----------------
@@ -1483,15 +1484,15 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
 ## 3.5 连接
 
-​	PostgreSQL 中支持三种**连接（JOIN）**操作：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。在PostgreSQL中，嵌套循环连接与归并连接有几种变体。
+PostgreSQL 中支持三种 **连接（JOIN）** 操作：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。在PostgreSQL中，嵌套循环连接与归并连接有几种变体。
 
-​	在下文中，我们会假设读者已经对这三种操作的基本行为有了解。如果读者对这些概念不熟悉，可以参阅[[1](https://www.amazon.com/dp/0073523321), [2](https://www.amazon.com/dp/0321523067)]。PostgreSQL支持一种针对数据倾斜的**混合散列连接（hybrid hash join）**，关于这方面的资料不多，因此这里会详细描述该操作。
+在下文中，我们会假设读者已经对这三种操作的基本行为有了解。如果读者对这些概念不熟悉，可以参阅[[1](https://www.amazon.com/dp/0073523321), [2](https://www.amazon.com/dp/0321523067)]。PostgreSQL支持一种针对数据倾斜的**混合散列连接（hybrid hash join）**，关于这方面的资料不多，因此这里会详细描述该操作。
 
-​	需要注意的是，这三种**连接方法（join method）**都支持PostgreSQL中所有的连接操作，诸如`INNER JOIN`，`LEFT/RIGHT OUTER JOIN`，`FULL OUTER JOIN`等；但是为了简单起见，这里只关注`NATURAL INNER JOIN`。
+需要注意的是，这三种 **连接方法（join method）** 都支持PostgreSQL中所有的连接操作，诸如`INNER JOIN`，`LEFT/RIGHT OUTER JOIN`，`FULL OUTER JOIN`等；但是为了简单起见，这里只关注`NATURAL INNER JOIN`。
 
 ### 3.5.1 嵌套循环连接（Nested Loop Join）
 
-**嵌套循环连接**是最为基础的连接操作，任何**连接条件（join condition）**都可以使用这种连接方式。PostgreSQL支持嵌套循环连接及其五种变体。
+**嵌套循环连接**是最为基础的连接操作，任何 **连接条件（join condition）** 都可以使用这种连接方式。PostgreSQL支持嵌套循环连接及其五种变体。
 
 #### 3.5.1.1 嵌套循环连接
 
@@ -1517,7 +1518,7 @@ $$
 
 在上面描述的嵌套循环连接中，每当读取一条外表中的元组时，都需要扫描内表中的所有元组。为每条外表元组对内表做全表扫描，这一过程代价高昂，PostgreSQL支持一种**物化嵌套循环连接（materialized nested loop join）** ，可以减少内表全表扫描的代价。
 
-在运行嵌套循环连接之前，执行器会使用**临时元组存储（temporary tuple storage）**模块对内表进行一次扫描，将内表元组加载到工作内存或临时文件中。在处理内表元组时，临时元组存储比缓冲区管理器更为高效，特别是当所有的元组都能放入工作内存中时。
+在运行嵌套循环连接之前，执行器会使用 **临时元组存储（temporary tuple storage）** 模块对内表进行一次扫描，将内表元组加载到工作内存或临时文件中。在处理内表元组时，临时元组存储比缓冲区管理器更为高效，特别是当所有的元组都能放入工作内存中时。
 
 图 3.17说明了物化嵌套循环连接的处理过程。扫描物化元组在内部被称为**重扫描（rescan）**。
 
@@ -1590,11 +1591,21 @@ $$
 \verb|rescan_cost| = (0.0025)× 5000=12.5
 $$
 运行代价由以下公式定义：
+
 $$
-\verb|run_cost| =(\verb|cpu_operator_cost| + \verb|cpu_tuple_cost|)× N_{\verb|inner|}× N_{\verb|outer|} \\
-+ \verb|recan_cost|× (N_{\verb|outer|}-1) + C^{\verb|total|}_{\verb|outer|,\verb|seqscan|} + C^{\verb|total|}_{\verb|materialize|}，
+\verb|run_cost| =(\verb|cpu_operator_cost| + \verb|cpu_tuple_cost|)× N_{\verb|inner|}× N_{\verb|outer|} \verb|recan_cost|× (N_{\verb|outer|}-1) + C^{\verb|total|}_{\verb|outer|,\verb|seqscan|} + C^{\verb|total|}_{\verb|materialize|}
 $$
-这里 $C^{\verb|total|}_{\verb|outer|,\verb|seqscan|}$代表外部表的全部扫描代价，$C^{\verb|total|}_{\verb|materialize|}$代表物化代价；因此
+
+这里外部表的全部扫描代价为：
+
+$$C^{\verb|total|}_{\verb|outer|,\verb|seqscan|}$$
+
+而物化代价表示为：
+
+$$C^{\verb|total|}_{\verb|materialize|}$$ 
+
+因此最终带入求得：
+
 $$
 \verb|run_cost| = ( 0.0025 + 0.01 ) × 5000 × 10000 + 12.5 ×(10000−1)+145.0+98.0=750230.5
 $$
@@ -1716,7 +1727,7 @@ $$
 
 ### 3.5.2 归并连接（Merge Join）
 
-与嵌套循环连接不同的是，**归并连接（Merge Join）**只能用于自然连接与等值连接。
+与嵌套循环连接不同的是，**归并连接（Merge Join）** 只能用于自然连接与等值连接。
 
 函数`initial_cost_mergejoin()`和`final_cost_mergejoin()`用于估计归并连接的代价。
 
@@ -1870,7 +1881,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 
 ### 3.5.3 散列连接（Hash Join）
 
-与归并连接类似，**散列连接（Hash Join）**只能用于自然连接与等值连接。
+与归并连接类似，**散列连接（Hash Join）** 只能用于自然连接与等值连接。
 
 PostgreSQL中的散列连接的行为因表的大小而异。 如果目标表足够小（确切地讲，内表大小不超过工作内存的25％），那么散列连接就是简单的**两阶段内存散列连接（two-phase in-memory hash join）** ； 否则，将会使用带倾斜批次的**混合散列连接（hybrid hash join）**。
 
@@ -1884,7 +1895,7 @@ PostgreSQL中的散列连接的行为因表的大小而异。 如果目标表足
 
 内存中的散列连接是在`work_mem`中处理的，在PostgreSQL中，散列表区域被称作**处理批次（batch）**。 一个处理批次会有多个**散列槽(hash slots)**，内部称其为**桶（buckets）**，桶的数量由[`nodeHash.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeHash.c)中定义的`ExecChooseHashTableSize()`函数所确定。 桶的数量总是2的整数次幂。
 
-内存散列连接有两个阶段：**构建（build）**阶段和**探测（probe）**阶段。 在构建阶段，内表中的所有元组都会被插入到batch中；在探测阶段，每条外表元组都会与处理批次中的内表元组比较，如果满足连接条件，则将两条元组连接起来。
+内存散列连接有两个阶段：**构建（build）** 阶段和 **探测（probe）** 阶段。 在构建阶段，内表中的所有元组都会被插入到batch中；在探测阶段，每条外表元组都会与处理批次中的内表元组比较，如果满足连接条件，则将两条元组连接起来。
 
 为了理解该操作的过程，下面是一个具体的例子。 假设该查询中的连接操作使用散列连接。
 
@@ -1912,7 +1923,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
    2. 将第一条元组插入散列键相应的桶中。
 
-      假设第一条元组的散列键以二进制记法表示为`0x000 ... 001`，即其末三**位（bit）**为`001`。 在这种情况下，该元组会被插入到键为`001`的桶中。
+      假设第一条元组的散列键以二进制记法表示为`0x000 ... 001`，即其末三 **位（bit）** 为`001`。 在这种情况下，该元组会被插入到键为`001`的桶中。
 
    在本文中，构建处理批次的插入操作会用运算符 ⊕ 表示。
 
@@ -1928,7 +1939,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
    1. 找出第一条外表元组中涉及连接条件的属性，计算其散列键。
 
-      在这个例子中，假设第一条元组的属性`attr2`的散列键是`0x000 ... 100`，即其末三**位（bit）**为`100`。 最后三位是`100`。
+      在这个例子中，假设第一条元组的属性`attr2`的散列键是`0x000 ... 100`，即其末三 **位（bit）** 为`100`。 最后三位是`100`。
 
    2. 将外表中第一条元组与批次中的内表元组进行比较。如果满足连接条件，则连接内外表元组。
 
@@ -2372,7 +2383,7 @@ $$
 \end{equation}
 $$
 
-​	计划器会估算这里面所有可能连接路径的代价。
+计划器会估算这里面所有可能连接路径的代价。
 
 在处理`{tbl_c,{tbl_a,tbl_b}}`对应的`RelOptInfo`时，计划器会估计`tbl_c`和`{tbl_a,tbl_b}`连接代价最小的路径。本例中`{tbl_a,tbl_b}`已经选定为内表为`tbl_a`且外表为`tbl_b`的散列连接。如先前小节所述，在估计时三种连接算法及其变体都会被评估，即嵌套循环连接及其变体，归并连接及其变体，散列连接及其变体。
 

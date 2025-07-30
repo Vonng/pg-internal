@@ -1,7 +1,8 @@
 {
   "origins": [
     "https://vonng.github.com/pg-internal",
-    "https://pg-internal.vonng.com",
+    "https://pgint.vonng.com",
+    "https://pgint.pgsty.com",
     "http://localhost:1313"
   ],
   "originsRegex": [

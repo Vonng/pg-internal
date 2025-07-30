@@ -5,21 +5,21 @@ breadcrumbs: false
 ---
 
 
-​	本章总结了PostgreSQL中进程与内存的架构，有助于读者理解后续章节。 如果读者已经熟悉这些内容，可以直接跳过本章。
+本章总结了PostgreSQL中进程与内存的架构，有助于读者理解后续章节。 如果读者已经熟悉这些内容，可以直接跳过本章。
 
 ## 2.1 进程架构
 
-​	PostgreSQL是一个客户端/服务器风格的关系型数据库管理系统，采用多进程架构，运行在单台主机上。
+PostgreSQL是一个客户端/服务器风格的关系型数据库管理系统，采用多进程架构，运行在单台主机上。
 
-​	我们通常所谓的“**PostgreSQL服务器（PostgreSQL Server）**” 实际上是一系列协同工作的进程集合，包含着下列进程：
+我们通常所谓的 “**PostgreSQL服务器（PostgreSQL Server）**” 实际上是一系列协同工作的进程集合，包含着下列进程：
 
-* **postgres服务器进程（Postgres Server Process）**是所有数据库集簇管理进程的父进程。
-* 每个**后端进程（Backend Process）** 负责处理客户端发出的查询和语句。
+* **Postgres服务器进程（Postgres Server Process）** 是所有数据库集簇管理进程的父进程。
+* 每个 **后端进程（Backend Process）** 负责处理客户端发出的查询和语句。
 
-* 各种**后台进程（Background Process）** 负责执行各种数据库管理任务（例如清理过程与检查点过程）。
+* 各种 **后台进程（Background Process）** 负责执行各种数据库管理任务（例如清理过程与检查点过程）。
 
-* 各种**复制相关（Replication Associated Process）**的进程负责流复制，流复制的细节会在[第11章](/ch11)中介绍。
-* **后台工作进程（Background Worker Process）** 在9.3版被引入，它能执行任意由用户实现的处理逻辑。这里不详述，请参阅[官方文档](https://www.postgresql.org/docs/current/static/bgworker.html)。
+* 各种 **复制相关（Replication Associated Process）** 的进程负责流复制，流复制的细节会在[第11章](/ch11)中介绍。
+* **后台工作进程（Background Worker Process）** 在 9.3 版被引入，它能执行任意由用户实现的处理逻辑。这里不详述，请参阅[官方文档](https://www.postgresql.org/docs/current/static/bgworker.html)。
 
 以下几小节将详细描述前三种进程。
 
@@ -32,7 +32,7 @@ breadcrumbs: false
 
 ### 2.1.1 Postgres服务器进程
 
-如上所述，**postgres服务器进程（postgres server process）**是PostgreSQL服务器中所有进程的父进程，在早期版本中它被称为*“postmaster“*。
+如上所述，**Postgres服务器进程（postgres server process）** 是 PostgreSQL 服务器中所有进程的父进程，在早期版本中它被称为 *“postmaster“*。
 
 带`start`参数执行[`pg_ctl`](https://www.postgresql.org/docs/current/static/app-pg-ctl.html)实用程序会启动一个postgres服务器进程。它会在内存中分配共享内存区域，启动各种后台进程，如有必要还会启动复制相关进程与后台工作进程，并等待来自客户端的连接请求。 每当接收到来自客户端的连接请求时，它都会启动一个后端进程 （然后由启动的后端进程处理该客户端发出的所有查询）。
 
@@ -100,7 +100,7 @@ PostgreSQL的内存架构可以分为两部分：
 
 ### 2.2.1 本地内存区域
 
-​	每个后端进程都会分配一块本地内存区域用于查询处理。该区域会分为几个子区域 —— 子区域的大小有的固定，有的可变。 表2.2列出了主要的子区域。 详细信息将在后续章节中介绍。
+每个后端进程都会分配一块本地内存区域用于查询处理。该区域会分为几个子区域 —— 子区域的大小有的固定，有的可变。 表2.2列出了主要的子区域。 详细信息将在后续章节中介绍。
 
 **表2.2 本地内存区域**
 
@@ -112,7 +112,7 @@ PostgreSQL的内存架构可以分为两部分：
 
 ### 2.2.2 共享内存区域
 
-​	PostgreSQL服务器启动时会分配共享内存区域。该区域分为几个固定大小的子区域。 表2.3列出了主要的子区域。 详细信息将在后续章节中介绍。
+PostgreSQL服务器启动时会分配共享内存区域。该区域分为几个固定大小的子区域。 表2.3列出了主要的子区域。 详细信息将在后续章节中介绍。
 
 **表2.3 共享内存区域**
 

@@ -1,6 +1,7 @@
 ---
 title: 译者序
 weight: 60
+breadcrumbs: false
 ---
 
 各位读者你们好，相信能选择这本书的读者，大多已经对PostgreSQL有所了解了。本书从PostgreSQL的整体架构展开，依次介绍了各个功能模块的来龙去脉，对于DBA与数据库系统开发人员了解数据库内部原理，阅读学习PostgreSQL源码是不可多得的一本好书。

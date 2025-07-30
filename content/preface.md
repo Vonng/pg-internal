@@ -1,6 +1,7 @@
 ---
 title: 作者序
 weight: 50
+breadcrumbs: false
 ---
 
 中国的PostgreSQL用户们，你们好！
