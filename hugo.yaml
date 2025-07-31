@@ -1,4 +1,4 @@
-baseURL: 'https://pg-internal.vonng.com/'
+baseURL: 'https://pgint.vonng.com/'
 languageCode: 'zh-CN'
 title: 'PostgreSQL 技术内幕'
 
@@ -60,11 +60,11 @@ menu:
       weight: 1
     - identifier: ddia
       name: "设计数据密集型应用 ↗"
-      url: "https://postgres-internals.cn/"
+      url: "https://ddia.vonng.com"
       weight: 2
     - identifier: pgint14
       name: "PostgreSQL 内参 ↗"
-      url: "https://postgres-internals.cn/"
+      url: "https://postgres-internals.cn"
       weight: 3
 
     - identifier: pigsty
