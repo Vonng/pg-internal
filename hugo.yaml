@@ -24,7 +24,7 @@ languages:
     languageName: 简体中文
     languageCode: zh
     weight: 1
-    title: PG技术内幕
+    title: PostgreSQL 技术内幕
 
 
 markup:
@@ -54,22 +54,28 @@ menu:
 
   sidebar:
     - identifier: more
-      name: 友情链接
+      name: 参考链接
       params:
         type: separator
       weight: 1
-    - identifier: pigsty
-      name: "Pigsty Docs ↗"
-      url: "https://doc.pgsty.com"
-      weight: 2
-    - identifier: pgext
-      name: "PG Extensions ↗"
-      url: "https://ext.pgsty.com"
-      weight: 3
-    - identifier: pgint14
-      name: "PG 14 Internal ↗"
+    - identifier: ddia
+      name: "设计数据密集型应用 ↗"
       url: "https://postgres-internals.cn/"
+      weight: 2
+    - identifier: pgint14
+      name: "PostgreSQL 内参 ↗"
+      url: "https://postgres-internals.cn/"
+      weight: 3
+
+    - identifier: pigsty
+      name: "Pigsty 文档 ↗"
+      url: "https://pgsty.com/zh"
       weight: 4
+    - identifier: pgext
+      name: "PG 扩展目录 ↗"
+      url: "https://ext.pgsty.com/zh"
+      weight: 5
+
 
 
 params:

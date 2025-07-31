@@ -1,7 +1,6 @@
 ## PG Internals
 
 [![pgint.vonng.com](https://img.shields.io/badge/Website-pgint.vonng.com-slategray?style=flat&logo=cilium&logoColor=white)](https://pgint.vonng.com)
-[![Github Pages](https://img.shields.io/badge/GH_Pages-vonng.github.io/pg--internal-slategray?style=flat&logo=cilium&logoColor=white)](https://vonng.github.io/pg-internal/)
 
 PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于各种目的。它是一个由多个子系统集成而来的巨大系统，每个子系统都包含着特殊的复杂功能，并与其它子系统相互协调工作。
 理解其内部原理对于管理和集成PostgreSQL而言至关重要，但其巨大性与复杂性让这一点变得相当困难。本书的主要目的是解释这些子系统是如何工作的，并提供一副关于PostgreSQL的全景图像。

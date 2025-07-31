@@ -1,12 +1,11 @@
+default: dev
 
-default: serve
+d:dev
+dev:
+	hugo serve
 
-# serve document with docsify (or python)
-serve:
-	bin/serve
+b:build
+build:
+	hugo build
 
-# generate zh-tw version
-translate:
-	bin/zh-tw.py
-
-.PHONY: default serve translate
+.PHONY: default d dev b build
