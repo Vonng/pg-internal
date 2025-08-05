@@ -102,7 +102,7 @@ params:
     displayToggle: true
 
   footer:
-    enable: true
+    enable: false
     displayCopyright: true
     displayPoweredBy: true
     width: normal
