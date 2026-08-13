@@ -1,60 +1,32 @@
 ---
-title: PostgreSQL技术内幕
+title: PostgreSQL 技术内幕
+description: 深入理解 PostgreSQL 的进程、查询、并发控制、存储、WAL、备份与复制机制。
+search_keywords: [PostgreSQL 内核, 数据库原理, 技术内幕, PG 内核]
+search_boost: 2
 cascade:
-  type: docs
-breadcrumbs: false
+  upstream_attribution: https://www.interdb.jp/pg/
+  downstream_modified: true
+  search_boost: 1.2
+  ui:
+    breadcrumb_disable: true
 ---
 
+《PostgreSQL 技术内幕》由 Hironobu Suzuki 原著，本站收录冯若航、刘阳明和张文升完成的
+2018 年中文译稿。正文按 PostgreSQL 的内部依赖关系组织，从数据库集簇、进程与查询处理，
+延伸到并发控制、缓冲区、WAL、备份和流复制。
 
-## 概览
+## 阅读入口
 
-PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于各种目的。它是一个由多个子系统集成而来的巨大系统，每个子系统都包含着特殊的复杂功能，并与其它子系统相互协调工作。
-理解其内部原理对于管理和集成PostgreSQL而言至关重要，但其巨大性与复杂性让这一点变得相当困难。本书的主要目的是解释这些子系统是如何工作的，并提供一副关于PostgreSQL的全景图像。
+- [作者序](/preface/)
+- [译者序](/preface2/)
+- [第一章：数据库集簇、数据库与数据表](/ch1/)
+- [全部章节](./#chapters)
 
-## 地址
+## 版本说明
 
-- 在线预览地址：[https://pgint.vonng.com](https://pgint.vonng.com)
-- GitHub仓库：[https://github.com/Vonng/pg-internal](https://github.com/Vonng/pg-internal)
-- GitHub Pages: [https://vonng.github.io/pg-internal](https://vonng.github.io/pg-internal)
+这份中文译稿主要反映 PostgreSQL 9.x 至 11 前后的实现。英文原著仍在持续更新；涉及当前
+PostgreSQL 行为时，请同时查阅[英文原著](https://www.interdb.jp/pg/)和
+[PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)。
 
-
-##  目录
-
-[序](/preface)
-
-[译者序](/preface2)
-
-[第一章 数据库集簇，数据库，数据表](/ch1)
-
-[第二章 进程与内存体系结构](/ch2)
-
-[第三章 查询处理](/ch3)
-
-[第四章 外部数据源包装与并行查询](/ch4)
-
-[第五章 并发控制](/ch5)
-
-[第六章 清理过程](/ch6)
-
-[第七章 HOT与仅索引扫描](/ch7)
-
-[第八章 缓冲管理器](/ch8)
-
-[第九章 预写式日志（WAL）](/ch9)
-
-[第十章 基础备份与时间点恢复（PITR）](/ch10)
-
-[第十一章 流复制](/ch11)
-
-
-## 作者
-
-**Hironobu Suzuki**
-**日语：鈴木 啓修**
-
-
-## 译者
-
-[**冯若航**](https://github.com/Vonng)，刘阳明，张文升
-
-探探 PostgreSQL DBA Team
+翻译、技术或链接问题可在
+[GitHub Issues](https://github.com/Vonng/pg-internal/issues) 中反馈。

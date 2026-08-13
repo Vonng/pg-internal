@@ -1,11 +1,12 @@
 ---
 title: 8. 缓冲区管理器
+description: 缓冲区结构、锁、置换策略、环形缓冲区与脏页刷盘。
+search_keywords: [shared buffers, buffer manager, buffer pool, buffer descriptor, clock sweep, bgwriter]
+type: docs
 weight: 108
-math: true
-breadcrumbs: false
 ---
 
-**缓冲区管理器（Buffer Manager）管**理着共享内存和持久存储之间的数据传输，对于DBMS的性能有着重要的影响。PostgreSQL的缓冲区管理器十分高效。
+**缓冲区管理器（Buffer Manager）** 管理着共享内存和持久存储之间的数据传输，对于DBMS的性能有着重要的影响。PostgreSQL的缓冲区管理器十分高效。
 
 本章介绍了PostgreSQL的缓冲区管理器。第一节概览了缓冲区管理器，后续的章节分别介绍以下内容：
 
@@ -32,8 +33,8 @@ breadcrumbs: false
 ### 8.1.1 缓冲区管理器的结构
 
 PostgreSQL缓冲区管理器由缓冲表，缓冲区描述符和缓冲池组成，这几个组件将在接下来的小节中介绍。
-**缓冲池（buffer pool）**层存储着数据文件页面，诸如表页与索引页，及其相应的 [自由空间映射](/ch5) 和 [可见性映射](/ch6) 的页面。**
-**缓冲池是一个数组，数据的每个槽中存储数据文件的一页。 缓冲池数组的序号索引称为**`buffer_id`**。8.2 和 8.3 节描述了缓冲区管理器的内部细节。
+**缓冲池（buffer pool）**层存储着数据文件页面，诸如表页与索引页，及其相应的[自由空间映射](/ch5/)和[可见性映射](/ch6/)页面。
+缓冲池是一个数组，每个槽中存储数据文件的一页。缓冲池数组的序号索引称为 **`buffer_id`**。8.2 和 8.3 节描述了缓冲区管理器的内部细节。
 
 ### 8.1.2 缓冲区标签（`buffer_tag`）
 
@@ -46,7 +47,7 @@ PostgreSQL中的每个数据文件页面都可以分配到唯一的标签，即 
  * Buffer tag 标识了缓冲区中包含着哪一个磁盘块。
  * 注意：BufferTag中的数据必需足以在不参考pg_class或pg_tablespace中的数据项
  * 的前提下，能够直接确定该块需要写入的位置。不过有可能出现这种情况：刷写缓冲区的
- * 后端进程甚至都不认为自己能在那个时刻看见相应的关系（譬如，后段进程对应的的事务
+ * 后端进程甚至都不认为自己能在那个时刻看见相应的关系（譬如，后端进程对应的事务
  * 开始时间早于创建该关系的事务）。无论如何，存储管理器都必须能应对这种情况。
  *
  * 注意：如果结构中存在任何填充字节，INIT_BUFFERTAG需要将所有字段抹为零，因为整个
@@ -73,7 +74,7 @@ typedef struct RelFileNode
 
 **图8.2 后端进程如何读取数据页** 
 
-![](/img/fig-8-02.png)
+![图8.2 后端进程如何读取数据页](/img/fig-8-02.png)
 
 1. 当读取表或索引页时，后端进程向缓冲区管理器发送请求，请求中带有目标页面的`buffer_tag`。
 2. 缓冲区管理器会根据`buffer_tag`返回一个`buffer_id`，即目标页面存储在数组中的槽位的序号。如果请求的页面没有存储在缓冲池中，那么缓冲区管理器会将页面从持久存储中加载到其中一个缓冲池槽位中，然后再返回该槽位的`buffer_id`。
@@ -110,7 +111,7 @@ PostgreSQL缓冲区管理器由三层组成，即**缓冲表层**，**缓冲区�
 
 **图8.3 缓冲区管理器的三层结构**
 
-![](/img/fig-8-03.png)
+![图8.3 缓冲区管理器的三层结构](/img/fig-8-03.png)
 
 + **缓冲池（buffer pool）** 层是一个数组。 每个槽都存储一个数据文件页，数组槽的索引称为`buffer_id`。
 + **缓冲区描述符（buffer descriptors）** 层是一个由缓冲区描述符组成的数组。 每个描述符与缓冲池槽一一对应，并保存着相应槽的元数据。请注意，术语“**缓冲区描述符层**”只是在本章中为方便起见使用的术语。
@@ -127,7 +128,7 @@ PostgreSQL缓冲区管理器由三层组成，即**缓冲表层**，**缓冲区�
 
 **图8.4 缓冲表**
 
-![](/img/fig-8-04.png)
+![图8.4 缓冲表](/img/fig-8-04.png)
 
 数据项包括两个值：页面的`buffer_tag`，以及包含页面元数据的描述符的`buffer_id`。例如数据项`Tag_A,id=1` 表示，`buffer_id=1`对应的缓冲区描述符中，存储着页面`Tag_A`的元数据。
 
@@ -226,11 +227,11 @@ typedef struct sbufdesc
 
 在下图中，缓冲区描述符的状态用彩色方框表示。
 
-* $\color{gray}{█}$（白色）**空**
-* $\color{blue}{█}$（蓝色）钉住
-* $\color{cyan}{█}$（青色）未钉住
+* $\color{gray}{\blacksquare}$（白色）**空**
+* $\color{blue}{\blacksquare}$（蓝色）钉住
+* $\color{cyan}{\blacksquare}$（青色）未钉住
 
-此外，脏页面会带有“X”的标记。例如一个未固定的脏描述符用 $\color{cyan}☒$ 表示。
+此外，脏页面会带有“X”的标记。例如一个未固定的脏描述符用 $\color{cyan}{\boxtimes}$ 表示。
 
 ### 8.2.3 缓冲区描述符层
 
@@ -240,7 +241,7 @@ typedef struct sbufdesc
 
 **图8.5 缓冲区管理器初始状态**
 
-![](/img/fig-8-05.png)
+![图8.5 缓冲区管理器初始状态](/img/fig-8-05.png)
 
 > 请注意PostgreSQL中的 **`freelist`** 完全不同于Oracle中`freelists`的概念。PostgreSQL的`freelist`只是空缓冲区描述符的链表。PostgreSQL中与Oracle中的`freelist`相对应的对象是空闲空间映射（FSM）（第5.3.4节）。
 
@@ -255,7 +256,7 @@ typedef struct sbufdesc
 
 **图8.6 加载第一页**
 
-![](/img/fig-8-06.png)
+![图8.6 加载第一页](/img/fig-8-06.png)
 
 从`freelist`中摘出的描述符始终保存着页面的元数据。换而言之，仍然在使用的非空描述符不会返还到`freelist`中。但当下列任一情况出现时，描述符状态将变为“空”，并被重新插入至`freelist`中：
 
@@ -281,7 +282,7 @@ typedef struct sbufdesc
 
 缓冲区管理器会出于不同的目的使用各式各样的锁，本节将介绍理解后续部分所必须的一些锁。
 
-> 注意本节中描述的锁，指的是是缓冲区管理器**同步机制**的一部分。它们与SQL语句和SQL操作中的锁没有任何关系。
+> 注意本节中描述的锁，指的是缓冲区管理器**同步机制**的一部分。它们与SQL语句和SQL操作中的锁没有任何关系。
 
 ### 8.3.1 缓冲表锁
 
@@ -293,7 +294,7 @@ typedef struct sbufdesc
 
 **图8.7 两个进程同时获取相应分区的`BufMappingLock`独占锁，以插入新数据项**
 
-![](/img/fig-8-07.png)
+![图8.7 两个进程同时获取相应分区的BufMappingLock独占锁，以插入新数据项](/img/fig-8-07.png)
 
 缓冲表也需要许多其他锁。例如，在缓冲表内部会使用 **自旋锁（spin lock）** 来删除数据项。不过本章不需要其他这些锁的相关知识，因此这里省略了对其他锁的介绍。
 
@@ -311,9 +312,9 @@ typedef struct sbufdesc
 
 但执行下列操作之一时，则会获取独占模式的`content_lock`：
 
-- 将行（即元组）插入页面，或更改页面中元组的`t_xmin/t_xmax`字段时（`t_xmin`和`t_xmax`在[第5.2节](/ch5)中介绍，简单地说，这些字段会在相关元组被删除或更新行时发生更改）。
-- 物理移除元组，或压紧页面上的空闲空间（由清理过程和HOT执行，分别在[第6章](http://www.interdb.jp/pg/pgsql06.html)和[第7章](http://www.interdb.jp/pg/pgsql06.html)中介绍）。
-- 冻结页面中的元组（冻结过程在[第5.10.1节](/ch5)与[第6.3节](/ch6)中介绍）。
+- 将行（即元组）插入页面，或更改页面中元组的`t_xmin/t_xmax`字段时（`t_xmin`和`t_xmax`在[第5.2节](/ch5/)中介绍，简单地说，这些字段会在相关元组被删除或更新行时发生更改）。
+- 物理移除元组，或压紧页面上的空闲空间（由清理过程和HOT执行，分别在[第6章](/ch6/)和[第7章](/ch7/)中介绍）。
+- 冻结页面中的元组（冻结过程在[第5.10.1节](/ch5/)与[第6.3节](/ch6/)中介绍）。
 
 官方[`README`](https://github.com/postgres/postgres/blob/master/src/backend/storage/buffer/README)文件包含更多的细节。
 
@@ -360,7 +361,7 @@ typedef struct sbufdesc
 
 > #### 用原子操作替换缓冲区管理器的自旋锁
 >
-> 在9.6版本中，缓冲区管理器的自旋锁被替换为原子操作，可以参考这个[提交日志](https://commitfest.postgresql.org/9/408/)的内容。如果想进一步了解详情，可以参阅这里的[讨论](http://www.postgresql.org/message-id/flat/2400449.GjM57CE0Yg@dinodell#2400449.GjM57CE0Yg@dinodell)。
+> 在9.6版本中，缓冲区管理器的自旋锁被替换为原子操作，可以参考这个[提交日志](https://commitfest.postgresql.org/9/408/)的内容。如果想进一步了解详情，可以参阅这里的[讨论](https://www.postgresql.org/message-id/flat/2400449.GjM57CE0Yg@dinodell#2400449.GjM57CE0Yg@dinodell)。
 >
 > 附，9.6版本中缓冲区描述符的数据结构定义。
 >
@@ -448,7 +449,7 @@ typedef struct sbufdesc
 
 **图8.8 访问存储在缓冲池中的页面。**
 
-![](/img/fig-8-08.png)
+![图8.8 访问存储在缓冲池中的页面](/img/fig-8-08.png)
 
 然后，当从缓冲池槽中的页面里读取行时，PostgreSQL进程获取相应缓冲区描述符的共享`content_lock`。因而缓冲池槽可以同时被多个进程读取。
 
@@ -494,7 +495,7 @@ typedef struct sbufdesc
 
 **图8.9 将页面从存储装载到空插槽**
 
-![](/img/fig-8-09.png)
+![图8.9 将页面从存储装载到空插槽](/img/fig-8-09.png)
 
 ### 8.4.3 将页面从存储加载至受害者缓冲池槽中
 
@@ -510,7 +511,7 @@ typedef struct sbufdesc
 
    1. 获取`buffer_id=5`描述符上的共享`content_lock`和独占`io_in_progress_lock`（在步骤6中释放）。
    2. 更改相应描述符的状态：相应`IO_IN_PROCESS`位被设置为`"1"`，`JUST_DIRTIED`位设置为`"0"`。
-   3. 根据具体情况，调用`XLogFlush()`函数将WAL缓冲区上的WAL数据写入当前WAL段文件（详细信息略，WAL和`XLogFlush`函数在[第9章](/ch9)中介绍）。
+   3. 根据具体情况，调用`XLogFlush()`函数将WAL缓冲区上的WAL数据写入当前WAL段文件（详细信息略，WAL和`XLogFlush`函数在[第9章](/ch9/)中介绍）。
    4. 将受害者页面的数据刷盘至存储中。
 
    5. 更改相应描述符的状态；将`IO_IN_PROCESS`位设置为`"0"`，将`VALID`位设置为`"1"`。
@@ -527,7 +528,7 @@ typedef struct sbufdesc
 
 **图8.10 将页面从存储加载至受害者缓冲池槽**
 
-![](/img/fig-8-10.png)
+![图8.10 将页面从存储加载至受害者缓冲池槽](/img/fig-8-10.png)
 
 6. 从缓冲表中删除旧表项，并释放旧表项所在分区的`BufMappingLock`。
 
@@ -541,7 +542,7 @@ typedef struct sbufdesc
 
 **图8.11 将页面从存储加载至受害者缓冲池槽（接图8.10）**
 
-![](/img/fig-8-11.png)
+![图8.11 将页面从存储加载至受害者缓冲池槽（接图8.10）](/img/fig-8-11.png)
 
 ### 8.4.4 页面替换算法：时钟扫描
 
@@ -576,7 +577,7 @@ typedef struct sbufdesc
 
 **图8.12 时钟扫描**
 
-![](/img/fig-8-12.png)
+![图8.12 时钟扫描](/img/fig-8-12.png)
 
 1. `nextVictimBuffer`指向第一个描述符（`buffer_id = 1`）；但因为该描述符被钉住了，所以跳过。
 2. `extVictimBuffer`指向第二个描述符（`buffer_id = 2`）。该描述符未被钉住，但其`usage_count`为2；因此该描述符的`usage_count`将减1，而`nextVictimBuffer`迭代至第三个候选描述符。
@@ -598,11 +599,11 @@ typedef struct sbufdesc
 
    当执行下列SQL命令时，这种情况下，环形缓冲区大小为*16 MB*。
 
-   * [`COPY FROM`](https://www.postgresql.org/docs/current/static/sql-copy.html)命令。
+   * [`COPY FROM`](https://www.postgresql.org/docs/current/sql-copy.html)命令。
 
-   - [`CREATE TABLE AS`](https://www.postgresql.org/docs/current/static/sql-createtableas.html)命令。
-   - [`CREATE MATERIALIZED VIEW`](http://www.postgresql.org/docs/current/static/sql-creatematerializedview.html)或 [`REFRESH MATERIALIZED VIEW`](http://www.postgresql.org/docs/current/static/sql-refreshmaterializedview.html)命令。
-   - [`ALTER TABLE`](http://www.postgresql.org/docs/current/static/sql-altertable.html)命令。
+   - [`CREATE TABLE AS`](https://www.postgresql.org/docs/current/sql-createtableas.html)命令。
+   - [`CREATE MATERIALIZED VIEW`](https://www.postgresql.org/docs/current/sql-creatematerializedview.html)或 [`REFRESH MATERIALIZED VIEW`](https://www.postgresql.org/docs/current/sql-refreshmaterializedview.html)命令。
+   - [`ALTER TABLE`](https://www.postgresql.org/docs/current/sql-altertable.html)命令。
 
 3. **清理过程**
 
@@ -622,23 +623,18 @@ typedef struct sbufdesc
 
 ## 8.6 脏页刷盘
 
-除了置换受害者页面之外，**检查点进程（Checkpointer）** 进程和后台写入器进程也会将脏页刷写至存储中。尽管两个进程都具有相同的功能（刷写脏页），但它们有着不同的角色和行为。
+除了置换受害者页面之外，**检查点进程（Checkpointer）** 和后台写入器进程也会将脏页刷写至存储中。尽管两个进程都具有相同的功能（刷写脏页），但它们有着不同的角色和行为。
 
-检查点进程将 **检查点记录（checkpoint record）** 写入WAL段文件，并在检查点开始时进行脏页刷写。[9.7节](/ch9)介绍了检查点，以及检查点开始的时机。
+检查点进程将 **检查点记录（checkpoint record）** 写入WAL段文件，并在检查点开始时进行脏页刷写。[9.7节](/ch9/)介绍了检查点，以及检查点开始的时机。
 
-后台写入器的目的是通过少量多次的脏页刷盘，减少检查点带来的密集写入的影响。后台写入器会一点点地将脏页落盘，尽可能减小对数据库活动造成的影响。默认情况下，后台写入器每200毫秒被唤醒一次（由参数[`bgwriter_delay`](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-DELAY)定义），且最多刷写[`bgwriter_lru_maxpages`](http://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-BGWRITER-LRU-MAXPAGES)个页面（默认为100个页面）。
+后台写入器的目的是通过少量多次的脏页刷盘，减少检查点带来的密集写入的影响。后台写入器会一点点地将脏页落盘，尽可能减小对数据库活动造成的影响。默认情况下，后台写入器每200毫秒被唤醒一次（由参数[`bgwriter_delay`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-BGWRITER-DELAY)定义），且最多刷写[`bgwriter_lru_maxpages`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-BGWRITER-LRU-MAXPAGES)个页面（默认为100个页面）。
 
 
 
 #### 为什么检查点进程与后台写入器相分离？
 
-> 在9.1版及更早版本中，后台写入器会规律性的执行检查点过程。在9.2版本中，检查点进程从后台写入器进程中被单独剥离出来。原因在一篇题为”[将检查点进程与后台写入器相分离](https://www.postgresql.org/message-id/CA%2BU5nMLv2ah-HNHaQ%3D2rxhp_hDJ9jcf-LL2kW3sE4msfnUw9gA%40mail.gmail.com)“的提案中有介绍。下面是一些摘录：
+> 在9.1版及更早版本中，后台写入器会规律性地执行检查点过程。在9.2版本中，检查点进程从后台写入器进程中被单独剥离出来。原因在一篇题为“[将检查点进程与后台写入器相分离](https://www.postgresql.org/message-id/CA%2BU5nMLv2ah-HNHaQ%3D2rxhp_hDJ9jcf-LL2kW3sE4msfnUw9gA%40mail.gmail.com)”的提案中有介绍。下面是一些摘录：
 >
 > > 当前（在2011年）后台写入器进程既执行后台写入，又负责检查点，还处理一些其他的职责。这意味着我们没法在不停止后台写入的情况下执行检查点最终的`fsync`。因此，在同一个进程中做两件事会有负面的性能影响。
 > >
 > > 此外，在9.2版本中，我们的一个目标是通过将轮询循环替换为锁存器，从而降低功耗。`bgwriter`中的循环复杂度太高了，以至于无法找到一种简洁的使用锁存器的方法。
-
-
-
-
-

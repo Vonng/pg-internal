@@ -1,7 +1,9 @@
 ---
 title: 1. 数据库集簇，数据库，数据表
+description: PostgreSQL 数据库集簇的逻辑与物理结构、堆表页面布局和元组访问方式。
+search_keywords: [database cluster, 数据库集簇, OID, heap table, 堆表, tuple, 元组, tablespace, TOAST]
+type: docs
 weight: 101
-breadcrumbs: false
 ---
 
 
@@ -24,9 +26,9 @@ breadcrumbs: false
 
 **图1.1 数据库集簇的逻辑结构**
 
-![](/img/fig-1-01.png)
+![图1.1 数据库集簇的逻辑结构](/img/fig-1-01.png)
 
-在 PostgreSQL 内部，所有的数据库对象都通过相应的 **对象标识符（Object Identifiers, OID）** 进行管理，这些标识符是无符号的4字节整型。数据库对象与相应OID之间的关系存储在相应的[**系统目录**](https://www.postgresql.org/docs/current/static/catalogs.html)中，依具体的对象类型而异。 例如数据库和堆表对象的OID分别存储在`pg_database`和`pg_class`中，因此当你希望找出OID时，可以执行以下查询：
+在 PostgreSQL 内部，所有的数据库对象都通过相应的 **对象标识符（Object Identifiers, OID）** 进行管理，这些标识符是无符号的4字节整型。数据库对象与相应OID之间的关系存储在相应的[**系统目录**](https://www.postgresql.org/docs/current/catalogs.html)中，依具体的对象类型而异。 例如数据库和堆表对象的OID分别存储在`pg_database`和`pg_class`中，因此当你希望找出OID时，可以执行以下查询：
 
 ```sql
 sampledb=# SELECT datname, oid FROM pg_database WHERE datname = 'sampledb';
@@ -46,19 +48,19 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 
 ## 1.2 数据库集簇的物理结构
 
-数据库集簇在本质上就是一个文件目录，名曰 **基础目录（base directory）**，包含着一系列子目录与文件。 执行 [`initdb`](https://www.postgresql.org/docs/current/static/app-initdb.html) 命令会在指定目录下创建基础目录从而初始化一个新的数据库集簇。 通常会将基础目录的路径配置到环境变量`PGDATA`中，但这并不是必须的。
+数据库集簇在本质上就是一个文件目录，名曰 **基础目录（base directory）**，包含着一系列子目录与文件。 执行 [`initdb`](https://www.postgresql.org/docs/current/app-initdb.html) 命令会在指定目录下创建基础目录从而初始化一个新的数据库集簇。 通常会将基础目录的路径配置到环境变量`PGDATA`中，但这并不是必须的。
 
 图1.2 展示了一个PostgreSQL数据库集簇的例子。 `base`子目录中的每一个子目录都对应一个数据库，数据库中每个表和索引都会在相应子目录下存储为（至少）一个文件；还有几个包含特定数据的子目录，以及配置文件。 虽然PostgreSQL支持**表空间（Tablespace）**，但该术语的含义与其他RDBMS不同。 PostgreSQL中的表空间对应一个包含基础目录之外数据的目录。
 
 **图1.2 数据库集簇示例**
 
-![](/img/fig-1-02.png)
+![图1.2 数据库集簇示例](/img/fig-1-02.png)
 
 后续小节将描述数据库集簇的布局，数据库的布局，表和索引对应的文件布局，以及PostgreSQL中表空间的布局。
 
 ### 1.2.1 数据库集簇的布局
 
-[官方文档](https://www.postgresql.org/docs/current/static/storage-file-layout.html) 中描述了数据库集簇的布局。 表1.1中列出了主要的文件与子目录：
+[官方文档](https://www.postgresql.org/docs/current/storage-file-layout.html) 中描述了数据库集簇的布局。 表1.1中列出了主要的文件与子目录：
 
 **表 1.1 基本目录下的数据库文件和子目录的布局（参考官方文档）**
 
@@ -77,7 +79,7 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 | `base/`           | 每个数据库对应的子目录存储于此                                                   |
 | `global/`         | 数据库集簇范畴的表（例如`pg_database`），以及`pg_control`文件。                      |
 | `pg_commit_ts/`   | 事务提交的时间戳数据（9.5及更新版本）。                                             |
-| `pg_clog/ (9.6-)` | 事务提交状态数据（9.6及更老版本），在版本10中被重命名为`pg_xact`。CLOG将在[5.4节](/ch5)中描述     |
+| `pg_clog/ (9.6-)` | 事务提交状态数据（9.6及更老版本），在版本10中被重命名为`pg_xact`。CLOG将在[5.4节](/ch5/)中描述     |
 | `pg_dynshmem/`    | 动态共享内存子系统中使用的文件（9.4或更新版本）。                                        |
 | `pg_logical/`     | 逻辑解码的状态数据（9.4或更新版本）。                                              |
 | `pg_multixact/`   | 多事务状态数据                                                           |
@@ -91,7 +93,7 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 | `pg_tblspc/`      | 指向表空间的符号链接                                                        |
 | `pg_twophase/`    | 两阶段事务（prepared transactions）的状态文件                                 |
 | `pg_wal/` (10+)   | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。            |
-| `pg_xact/` (10+)  | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](/ch5)中描述。         |
+| `pg_xact/` (10+)  | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](/ch5/)中描述。         |
 | `pg_xlog/` (9.6-) | **WAL（Write Ahead Logging）** 段文件（9.6及更老版本），它在版本10中被重命名为 `pg_wal`。 |
 
 ### 1.2.2 数据库布局
@@ -163,7 +165,7 @@ $ ls -la -h base/16384/19427*
 
 > 在构建PostgreSQL时，可以使用配置选项`--with-segsize`更改表和索引的最大文件大小。
 
-仔细观察数据库子目录就会发现，每个表都有两个与之相关联的文件，后缀分别为`_fsm`和`_vm`。这些实际上是**空闲空间映射（free space map）**和**可见性映射（visibility map）** 文件，分别存储了表文件每个页面上的空闲空间信息与可见性信息（更多细节见[第5.3.4节](/ch5)和[第6.2节](/ch6)）。索引没有可见性映射文件，只有空闲空间映射文件。
+仔细观察数据库子目录就会发现，每个表都有两个与之相关联的文件，后缀分别为`_fsm`和`_vm`。这些实际上是**空闲空间映射（free space map）**和**可见性映射（visibility map）** 文件，分别存储了表文件每个页面上的空闲空间信息与可见性信息（更多细节见[第5.3.4节](/ch5/)和[第6.2节](/ch6/)）。索引没有可见性映射文件，只有空闲空间映射文件。
 
 一个具体的示例如下所示：
 
@@ -191,9 +193,9 @@ PostgreSQL中的 **表空间（Tablespace）** 是基础目录之外的附加数
 
 **图 1.3 数据库集簇的表空间**
 
-![](/img/fig-1-03.png)
+![图 1.3 数据库集簇的表空间](/img/fig-1-03.png)
 
-执行[`CREATE TABLESPACE`](https://www.postgresql.org/docs/current/static/sql-createtablespace.html)语句会在指定的目录下创建表空间。而在该目录下还会创建版本特定的子目录（例如`PG_9.4_201409291`）。版本特定的命名方式为：
+执行[`CREATE TABLESPACE`](https://www.postgresql.org/docs/current/sql-createtablespace.html)语句会在指定的目录下创建表空间。而在该目录下还会创建版本特定的子目录（例如`PG_9.4_201409291`）。版本特定的命名方式为：
 
 ```
 PG_主版本号_目录版本号
@@ -246,17 +248,17 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 **图 1.4. 堆表文件的页面布局**
 
-![](/img/fig-1-04.png)
+![图 1.4. 堆表文件的页面布局](/img/fig-1-04.png)
 
 表的页面包含了三种类型的数据：
 
-1. **堆元组（heap tuples）** —— 堆元组就是数据记录本身。它们从页面底部开始依序堆叠。[第5.2节](/ch5)与[第9章](/ch9)会描述元组的内部结构，这一知识对于理解PostgreSQL并发控制与WAL机制是必须的。
+1. **堆元组（heap tuples）** —— 堆元组就是数据记录本身。它们从页面底部开始依序堆叠。[第5.2节](/ch5/)与[第9章](/ch9/)会描述元组的内部结构，这一知识对于理解PostgreSQL并发控制与WAL机制是必须的。
 
 2. **行指针（line pointer）** —— 每个行指针占4个字节，保存着指向堆元组的指针。它们也被称为**项目指针（item pointer）**。行指针简单地组织为一个数组，扮演了元组索引的角色。每个索引项从1开始依次编号，称为**偏移号（offset number）**。当向页面中添加新元组时，一个相应的新行指针也会被放入数组中，并指向新添加的元组。
 
 3. **首部数据（header data）**  —— 页面的起始位置分配了由结构`PageHeaderData`定义的首部数据。它的大小为24个字节，包含关于页面的元数据。该结构的主要成员变量为：
 
-   + `pd_lsn` —— 本页面最近一次变更所写入XLOG记录对应的LSN。它是一个8字节无符号整数，与WAL机制相关，[第9章](/ch9)将详细展开。
+   + `pd_lsn` —— 本页面最近一次变更所写入XLOG记录对应的LSN。它是一个8字节无符号整数，与WAL机制相关，[第9章](/ch9/)将详细展开。
    + `pd_checksum` —— 本页面的校验和值。（注意只有在9.3或更高版本才有此变量，早期版中该字段用于存储页面的时间线标识）
    + `pd_lower`，`pd_upper` —— `pd_lower`指向行指针的末尾，`pd_upper`指向最新堆元组的起始位置。
    + `pd_special` —— 在索引页中会用到该字段。在堆表页中它指向页尾。（在索引页中它指向特殊空间的起始位置，特殊空间是仅由索引使用的特殊数据区域，包含特定的数据，具体内容依索引的类型而定，如B树，GiST，GiN等。
@@ -333,11 +335,11 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 行指针的末尾与最新元组起始位置之间的空余空间称为**空闲空间（free space）**或**空洞（hole）**。
 
-为了识别表中的元组，数据库内部会使用**元组标识符（tuple identifier, TID）**。TID由一对值组成：元组所属页面的**区块号**，及指向元组的行指针的**偏移号**。TID的一种典型用途是索引，更多细节参见[第1.4.2节](/ch1)。
+为了识别表中的元组，数据库内部会使用**元组标识符（tuple identifier, TID）**。TID由一对值组成：元组所属页面的**区块号**，及指向元组的行指针的**偏移号**。TID的一种典型用途是索引，更多细节参见[第1.4.2节](/ch1/)。
 
 > 结构体`PageHeaderData`定义于[`src/include/storage/bufpage.h`](https://github.com/postgres/postgres/blob/master/src/include/storage/bufpage.h)中。
 
-此外，大小超过约2KB（8KB的四分之一）的堆元组会使用一种称为 **TOAST（The Oversized-Attribute Storage Technique，超大属性存储技术）** 的方法来存储与管理。详情请参阅[PostgreSQL文档](https://www.postgresql.org/docs/current/static/storage-toast.html)。
+此外，大小超过约2KB（8KB的四分之一）的堆元组会使用一种称为 **TOAST（The Oversized-Attribute Storage Technique，超大属性存储技术）** 的方法来存储与管理。详情请参阅[PostgreSQL文档](https://www.postgresql.org/docs/current/storage-toast.html)。
 
 
 
@@ -349,11 +351,11 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 让我们假设有一个表，仅由一个页面组成，且该页面只包含一个堆元组。 此页面的`pd_lower`指向第一个行指针，而该行指针和`pd_upper`都指向第一个堆元组。 如图1.5(a)所示。
 
-当第二个元组被插入时，它会被放在第一个元组之后。第二个行指针被插入到第一个行指针的后面，并指向第二个元组。 `pd_lower`更改为指向第二个行指针，`pd_upper`更改为指向第二个堆元组，如图1.5(b)。 页面内的首部数据（例如`pd_lsn`，`pg_checksum`，`pg_flag`）也会被改写为适当的值，细节在[第5.3节](/ch5)和[第9章](/ch9)中描述。
+当第二个元组被插入时，它会被放在第一个元组之后。第二个行指针被插入到第一个行指针的后面，并指向第二个元组。 `pd_lower`更改为指向第二个行指针，`pd_upper`更改为指向第二个堆元组，如图1.5(b)。 页面内的首部数据（例如`pd_lsn`、`pd_checksum`和`pd_flags`）也会被改写为适当的值，细节在[第5.3节](/ch5/)和[第9章](/ch9/)中描述。
 
 **图1.5 堆元组的写入**
 
-![](/img/fig-1-05.png)
+![图1.5 堆元组的写入](/img/fig-1-05.png)
 
 ### 1.4.2 读取堆元组
 
@@ -364,7 +366,7 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 **图 1.6 顺序扫描和索引扫描**
 
-![](/img/fig-1-06.png)
+![图 1.6 顺序扫描和索引扫描](/img/fig-1-06.png)
 
 > PostgreSQL还支持**TID扫描**，**位图扫描（[Bitmap-Scan](https://wiki.postgresql.org/wiki/Bitmap_Indexes)）**和**仅索引扫描（Index-Only-Scan）**。
 >
@@ -384,5 +386,4 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 >    TID Cond: (ctid = '(0,1)'::tid)
 > ```
 >
-> 仅索引扫描将在[第7章](/ch7)中详细介绍。
-
+> 仅索引扫描将在[第7章](/ch7/)中详细介绍。

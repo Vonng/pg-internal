@@ -57,8 +57,14 @@ jobs:
           HUGO_ENV: production
         run: |
           hugo \
-            --gc --minify --panicOnWarning \
+            --gc --minify --panicOnWarning --printPathWarnings \
             --baseURL "${{ steps.pages.outputs.base_url }}/"
+      - name: Check rendered links
+        run: >-
+          python3 scripts/check_links.py public
+          --origin "${{ steps.pages.outputs.base_url }}"
+      - name: Check content and search index
+        run: python3 scripts/check_site.py public
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

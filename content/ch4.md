@@ -1,7 +1,9 @@
 ---
 title: 4. 外部数据包装器与并行查询
-weight: 105
-breadcrumbs: false
+description: 外部数据包装器的查询路径，以及 PostgreSQL 并行查询的基本机制。
+search_keywords: [FDW, foreign data wrapper, postgres_fdw, 外部数据包装器, parallel query, 并行查询]
+type: docs
+weight: 104
 ---
 
 本章将介绍两种相当实用，而且很有趣的特性：**外部数据包装器（Foreign Data Wrapper FDW）**与**并行查询（Parallel Query）**。
@@ -41,7 +43,7 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
  10000
 ```
 
-[Postgres wiki](https://wiki.postgresql.org/wiki/Foreign_data_wrappers)中列出了很多现有的FDW扩展。但只有[`postgres_fdw`](https://www.postgresql.org/docs/current/static/postgres-fdw.html) 与[`file_fdw`](https://www.postgresql.org/docs/current/static/file-fdw.html) 是由官方PostgreSQL全球开发组维护的。`postgres_fdw`可用于访问远程PostgreSQL服务器。
+[Postgres wiki](https://wiki.postgresql.org/wiki/Foreign_data_wrappers)中列出了很多现有的FDW扩展。但只有[`postgres_fdw`](https://www.postgresql.org/docs/current/postgres-fdw.html) 与[`file_fdw`](https://www.postgresql.org/docs/current/file-fdw.html) 是由官方PostgreSQL全球开发组维护的。`postgres_fdw`可用于访问远程PostgreSQL服务器。
 
 以下部分将详细介绍PostgreSQL的FDW。 4.1.1节为概述，4.1.2节介绍了`postgres_fdw`扩展的工作方式。
 
@@ -53,7 +55,7 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
 
 ### 4.1.1 概述
 
-使用FDW特性需要先安装相应的扩展，并执行一些设置命令，例如[`CREATE FOREIGN TABLE`](https://www.postgresql.org/docs/current/static/sql-createforeigntable.html)，[`CREATE SERVER`](https://www.postgresql.org/docs/current/static/sql-createserver.html) 和[`CREATE USER MAPPING`](https://www.postgresql.org/docs/current/static/sql-createusermapping.html)（细节请参阅[官方文档](https://www.postgresql.org/docs/9.5/static/postgres-fdw.html#AEN180314)）。
+使用FDW特性需要先安装相应的扩展，并执行一些设置命令，例如[`CREATE FOREIGN TABLE`](https://www.postgresql.org/docs/current/sql-createforeigntable.html)，[`CREATE SERVER`](https://www.postgresql.org/docs/current/sql-createserver.html) 和[`CREATE USER MAPPING`](https://www.postgresql.org/docs/current/sql-createusermapping.html)（细节请参阅[官方文档](https://www.postgresql.org/docs/9.5/postgres-fdw.html#AEN180314)）。
 
 在配置妥当之后，查询处理期间，执行器将会调用扩展中定义的相应函数来访问外部表。
 
@@ -63,9 +65,9 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
 
 ![Fig. 4.2. How FDWs perform.](/img/fig-4-2.png)
 
-1. 分析器为输入的SQL创建一颗查询树。
+1. 分析器为输入的SQL创建一棵查询树。
 2. 计划器（或执行器）连接到远程服务器。
-3. 如果启用了[`use_remote_estimate`](https://www.postgresql.org/docs/current/static/postgres-fdw.html#id-1.11.7.43.10.4)选项（默认关闭），则计划器将执行`EXPLAIN`命令以估计每条计划路径的代价。
+3. 如果启用了[`use_remote_estimate`](https://www.postgresql.org/docs/current/postgres-fdw.html#id-1.11.7.43.10.4)选项（默认关闭），则计划器将执行`EXPLAIN`命令以估计每条计划路径的代价。
 4. 计划器按照计划树创建出纯文本SQL语句，在内部称该过程为**逆解析（deparesing）**。
 5. 执行器将纯文本SQL语句发送到远程服务器并接收结果。
 
@@ -73,27 +75,27 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
 
 以下各节介绍了每一步中的具体细节。
 
-#### 4.1.1.1 创建一颗查询树
+#### 4.1.1.1 创建一棵查询树
 
-分析器会根据输入的SQL创建一颗查询树，并使用外部表的定义。当执行命令[`CREATE FOREIGN TABLE`](https://www.postgresql.org/docs/current/static/sql-createforeigntable.html) 和[`IMPORT FOREIGN SCHEMA`](https://www.postgresql.org/docs/current/static/sql-importforeignschema.html)时，外部表的定义会被存储至系统目录[`pg_catalog.pg_class`](https://www.postgresql.org/docs/current/static/catalog-pg-class.html)和[`pg_catalog.pg_foreign_table`](https://www.postgresql.org/docs/current/static/catalog-pg-foreign-table.html)中。
+分析器会根据输入的SQL创建一棵查询树，并使用外部表的定义。当执行命令[`CREATE FOREIGN TABLE`](https://www.postgresql.org/docs/current/sql-createforeigntable.html) 和[`IMPORT FOREIGN SCHEMA`](https://www.postgresql.org/docs/current/sql-importforeignschema.html)时，外部表的定义会被存储至系统目录[`pg_catalog.pg_class`](https://www.postgresql.org/docs/current/catalog-pg-class.html)和[`pg_catalog.pg_foreign_table`](https://www.postgresql.org/docs/current/catalog-pg-foreign-table.html)中。
 
 #### 4.1.1.2 连接至远程服务器
 
-计划器（或执行器）会使用特定的库连接至远程数据库服务器。 例如要连接至远程PostgreSQL服务器时，`postgres_fdw`会使用[`libpq`](https://www.postgresql.org/docs/current/static/libpq.html)。 而连接到mysql服务器时，由EnterpriseDB开发的[`mysql_fdw`](https://github.com/EnterpriseDB/mysql_fdw)使用`libmysqlclient`。
+计划器（或执行器）会使用特定的库连接至远程数据库服务器。 例如要连接至远程PostgreSQL服务器时，`postgres_fdw`会使用[`libpq`](https://www.postgresql.org/docs/current/libpq.html)。 而连接到mysql服务器时，由EnterpriseDB开发的[`mysql_fdw`](https://github.com/EnterpriseDB/mysql_fdw)使用`libmysqlclient`。
 
-当执行[`CREATE USER MAPPING`](https://www.postgresql.org/docs/current/static/sql-createusermapping.html)和[`CREATE SERVER`](https://www.postgresql.org/docs/current/static/sql-createserver.html)命令时，诸如用户名，服务器IP地址和端口号等连接参数会被存储至系统目录[`pg_catalog.pg_user_mapping`](https://www.postgresql.org/docs/current/static/catalog-pg-user-mapping.html)和[`pg_catalog.pg_foreign_server`](https://www.postgresql.org/docs/current/static/catalog-pg-foreign-server.html)中。
+当执行[`CREATE USER MAPPING`](https://www.postgresql.org/docs/current/sql-createusermapping.html)和[`CREATE SERVER`](https://www.postgresql.org/docs/current/sql-createserver.html)命令时，诸如用户名，服务器IP地址和端口号等连接参数会被存储至系统目录[`pg_catalog.pg_user_mapping`](https://www.postgresql.org/docs/current/catalog-pg-user-mapping.html)和[`pg_catalog.pg_foreign_server`](https://www.postgresql.org/docs/current/catalog-pg-foreign-server.html)中。
 
 #### 4.1.1.3 使用EXPLAIN命令创建计划树（可选）
 
 PostgreSQL的FDW机制支持一种特性：获取外部表上的统计信息，用于估计查询代价。一些FDW扩展使用了该特性，例如`postgres_fdw`，`mysql_fdw`，`tds_fdw`和`jdbc2_fdw`。
 
-如果使用[`ALTER SERVER`](https://www.postgresql.org/docs/current/static/sql-alterserver.html)命令将`use_remote_estimate`选项设置为`on`，则计划器会向远程服务器发起查询，执行`EXPLAIN`命令获取执行计划的代价。否则在默认情况下，会使用默认内置常量值作为代价。
+如果使用[`ALTER SERVER`](https://www.postgresql.org/docs/current/sql-alterserver.html)命令将`use_remote_estimate`选项设置为`on`，则计划器会向远程服务器发起查询，执行`EXPLAIN`命令获取执行计划的代价。否则在默认情况下，会使用默认内置常量值作为代价。
 
 ```sql
 localdb=# ALTER SERVER remote_server_name OPTIONS (use_remote_estimate 'on');
 ```
 
-尽管一些扩展也会执行`EXPLAIN`命令，但目前只有`postgres_fdw`才能忠于`EXPLAIN`命令的真正意图，因为PostgreSQL的`EXPLAIN`命令会同时返回启动代价和总代价。而其他DBMS的FDW扩展一般无法使用`EXPLAIN`命令的结果进行规划。 例如MySQL的`EXPLAIN`命令仅仅返回估计的行数， 但如[第3章](/ch3)所述，PostgreSQL的计划器需要更多的信息来估算代价。
+尽管一些扩展也会执行`EXPLAIN`命令，但目前只有`postgres_fdw`才能忠于`EXPLAIN`命令的真正意图，因为PostgreSQL的`EXPLAIN`命令会同时返回启动代价和总代价。而其他DBMS的FDW扩展一般无法使用`EXPLAIN`命令的结果进行规划。 例如MySQL的`EXPLAIN`命令仅仅返回估计的行数， 但如[第3章](/ch3/)所述，PostgreSQL的计划器需要更多的信息来估算代价。
 
 #### 4.1.1.4 逆解析
 
@@ -225,7 +227,7 @@ LOG:  statement: COMMIT TRANSACTION
 
 在9.5或更早版本中，即使所有外部表都存储在同一个远程服务器中，`postgres_fdw`也会单独拉取每个表再连接。
 
-在9.6或更高版本中，`postgres_fdw`已经有所改进，当外部表位于同一服务器上且[`use_remote_estimate`](https://www.postgresql.org/docs/current/static/postgres-fdw.html)选项打开时，可以在远程服务器上执行远程连接操作。
+在9.6或更高版本中，`postgres_fdw`已经有所改进，当外部表位于同一服务器上且[`use_remote_estimate`](https://www.postgresql.org/docs/current/postgres-fdw.html)选项打开时，可以在远程服务器上执行远程连接操作。
 
 执行细节如下所述。
 

@@ -3,7 +3,7 @@
 [![pgint.vonng.com](https://img.shields.io/badge/在线阅读-pgint.vonng.com-slategray?style=flat&logo=cilium&logoColor=white)](https://pgint.vonng.com)
 
 PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于各种目的。它是一个由多个子系统集成而来的巨大系统，每个子系统都包含着特殊的复杂功能，并与其它子系统相互协调工作。
-理解其内部原理对于管理和集成PostgreSQL而言至关重要，但其巨大性与复杂性让这一点变得相当困难。本书的主要目的是解释这些子系统是如何工作的，并提供一副关于PostgreSQL的全景图像。
+理解其内部原理对于管理和集成PostgreSQL而言至关重要，但其巨大性与复杂性让这一点变得相当困难。本书的主要目的是解释这些子系统是如何工作的，并提供一幅关于PostgreSQL的全景图像。
 
 ## 链接
 
@@ -37,6 +37,21 @@ PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于�
 [第十章 基础备份与时间点恢复（PITR）](content/ch10.md)
 
 [第十一章 流复制](content/ch11.md)
+
+## 本地预览
+
+站点使用 [OINK 0.3.0](https://github.com/pgsty/oink/tree/v0.3.0)，版本固定在
+`go.mod` 中。构建需要 Hugo Extended 0.160.1 或更高版本与 Go：
+
+```bash
+make dev
+```
+
+提交前运行生产构建、渲染后链接检查，以及 OINK 搜索索引和内容卫生检查：
+
+```bash
+make check
+```
 
 
 ## 作者

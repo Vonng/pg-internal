@@ -1,0 +1,267 @@
+# OINK 0.3.0 按此顺序组合首页；内容与呈现保持分离，便于后续调整。
+sections:
+  - hero
+  - metrics
+  - type: cards
+    key: reading_paths
+    id: reading-paths
+  - type: gallery
+    key: concept_map
+    id: concept-map
+  - type: cards
+    key: chapters
+    id: chapters
+  - type: principles
+    key: reading_notes
+    id: edition-notes
+  - type: logo_wall
+    key: resources
+    id: resources
+  - faq
+  - cta
+
+hero:
+  eyebrow: PostgreSQL Internals · 2018 中文译稿
+  title: 读懂 **PostgreSQL** 的内部机制
+  lead: >-
+    从进程与内存、查询规划和 MVCC，一路深入缓冲区、WAL、备份与流复制；
+    用一套连贯的系统视角理解 PostgreSQL 为什么这样工作。
+  note: 本站保留 2018 年中文版本；涉及当前行为时，请同时查阅持续更新的英文原著与 PostgreSQL 官方文档。
+  note_icon: fa-solid fa-circle-info
+  actions:
+    - label: 从第一章开始
+      url: ch1/
+      icon: fa-solid fa-book-open
+      style: primary
+    - label: 浏览全部章节
+      url: "#chapters"
+      icon: fa-solid fa-list
+      style: ghost
+  detail:
+    label: 阅读英文原著的最新版本
+    url: https://www.interdb.jp/pg/
+    icon: fa-solid fa-arrow-up-right-from-square
+    external: true
+
+metrics:
+  eyebrow: 全书概览
+  title: 一张覆盖 PostgreSQL 核心子系统的知识地图
+  text: 章节按内部依赖关系展开，既适合顺序阅读，也适合按主题查阅。
+  columns: 4
+  items:
+    - value: "11"
+      label: 个核心章节
+      icon: fa-solid fa-layer-group
+      url: "#chapters"
+    - value: "127"
+      label: 张技术插图
+      icon: fa-regular fa-images
+    - value: "2"
+      label: 篇作者与译者序
+      icon: fa-solid fa-quote-left
+      url: preface/
+    - value: "全文"
+      label: 本地离线检索
+      icon: fa-solid fa-magnifying-glass
+
+reading_paths:
+  eyebrow: 建议路径
+  title: 按你的问题开始阅读
+  text: 不必一次读完；先建立全局模型，再沿着当前问题深入。
+  columns: 3
+  link_label: 打开
+  items:
+    - title: 建立整体架构
+      meta: 入门路径
+      icon: fa-solid fa-sitemap
+      desc: 从数据库集簇的逻辑与物理结构开始，再理解服务端进程和内存区域。
+      url: ch1/
+    - title: 理解查询与事务
+      meta: 核心机制
+      icon: fa-solid fa-diagram-project
+      desc: 连接查询处理、并发控制、VACUUM 与 HOT，理解性能和一致性的来源。
+      url: ch3/
+    - title: 掌握持久性与高可用
+      meta: 运维路径
+      icon: fa-solid fa-shield-halved
+      desc: 从缓冲区与 WAL 出发，继续阅读备份、时间点恢复和流复制。
+      url: ch8/
+
+concept_map:
+  eyebrow: 图解内核
+  title: 先看懂系统之间的连接
+  text: 选取三张贯穿全书的架构图，从系统边界、查询流程与持久性开始建立整体模型。
+  columns: 3
+  link_label: 结合正文阅读
+  items:
+    - title: 进程与内存架构
+      badge: 第 2 章
+      image: img/fig-2-01.png
+      alt: PostgreSQL 客户端、服务端进程、后台进程、共享内存与数据库集簇的关系图
+      desc: 理解客户端连接、后端进程、后台任务、共享内存与数据文件的边界。
+      url: ch2/
+    - title: 查询处理流水线
+      badge: 第 3 章
+      image: img/fig-3-01.png
+      alt: PostgreSQL 查询从解析、分析、重写、规划到执行的流程图
+      desc: 从 SQL 文本到计划树与结果，将解析器、重写器、规划器和执行器串起来。
+      url: ch3/
+    - title: WAL 与崩溃恢复
+      badge: 第 9 章
+      image: img/fig-9-03.png
+      alt: PostgreSQL 从重做点回放 WAL 记录并恢复数据页的流程图
+      desc: 看懂数据页、WAL 记录、重做点和崩溃恢复之间的因果链。
+      url: ch9/
+
+chapters:
+  eyebrow: 章节目录
+  title: 从数据布局到流复制
+  text: 每一章都可以独立查阅；侧边栏、目录和全文搜索可帮助你在长章节中定位。
+  columns: 3
+  link_label: 阅读本章
+  items:
+    - title: 第 1 章 · 数据库集簇、数据库与数据表
+      icon: fa-solid fa-database
+      desc: 逻辑结构、物理文件、堆表页面，以及元组的读写方式。
+      url: ch1/
+    - title: 第 2 章 · 进程与内存体系结构
+      icon: fa-solid fa-memory
+      desc: 服务端、后端与后台进程，以及本地内存和共享内存的职责。
+      url: ch2/
+    - title: 第 3 章 · 查询处理
+      icon: fa-solid fa-route
+      desc: 解析、重写、代价估算、计划树、执行器与连接算法。
+      url: ch3/
+    - title: 第 4 章 · 外部数据包装器与并行查询
+      icon: fa-solid fa-network-wired
+      desc: FDW 的查询执行路径，以及 PostgreSQL 并行查询的基本机制。
+      url: ch4/
+    - title: 第 5 章 · 并发控制
+      icon: fa-solid fa-code-branch
+      desc: 事务标识、元组版本、快照、可见性规则与可串行化快照隔离。
+      url: ch5/
+    - title: 第 6 章 · 清理过程
+      icon: fa-solid fa-broom
+      desc: VACUUM、可见性映射、冻结、提交日志回收与自动清理。
+      url: ch6/
+    - title: 第 7 章 · HOT 与仅索引扫描
+      icon: fa-solid fa-gauge-high
+      desc: 减少索引写放大的 HOT 更新，以及仅索引扫描的工作条件。
+      url: ch7/
+    - title: 第 8 章 · 缓冲区管理器
+      icon: fa-solid fa-layer-group
+      desc: 缓冲区结构、锁、置换策略、环形缓冲区与脏页刷盘。
+      url: ch8/
+    - title: 第 9 章 · 预写式日志
+      icon: fa-solid fa-file-waveform
+      desc: WAL 布局、记录写入、检查点、崩溃恢复与持续归档。
+      url: ch9/
+    - title: 第 10 章 · 基础备份与时间点恢复
+      icon: fa-solid fa-clock-rotate-left
+      desc: 基础备份、PITR、时间线与时间线历史文件。
+      url: ch10/
+    - title: 第 11 章 · 流复制
+      icon: fa-solid fa-arrows-rotate
+      desc: 主备启动、WAL 传输、同步复制、多备库管理与故障检测。
+      url: ch11/
+
+reading_notes:
+  eyebrow: 阅读前说明
+  title: 把历史实现与当前行为区分开
+  columns: 3
+  items:
+    - icon: fa-solid fa-calendar
+      title: 中文版本有明确时间边界
+      desc: 本站正文形成于 2018 年，主要描述 PostgreSQL 9.x 至 11 前后的实现与接口。
+    - icon: fa-solid fa-code-compare
+      title: 原著仍在持续更新
+      desc: 英文原著已经新增和重写部分章节；涉及最新版本时，应以原著和官方文档为准。
+    - icon: fa-solid fa-link
+      title: 代码链接保留上下文
+      desc: 历史实现尽量链接到对应版本或稳定来源，当前接口则链接到规范的 HTTPS 文档。
+
+resources:
+  eyebrow: 延伸阅读
+  title: 对照原著、官方文档与源码
+  text: 这些入口用于确认当前行为，或继续深入某个实现细节。
+  columns: 4
+  link_label: 访问
+  items:
+    - name: 英文原著
+      icon: fa-solid fa-book
+      desc: Hironobu Suzuki 持续更新的 The Internals of PostgreSQL。
+      url: https://www.interdb.jp/pg/
+      external: true
+    - name: PostgreSQL 文档
+      icon: fa-solid fa-file-lines
+      desc: 当前稳定版本的官方手册与参考资料。
+      url: https://www.postgresql.org/docs/current/
+      external: true
+    - name: PostgreSQL 源码
+      icon: fa-brands fa-github
+      desc: 查询数据结构、实现与版本历史。
+      url: https://github.com/postgres/postgres
+      external: true
+    - name: Pigsty 文档
+      icon: fa-solid fa-piggy-bank
+      desc: PostgreSQL 发行版与生产环境实践。
+      url: https://pgsty.com/zh/
+      external: true
+
+faq:
+  eyebrow: 常见问题
+  title: 关于版本、链接与勘误
+  items:
+    - question: 这是英文原著当前版本的完整中文翻译吗？
+      answer: >-
+        不是。本站保留的是 2018 年中文译稿，只有 11 章；英文原著此后持续修订并新增内容。
+        学习内部原理时这份译稿仍有价值，但判断当前 PostgreSQL 行为时请对照最新原著和官方文档。
+      open: true
+    - question: 为什么正文中仍会出现旧参数、旧函数名或旧目录名？
+      answer: >-
+        它们属于原文所描述版本的实现上下文。校对会修复错误链接和明显笔误，但不会把历史叙述
+        直接改写成另一个版本的实现，以免让文字、图示和源码失去一致性。
+    - question: 如何报告翻译、技术或链接问题？
+      answer: >-
+        可以在 [GitHub 仓库](https://github.com/Vonng/pg-internal/issues)提交问题，
+        也可以使用文档页右侧的“编辑此页”入口直接提出修改。
+      link_label: 提交问题
+      url: https://github.com/Vonng/pg-internal/issues
+      external: true
+
+cta:
+  title: 从整体结构开始，建立自己的 PostgreSQL 心智模型。
+  desc: 第一章先解释数据库集簇、文件和页面；之后的每一章都会复用这些概念。
+  actions:
+    - label: 阅读第一章
+      url: ch1/
+      icon: fa-solid fa-arrow-right
+      style: primary
+    - label: 先看译者序
+      url: preface2/
+      icon: fa-solid fa-quote-left
+      style: ghost
+
+footer:
+  brand:
+    name: PostgreSQL 技术内幕
+    logo: postgresql.svg
+    tagline: 一份面向 DBA 与系统开发者的 PostgreSQL 内部机制中文译稿。
+    slogan: 先理解系统，再解决问题。
+  columns:
+    - title: 开始阅读
+      links:
+        - { label: 作者序, url: preface/ }
+        - { label: 译者序, url: preface2/ }
+        - { label: 第一章, url: ch1/ }
+        - { label: 全部章节, url: "#chapters" }
+    - title: 权威来源
+      links:
+        - { label: 英文原著, url: https://www.interdb.jp/pg/, external: true }
+        - { label: PostgreSQL 文档, url: https://www.postgresql.org/docs/current/, external: true }
+        - { label: PostgreSQL 源码, url: https://github.com/postgres/postgres, external: true }
+    - title: 项目
+      links:
+        - { label: GitHub 仓库, url: https://github.com/Vonng/pg-internal, external: true }
+        - { label: 提交问题, url: https://github.com/Vonng/pg-internal/issues, external: true }
+        - { label: Pigsty 文档, url: https://pgsty.com/zh/, external: true }

@@ -1,8 +1,9 @@
 ---
 title: 5. 并发控制
+description: 事务标识、元组版本、快照、可见性规则与可串行化快照隔离。
+search_keywords: [MVCC, transaction, XID, snapshot, visibility, SSI, serializable snapshot isolation, CLOG]
+type: docs
 weight: 105
-breadcrumbs: false
-math: true
 ---
 
 
@@ -36,7 +37,7 @@ SI中不会出现在ANSI SQL-92标准中定义的三种异常：脏读，不可�
 
 * 第4部分：第5.10节。
 
-  这一部分描述了并发控制机制持久运行所需的几个维护过程。维护过程主要通过 **清理过程（vacuum processing）** 进行，清理过程将在[第6章](/ch6)详细阐述。
+  这一部分描述了并发控制机制持久运行所需的几个维护过程。维护过程主要通过 **清理过程（vacuum processing）** 进行，清理过程将在[第6章](/ch6/)详细阐述。
 
 并发控制包含着很多主题，本章重点介绍 PostgreSQL 独有的内容。故这里省略了锁模式与死锁处理的内容（相关信息请参阅官方文档）。
 
@@ -81,7 +82,7 @@ PostgreSQL保留以下三个特殊`txid`：
 
 **图5.1  PostgreSQL中的事务标识**
 
-![](/img/fig-5-01.png)
+![图5.1 PostgreSQL中的事务标识](/img/fig-5-01.png)
 
 因为`txid`在逻辑上是无限的，而实际系统中的`txid`空间不足（4字节取值空间约42亿），因此PostgreSQL将`txid`空间视为一个环。对于某个特定的`txid`，其前约21亿个`txid`属于过去，而其后约21亿个`txid`属于未来。如图5.1(b)所示。
 
@@ -99,7 +100,7 @@ PostgreSQL保留以下三个特殊`txid`：
 
 **图5.2 元组结构**
 
-![](/img/fig-5-02.png)
+![图5.2 元组结构](/img/fig-5-02.png)
 
 > `HeapTupleHeaderData`结构在[`src/include/access/htup_details.h`](https://github.com/postgres/postgres/blob/ee943004466418595363d567f18c053bae407792/src/include/access/htup_details.h)中定义。
 
@@ -161,7 +162,7 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 **图5.3 元组的表示**
 
-![](/img/fig-5-03.png)
+![图5.3 元组的表示](/img/fig-5-03.png)
 
 ### 5.3.1 插入
 
@@ -169,7 +170,7 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 **图5.4 插入元组**
 
-![](/img/fig-5-04.png)
+![图5.4 插入元组](/img/fig-5-04.png)
 
 假设元组是由`txid=99`的事务插入页面中的，在这种情况下，被插入元组的首部字段会依以下步骤设置。
 
@@ -205,7 +206,7 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 **图5.5 删除元组**
 
-![](/img/fig-5-05.png)
+![图5.5 删除元组](/img/fig-5-05.png)
 假设`Tuple_1`被`txid=111`的事务删除。在这种情况下，`Tuple_1`的首部字段会依以下步骤设置。
 
 `Tuple_1`：
@@ -214,7 +215,7 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 如果`txid=111`的事务已经提交，那么`Tuple_1`就不是必需的了。通常不需要的元组在PostgreSQL中被称为**死元组（dead tuple）**。
 
-死元组最终将从页面中被移除。清除死元组的过程被称为**清理（VACUUM）过程**，[第6章](/ch6)将介绍清理过程。
+死元组最终将从页面中被移除。清除死元组的过程被称为**清理（VACUUM）过程**，[第6章](/ch6/)将介绍清理过程。
 
 ### 5.3.3 更新
 
@@ -222,7 +223,7 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 **图5.6 两次更新同一行**
 
-![](/img/fig-5-06.png)
+![图5.6 两次更新同一行](/img/fig-5-06.png)
 
 假设由`txid=99`的事务插入的行，被`txid=100`的事务更新两次。
 
@@ -307,7 +308,7 @@ PostgreSQL定义了四种事务状态，即：`IN_PROGRESS`，`COMMITTED`，`ABO
 
 **图5.7 clog如何工作**
 
-![](/img/fig-5-07.png)
+![图5.7 clog如何工作](/img/fig-5-07.png)
 
 > **T1**：`txid 200`提交；`txid 200`的状态从`IN_PROGRESS`变为`COMMITTED`。
 > **T2**：`txid 201`中止；`txid 201`的状态从`IN_PROGRESS`变为`ABORTED`。
@@ -322,7 +323,7 @@ PostgreSQL定义了四种事务状态，即：`IN_PROGRESS`，`COMMITTED`，`ABO
 
 当PostgreSQL启动时会加载存储在`pg_clog`（`pg_xact`）中的文件，用其数据初始化clog。
 
-clog的大小会不断增长，因为只要clog一填满就会追加新的页面。但并非所有数据都是必需的。[第6章](/ch6)中描述的清理过程会定期删除这些不需要的旧数据（clog页面和文件），有关删除clog数据的详情请参见第6.4节。
+clog的大小会不断增长，因为只要clog一填满就会追加新的页面。但并非所有数据都是必需的。[第6章](/ch6/)中描述的清理过程会定期删除这些不需要的旧数据（clog页面和文件），有关删除clog数据的详情请参见第6.4节。
 
 
 
@@ -385,7 +386,7 @@ clog的大小会不断增长，因为只要clog一填满就会追加新的页面
 
 **图5.9 事务管理器与事务**
 
-![](/img/fig-5-09.png)
+![图5.9 事务管理器与事务](/img/fig-5-09.png)
 
 事务管理器始终保存着当前运行的事务的有关信息。假设三个事务一个接一个地开始，并且`Transaction_A`和`Transaction_B`的隔离级别是`READ COMMITTED`，`Transaction_C`的隔离级别是`REPEATABLE READ`。
 
@@ -526,7 +527,7 @@ Rule 10:            ELSE /* 删除有效，可见 */
 
 **图5.10 可见性检查场景一例**
 
-![](/img/fig-5-10.png)
+![图5.10 可见性检查场景一例](/img/fig-5-10.png)
 
 在图5.10所示的场景中，SQL命令按以下时序执行。
 
@@ -984,7 +985,7 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 第5.3.2和5.4.3节分别解释了为什么需要第一个和第二个过程。第三个过程与事务标识回卷问题有关，本小节将概述 **事务标识回卷（txid wrap around）** 问题。
 
-在PostgreSQL中，清理过程（**`VACUUM`**）负责这些过程。 **清理过程（VACUUM）** 在[第6章](/ch6)中描述。
+在PostgreSQL中，清理过程（**`VACUUM`**）负责这些过程。 **清理过程（VACUUM）** 在[第6章](/ch6/)中描述。
 
 ### 5.10.1  冻结处理
 
@@ -994,13 +995,13 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 **图5.20 回卷问题**
 
-![](/img/fig-5-20.png)
+![图5.20 回卷问题](/img/fig-5-20.png)
 
 为了解决这个问题，PostgreSQL引入了一个 **冻结事务标识（Frozen txid）** 的概念，并实现了一个名为`FREEZE`的过程。
 
 在PostgreSQL中定义了一个冻结的`txid`，它是一个特殊的保留值`txid = 2`，在参与事务标识大小比较时，它总是比所有其他`txid`都旧。换句话说，冻结的`txid`始终处于**非活跃状态**，且其结果对其他事务始终可见。
 
-**清理过程（`VACUUM`）**会调用冻结过程（**`FREEZE`**）。冻结过程将扫描所有表文件，如果元组的`t_xmin`比当前`txid - vacuum_freeze_min_age`（默认值为5000万）更老，则将该元组的`t_xmin`重写为冻结事务标识。在[第6章](/ch6)中会有更详细的解释。
+**清理过程（`VACUUM`）**会调用冻结过程（**`FREEZE`**）。冻结过程将扫描所有表文件，如果元组的`t_xmin`比当前`txid - vacuum_freeze_min_age`（默认值为5000万）更老，则将该元组的`t_xmin`重写为冻结事务标识。在[第6章](/ch6/)中会有更详细的解释。
 
 举个例子，如图5.21(a)所示，当前`txid`为5000万，此时通过`VACUUM`命令调用冻结过程。在这种情况下，`Tuple_1`和`Tuple_2`的`t_xmin`都被重写为2。
 
@@ -1008,10 +1009,10 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 **图5.21 冻结过程**
 
-![](/img/fig-5-21.png)
+![图5.21 冻结过程](/img/fig-5-21.png)
 
 ## 参考文献
 
-- [1] Abraham Silberschatz, Henry F. Korth, and S. Sudarshan, "[Database System Concepts](https://www.amazon.com//dp/0073523321)", McGraw-Hill Education, ISBN-13: 978-0073523323
-- [2] Dan R. K. Ports, and Kevin Grittner, "[Serializable Snapshot Isolation in PostgreSQL](https://drkp.net/papers/ssi-vldb12.pdf)", VDBL 2012 
+- [1] Abraham Silberschatz, Henry F. Korth, and S. Sudarshan, "[Database System Concepts](https://www.amazon.com/dp/0073523321)", McGraw-Hill Education, ISBN-13: 978-0073523323
+- [2] Dan R. K. Ports, and Kevin Grittner, "[Serializable Snapshot Isolation in PostgreSQL](https://drkp.net/papers/ssi-vldb12.pdf)", VLDB 2012
 - [3] Thomas M. Connolly, and Carolyn E. Begg, "[Database Systems](https://www.amazon.com/dp/0321523067)", Pearson, ISBN-13: 978-0321523068

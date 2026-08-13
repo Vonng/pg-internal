@@ -1,7 +1,9 @@
 ---
 title: 6. 清理过程
+description: VACUUM、可见性映射、冻结、提交日志回收与自动清理机制。
+search_keywords: [VACUUM, autovacuum, visibility map, VM, freeze, freezing, dead tuple, 冻结]
+type: docs
 weight: 106
-breadcrumbs: false
 ---
 
 **清理（VACUUM）** 是一种维护过程，有助于 PostgreSQL 的持久运行。它的两个主要任务是删除死元组，以及冻结事务标识，两者都在第5.10节中简要提到过。
@@ -36,7 +38,7 @@ breadcrumbs: false
    * 更新已处理表的空闲空间映射（FSM）和可见性映射（VM）。
    * 更新一些统计信息（`pg_stat_all_tables`等）。
 
-这里假设读者已经熟悉以下术语：死元组，冻结事务标识，FSM，clog；如果读者不熟悉这些术语的含义，请参阅[第5章](/ch5)。VM将在第6.2节中介绍。
+这里假设读者已经熟悉以下术语：死元组，冻结事务标识，FSM，clog；如果读者不熟悉这些术语的含义，请参阅[第5章](/ch5/)。VM将在第6.2节中介绍。
 
 以下伪代码描述了清理的过程。
 
@@ -87,9 +89,9 @@ breadcrumbs: false
 
 这一部分执行冻结处理，并删除指向死元组的索引元组。
 
-首先，PostgreSQL扫描目标表以构建死元组列表，如果可能的话，还会冻结旧元组。该列表存储在本地内存中的[`maintenance_work_mem`](https://www.postgresql.org/docs/current/static/runtime-config-resource.html#GUC-MAINTENANCE-WORK-MEM)里（维护用的工作内存）。冻结处理将在第6.3节中介绍。
+首先，PostgreSQL扫描目标表以构建死元组列表，如果可能的话，还会冻结旧元组。该列表存储在本地内存中的[`maintenance_work_mem`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-MAINTENANCE-WORK-MEM)里（维护用的工作内存）。冻结处理将在第6.3节中介绍。
 
-扫描完成后，PostgreSQL根据构建得到的死元组列表来删除索引元组。该过程在内部被称为“**清除阶段（cleanup stage）**”。不用说，该过程代价高昂。在10或更早版本中始终会执行清除阶段。在11或更高版本中，如果目标索引是B树，是否执行清除阶段由配置参数[`vacuum_cleanup_index_scale_factor`](https://www.postgresql.org/docs/devel/static/runtime-config-resource.html#RUNTIME-CONFIG-INDEX-VACUUM)决定。详细信息请参考[此参数的说明](https://www.postgresql.org/docs/devel/static/runtime-config-resource.html#RUNTIME-CONFIG-INDEX-VACUUM)。
+扫描完成后，PostgreSQL根据构建得到的死元组列表来删除索引元组。该过程在内部被称为“**清除阶段（cleanup stage）**”。不用说，该过程代价高昂。在10或更早版本中始终会执行清除阶段。在11或更高版本中，如果目标索引是B树，是否执行清除阶段由配置参数[`vacuum_cleanup_index_scale_factor`](https://www.postgresql.org/docs/devel/runtime-config-resource.html#RUNTIME-CONFIG-INDEX-VACUUM)决定。详细信息请参考[此参数的说明](https://www.postgresql.org/docs/devel/runtime-config-resource.html#RUNTIME-CONFIG-INDEX-VACUUM)。
 
 当`maintenance_work_mem`已满，且未完成全部扫描时，PostgreSQL继续进行后续任务，即步骤4到7；完成后再重新返回步骤3并继续扫描。
 
@@ -99,7 +101,7 @@ breadcrumbs: false
 
 **图6.1 删除死元组**
 
-![](/img/fig-6-01.png)
+![图6.1 删除死元组](/img/fig-6-01.png)
 假设该表包含三个页面，这里先关注0号页面（即第一个页面）。该页面包含三条元组， 其中`Tuple_2`是一条死元组，如图6.1(1)所示。在这里PostgreSQL移除了`Tuple_2`，并重排剩余元组来整理碎片空间，然后更新该页面的FSM和VM，如图6.1(2)所示。 PostgreSQL不断重复该过程直至最后一页。
 
 请注意，非必需的行指针是不会被移除的，它们会在将来被重用。因为如果移除了行指针，就必须同时更新所有相关索引中的索引元组。
@@ -127,7 +129,7 @@ VM的基本概念很简单。 每个表都拥有各自的可见性映射，用�
 
 **图6.2 VM的使用方式**
 
-![](/img/fig-6-02.png)
+![图6.2 VM的使用方式](/img/fig-6-02.png)
 
 每个VM由一个或多个8 KB页面组成，文件以后缀`_vm`存储。 例如，一个表文件的`relfilenode`是18751，其FSM（`18751_fsm`）和VM（`18751_vm`）文件如下所示。
 
@@ -174,7 +176,7 @@ $$
 
 **图6.3 冻结元组——惰性模式**
 
-![](/img/fig-6-03.png)
+![图6.3 冻结元组——惰性模式](/img/fig-6-03.png)
 
 * 第0页：
 
@@ -204,13 +206,13 @@ $$
 $$
 在上面的条件中，`pg_database.datfrozenxid`是系统视图`pg_database`中的列，并保存着每个数据库中最老的已冻结的事务标识。细节将在后面描述；因此这里我们假设所有`pg_database.datfrozenxid`的值都是`1821`（这是在9.5版本中安装新数据库集群之后的初始值）。 `vacuum_freeze_table_age`是配置参数（默认为`150,000,000`）。
 
-图6.4给出了一个具体的例子。在表1中，`Tuple_1`和`Tuple_7`都已经被删除。`Tuple_10`和`Tuple_11`则已经插入第2页中。执行`VACUUM`命令时的事务标识为`150,002,000`，且没有其他事务。因此，`OldestXmin=150,002,000`，`freezeLimit_txid=100,002,000`。在这种情况下满足了上述条件：因为`1821 < (150002000 - 150000000)`	，因而冻结过程会以迫切模式执行，如下所示。
+图6.4给出了一个具体的例子。在表1中，`Tuple_1`和`Tuple_7`都已经被删除。`Tuple_10`和`Tuple_11`则已经插入第2页中。执行`VACUUM`命令时的事务标识为`150,002,000`，且没有其他事务。因此，`OldestXmin=150,002,000`，`freezeLimit_txid=100,002,000`。在这种情况下满足了上述条件：因为`1821 < (150002000 - 150000000)`，因而冻结过程会以迫切模式执行，如下所示。
 
 （注意，这里是版本9.5或更早版本的行为；最新版本的行为将在第6.3.3节中描述。）
 
 **图6.4 冻结旧元组——迫切模式（9.5或更早版本）**
 
-![](/img/fig-6-04.png)
+![图6.4 冻结旧元组——迫切模式（9.5或更早版本）](/img/fig-6-04.png)
 
 * 第0页：
 
@@ -230,7 +232,7 @@ $$
 
 **图6.5  `pg_database.datfrozenxid`与`pg_class.relfrozenxid`之间的关系**
 
-![](/img/fig-6-05.png)
+![图6.5 pg_database.datfrozenxid与pg_class.relfrozenxid之间的关系](/img/fig-6-05.png)
 
 > ####  如何显示`pg_class.relfrozenxid`与`pg_database.datfrozenxid`
 >
@@ -284,7 +286,7 @@ $$
 
 **图6.6  冻结旧元组——迫切模式（9.6或更高版本）**
 
-![](/img/fig-6-06.png)
+![图6.6 冻结旧元组——迫切模式（9.6或更高版本）](/img/fig-6-06.png)
 
 ## 6.4 移除不必要的提交日志文件
 
@@ -294,7 +296,7 @@ $$
 
 **图6.7  删除不必要的clog文件和页面**
 
-![](/img/fig-6-07.png)
+![图6.7 删除不必要的clog文件和页面](/img/fig-6-07.png)
 
 > ###  `pg_database.datfrozenxid`与clog文件
 >
@@ -338,7 +340,7 @@ $$
 
 **图6.8 并发清理的缺陷示例**
 
-![](/img/fig-6-08.png)
+![图6.8 并发清理的缺陷示例](/img/fig-6-08.png)
 
 ```sql
 testdb=# DELETE FROM tbl WHERE id % 6 != 0;
@@ -351,7 +353,7 @@ testdb=# VACUUM tbl;
 
 **图6.9 完整清理模式概述**
 
-![](/img/fig-6-09.png)
+![图6.9 完整清理模式概述](/img/fig-6-09.png)
 
 1. 创建新的表文件：见图6.9(1)
 
@@ -393,7 +395,7 @@ testdb=# VACUUM tbl;
 
 > ### 什么时候该使用`VACUUM FULL`？
 >
-> 不幸的是，并没有关于什么时候该执行`VACUUM FULL`的最佳实践。但是扩展[`pg_freespacemap`](https://www.postgresql.org/docs/current/static/pgfreespacemap.html)可能会给出很好的建议。
+> 不幸的是，并没有关于什么时候该执行`VACUUM FULL`的最佳实践。但是扩展[`pg_freespacemap`](https://www.postgresql.org/docs/current/pgfreespacemap.html)可能会给出很好的建议。
 >
 > 以下查询给出了表的平均空间空闲率。
 >
@@ -462,4 +464,3 @@ testdb=# VACUUM tbl;
 >              164 | 0 bytes            |                0.00
 > (1 row)
 > ```
-

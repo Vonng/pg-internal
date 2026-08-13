@@ -1,0 +1,8 @@
+/* Keep long rendered equations inside the document column. */
+.td-shell-main .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.25rem;
+  overscroll-behavior-x: contain;
+}

@@ -1,13 +1,13 @@
 ---
 title: 3. 查询处理
+description: PostgreSQL 的解析、重写、代价估算、计划树、执行器与连接算法。
+search_keywords: [query planner, query optimizer, executor, parse tree, query tree, EXPLAIN, nested loop, merge join, hash join]
+type: docs
 weight: 103
-math: true
-full: true
-breadcrumbs: false
 ---
 
 
-查询处理是PostgreSQL中最为复杂的子系统。如PostgreSQL[官方文档](https://www.postgresql.org/docs/current/static/features.html)所述，PostgreSQL支持SQL2011标准中的大多数特性，查询处理子系统能够高效地处理这些SQL。本章概述了查询处理的流程，特别关注了查询优化的部分。
+查询处理是PostgreSQL中最为复杂的子系统。如PostgreSQL[官方文档](https://www.postgresql.org/docs/current/features.html)所述，PostgreSQL支持SQL2011标准中的大多数特性，查询处理子系统能够高效地处理这些SQL。本章概述了查询处理的流程，特别关注了查询优化的部分。
 
 本章包括下列三个部分：
 
@@ -21,9 +21,9 @@ breadcrumbs: false
 
 + 第三部分：3.5~3.6节
 
-  这一部分会描述获取多表查询上最优执行计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。3.6节将介绍为多表查询创建计划树的过程。
+  这一部分会描述获取多表查询上最优执行计划的步骤。3.5节介绍了三种连接算法：**嵌套循环连接（Nested Loop Join）**、**归并连接（Merge Join）**、**散列连接（Hash Join）**。3.6节将介绍为多表查询创建计划树的过程。
 
-PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外部数据包装（Foreign Data Wrapper, FDW）**](https://www.postgresql.org/docs/current/static/fdwhandler.html)，[**并行查询**](https://www.postgresql.org/docs/current/static/parallel-query.html)，以及版本11即将支持的[JIT编译](https://www.postgresql.org/docs/11/static/jit-reason.html)。前两者将在[第4章](/ch4)中描述，JIT编译超出范围本书的范围，详见[官方文档](https://www.postgresql.org/docs/11/static/jit-reason.html)。
+PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外部数据包装（Foreign Data Wrapper, FDW）**](https://www.postgresql.org/docs/current/fdwhandler.html)，[**并行查询**](https://www.postgresql.org/docs/current/parallel-query.html)，以及版本11即将支持的[JIT编译](https://www.postgresql.org/docs/11/jit-reason.html)。前两者将在[第4章](/ch4/)中描述，JIT编译超出本书范围，详见[官方文档](https://www.postgresql.org/docs/11/jit-reason.html)。
 
 
 
@@ -33,19 +33,19 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
 1. **解析器（Parser）**
 
-   解析器根据SQL语句生成一颗**语法解析树（parse tree）** 。
+   解析器根据SQL语句生成一棵**语法解析树（parse tree）**。
 
 2. **分析器（Analyzer）**
 
-   分析器对语法解析树进行语义分析，生成一颗**查询树（query tree）**。
+   分析器对语法解析树进行语义分析，生成一棵**查询树（query tree）**。
 
 3. **重写器（Rewriter）**
 
-   重写器按照[规则系统](https://www.postgresql.org/docs/current/static/rules.html)中存在的规则，对查询树进行改写。
+   重写器按照[规则系统](https://www.postgresql.org/docs/current/rules.html)中存在的规则，对查询树进行改写。
 
 4. **计划器（Planner）**
 
-   计划器基于查询树，生成一颗执行效率最高的**计划树（plan tree）**。
+   计划器基于查询树，生成一棵执行效率最高的**计划树（plan tree）**。
 
 5. **执行器（Executor）**
 
@@ -59,11 +59,11 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
 本节将概述这些子系统。计划器和执行器很复杂，后面的章节会对这些函数的细节进行描述。
 
-> PostgreSQL的查询处理在[官方文档](http://www.postgresql.org/docs/current/static/overview.html)中有详细的描述
+> PostgreSQL的查询处理在[官方文档](https://www.postgresql.org/docs/current/overview.html)中有详细的描述
 
 ### 3.1.1 解析器（Parser）
 
-解析器基于SQL语句的文本，生成一颗后续子系统可以理解的语法解析树。下面是一个具体的例子。
+解析器基于SQL语句的文本，生成一棵后续子系统可以理解的语法解析树。下面是一个具体的例子。
 
 考虑以下查询：
 
@@ -122,18 +122,18 @@ typedef struct SelectStmt
 
 ### 3.1.2 分析器（Analyzer）
 
-分析器对解析器产出的**语法解析树（parse tree）**进行语义分析，并产出一颗**查询树（query tree）**。
+分析器对解析器产出的**语法解析树（parse tree）**进行语义分析，并产出一棵**查询树（query tree）**。
 
 查询树的根节点是[`parsenode.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中定义的`Query`数据结构，这个结构包含着对应查询的元数据，比如命令的类型（`SELECT/INSERT`等），还包括了一些叶子节点，叶子节点由列表或树组成，包含了特定子句相应的数据。
 
 ```c
 /*
  * Query -
- *	  解析与分析过程会将所有的语句转换为一颗查询树，供重写器与计划器用于进一步的处理。
+ *	  解析与分析过程会将所有的语句转换为一棵查询树，供重写器与计划器用于进一步的处理。
  *    功能语句（即不可优化的语句）会设置utilityStmt字段，而Query结构本身基本上是空的。
  *	  DECLARE CURSOR 是一个特例：它的形式与SELECT类似，但原始的DeclareCursorStmt会
  *    被放在 utilityStmt 字段中。
- *    计划过程会将查询树转换为一颗计划树，计划树的根节点是一个PlannedStmt结构
+ *    计划过程会将查询树转换为一棵计划树，计划树的根节点是一个PlannedStmt结构
  *    执行器不会用到查询树结构
  */
 typedef struct Query
@@ -187,15 +187,15 @@ typedef struct Query
 + 连接树`jointree`存储着`FROM`和`WHERE`子句的相关信息。
 + 排序子句`sortClause`是`SortGroupClause`结构体的列表。
 
-[官方文档](http://www.postgresql.org/docs/current/static/querytree.html)描述了查询树的细节。
+[官方文档](https://www.postgresql.org/docs/current/querytree.html)描述了查询树的细节。
 
 ### 3.1.3 重写器（Rewriter）
 
-PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules.html)正是基于重写器实现的；当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，不过本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
+PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/rules.html)正是基于重写器实现的；当需要时，重写器会根据存储在`pg_rules`中的规则对查询树进行转换。规则系统本身也是一个很有趣的系统，不过本章略去了关于规则系统和重写器的描述，以免内容过于冗长。
 
 > #### 视图
 >
-> 在PostgreSQL中，[视图](https://www.postgresql.org/docs/current/static/rules-views.html)是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/static/sql-createview.html)命令定义一个视图时，PostgreSQL就会创建相应的规则，并存储到系统目录中。
+> 在PostgreSQL中，[视图](https://www.postgresql.org/docs/current/rules-views.html)是基于规则系统实现的。当使用[`CREATE VIEW`](https://www.postgresql.org/docs/current/sql-createview.html)命令定义一个视图时，PostgreSQL就会创建相应的规则，并存储到系统目录中。
 >
 > 假设下面的视图已经被定义，而`pg_rule`中也存储了相应的规则。
 >
@@ -205,31 +205,31 @@ PostgreSQL的[规则系统](https://www.postgresql.org/docs/current/static/rules
 > sampledb-#      FROM employees AS e, departments AS d WHERE e.department_id = d.id;
 > ```
 >
-> 当执行一个包含该视图的查询，解析器会创建一颗如图3.4(a)所示的语法解析树。
+> 当执行一个包含该视图的查询，解析器会创建一棵如图3.4(a)所示的语法解析树。
 >
 > ```sql
 > sampledb=# SELECT * FROM employees_list;
 > ```
 >
-> 在该阶段，重写器会基于`pg_rules`中存储的视图规则将`rangetable`节点重写为一颗查询子树，与子查询相对应。
+> 在该阶段，重写器会基于`pg_rules`中存储的视图规则将`rangetable`节点重写为一棵查询子树，与子查询相对应。
 >
 > **图3.4 重写阶段一例**
 >
 > ![rewriter](/img/fig-3-04.png)
 >
-> 因为PostgreSQL使用这种机制实现视图，直到9.2版本，视图都是不能更新的。虽然9.3版本后可以对视图进行更新，但对视图的更新仍然存在很多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/static/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
+> 因为PostgreSQL使用这种机制实现视图，直到9.2版本，视图都是不能更新的。虽然9.3版本后可以对视图进行更新，但对视图的更新仍然存在很多限制，具体细节请参考[官方文档](https://www.postgresql.org/docs/current/sql-createview.html#SQL-CREATEVIEW-UPDATABLE-VIEWS)。
 
 ### 3.1.4 计划器与执行器
 
-计划器从重写器获取一颗**查询树（query tree）**，基于查询树生成一颗能被执行器高效执行的（查询）**计划树（plan tree）**。	
+计划器从重写器获取一棵**查询树（query tree）**，基于查询树生成一棵能被执行器高效执行的（查询）**计划树（plan tree）**。
 
 在PostgreSQL中，计划器是完全**基于代价估计（cost-based）**的；它不支持基于规则的优化与**提示（hint）**。计划器是RDBMS中最为复杂的部分，因此本章的后续内容会对计划器做一个概述。
 
 > #### `pg_hint_plan`
 >
-> PostgreSQL不支持SQL中的**提示（hint）**，并且永远也不会去支持。如果你想在查询中使用提示，可以考虑使用`pg_hint_plan`扩展，细节请参考[官方站点](http://pghintplan.osdn.jp/pg_hint_plan.html)。
+> PostgreSQL不支持SQL中的**提示（hint）**。如果你想在查询中使用提示，可以考虑使用`pg_hint_plan`扩展，细节请参考[项目文档](https://pg-hint-plan.readthedocs.io/en/latest/)。
 
-与其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令会显示命令的计划树。下面给出了一个具体的例子。
+与其他RDBMS类似，PostgreSQL中的[`EXPLAIN`](https://www.postgresql.org/docs/current/sql-explain.html)命令会显示命令的计划树。下面给出了一个具体的例子。
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
@@ -250,19 +250,19 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 
 
-计划树由许多称为 **计划节点（plan node）** 的元素组成，这些节点挂在`PlannedStmt`结构对应的计划树上。这些元素的定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h中)中，第3.3.3节与第3.5.4.2会解释相关细节。
+计划树由许多称为 **计划节点（plan node）** 的元素组成，这些节点挂在`PlannedStmt`结构对应的计划树上。这些元素定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h)中，第3.3.3节与第3.5.4.2会解释相关细节。
 
 每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会按照从终端节点往根节点的顺序依次处理这些节点。
 
 比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表`tbl_a`执行顺序扫描，并对获取的结果进行排序。
 
-执行器会通过[第8章](/ch8)将介绍的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
+执行器会通过[第8章](/ch8/)将介绍的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
 
 **图3.6 执行器，缓冲管理器，临时文件之间的关系**
 
 ![dd](/img/fig-3-06.png)
 
-除此之外，当访问元组的时候，PostgreSQL还会使用并发控制机制来维护运行中事务的一致性和隔离性。[第五章](/ch5)介绍了并发控制机制。
+除此之外，当访问元组的时候，PostgreSQL还会使用并发控制机制来维护运行中事务的一致性和隔离性。[第五章](/ch5/)介绍了并发控制机制。
 
 ## 3.2 单表查询的代价估计
 
@@ -276,7 +276,7 @@ PostgreSQL的查询优化是基于 **代价（Cost）** 的。代价是一个无
 2. **运行代价（run）**： 获取全部元组的代价
 3. **总代价（total）**：前两者之和
 
-[`EXPLAIN`](https://www.postgresql.org/docs/current/static/sql-explain.html)命令显示了每个操作的启动代价和总代价，下面是一个简单的例子：
+[`EXPLAIN`](https://www.postgresql.org/docs/current/sql-explain.html)命令显示了每个操作的启动代价和总代价，下面是一个简单的例子：
 
 ```sql
 testdb=# EXPLAIN SELECT * FROM tbl;
@@ -324,7 +324,7 @@ $$
   &= (\verb|cpu_tuple_cost| + \verb|cpu_operator_cost|) × N_{\verb|tuple|} + \verb|seq_page_cost| × N_{\verb|page|},
 \end{align}
 $$
-其中[`seq_page_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)，[`cpu_tuple_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-TUPLE-COST)和[`cpu_operator_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-OPERATOR-COST)是在*postgresql.conf* 中配置的参数，默认值分别为1.0，0.01和0.0025。$N_{\verb|tuple|}$ 和$N_{\verb|page|}$ 分别是表中的元组总数与页面总数，这两个值可以使用以下查询获取。
+其中[`seq_page_cost`](https://www.postgresql.org/docs/current/runtime-config-query.html#GUC-SEQ-PAGE-COST)，[`cpu_tuple_cost`](https://www.postgresql.org/docs/current/runtime-config-query.html#GUC-CPU-TUPLE-COST)和[`cpu_operator_cost`](https://www.postgresql.org/docs/current/runtime-config-query.html#GUC-CPU-OPERATOR-COST)是在*postgresql.conf* 中配置的参数，默认值分别为1.0，0.01和0.0025。$N_{\verb|tuple|}$ 和$N_{\verb|page|}$ 分别是表中的元组总数与页面总数，这两个值可以使用以下查询获取。
 
 ```sql
 testdb=# SELECT relpages, reltuples FROM pg_class WHERE relname = 'tbl';
@@ -379,7 +379,7 @@ testdb=# EXPLAIN SELECT * FROM tbl WHERE id < 8000;
 
 ### 3.2.2 索引扫描
 
-尽管PostgreSQL支持很多[索引方法](https://www.postgresql.org/docs/current/static/indexes-types.html)，比如B树，[GiST](https://www.postgresql.org/docs/current/static/gist.html)，[GIN](https://www.postgresql.org/docs/current/static/gin.html)和[BRIN](https://www.postgresql.org/docs/current/static/brin.html)，不过索引扫描的代价估计都使用一个共用的代价函数：`cost_index()`。
+尽管PostgreSQL支持很多[索引方法](https://www.postgresql.org/docs/current/indexes-types.html)，比如B树，[GiST](https://www.postgresql.org/docs/current/gist.html)，[GIN](https://www.postgresql.org/docs/current/gin.html)和[BRIN](https://www.postgresql.org/docs/current/brin.html)，不过索引扫描的代价估计都使用一个共用的代价函数：`cost_index()`。
 
 本节将研究索引扫描的代价是如何估计的，以下列查询为例。
 
@@ -428,7 +428,7 @@ $$
 $$
 #### 3.2.2.2 运行代价
 
-索引扫描的运行代价是表和索引的CPU代价与IO代价之和 。
+索引扫描的运行代价是表和索引的CPU代价与IO代价之和。
 
 $$
 \begin{align}
@@ -437,7 +437,7 @@ $$
 \end{align}
 $$
 
-> 如果使用[仅索引扫描](https://www.postgresql.org/docs/10/static/indexes-index-only-scans.html)，则不会估计`table_cpu_cost`与`table_io_cost`，仅索引扫描将在[第七章](/ch7)中介绍。
+> 如果使用[仅索引扫描](https://www.postgresql.org/docs/10/indexes-index-only-scans.html)，则不会估计`table_cpu_cost`与`table_io_cost`，仅索引扫描将在[第七章](/ch7/)中介绍。
 
 前三个代价（即`index_cpu_cost`，`table_cpu_cost`和`index_io_cost`）如下所示：
 
@@ -450,11 +450,11 @@ $$
 $$
 
 
-以上公式中的[`cpu_index_tuple_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-CPU-INDEX-TUPLE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)在*postgresql.conf*中配置（默认值分别为0.005和4.0）。$\verb|qual_op_cost|$粗略来说就是索引求值的代价，默认值是0.0025，这里不再展开。**选择率（Selectivity）** 是一个0到1之间的浮点数，代表查询指定的`WHERE`子句在索引中搜索范围的比例。举个例子，$(\verb|Selectivity| × N_{\verb|tuple|})$就是需要读取的表元组数量，$(\verb|Selectivity| × N_{\verb|index|,\verb|tuple|})$就是需要读取的索引元组数量，诸如此类。
+以上公式中的[`cpu_index_tuple_cost`](https://www.postgresql.org/docs/current/runtime-config-query.html#GUC-CPU-INDEX-TUPLE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/current/runtime-config-query.html#GUC-RANDOM-PAGE-COST)在*postgresql.conf*中配置（默认值分别为0.005和4.0）。$\verb|qual_op_cost|$粗略来说就是索引求值的代价，默认值是0.0025，这里不再展开。**选择率（Selectivity）** 是一个0到1之间的浮点数，代表查询指定的`WHERE`子句在索引中搜索范围的比例。举个例子，$(\verb|Selectivity| × N_{\verb|tuple|})$就是需要读取的表元组数量，$(\verb|Selectivity| × N_{\verb|index|,\verb|tuple|})$就是需要读取的索引元组数量，诸如此类。
 
 > #### 选择率
 >
-> 查询谓词的选择率是通过 **直方图界值（histogram_bounds）** 与 **高频值（Most Common Value, MCV）** 估计的，这些信息都存储在系统目录`pg_statistics`中，并可通过`pg_stats`视图查询。这里通过一个具体的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/static/row-estimation-examples.html)。
+> 查询谓词的选择率是通过 **直方图界值（histogram_bounds）** 与 **高频值（Most Common Value, MCV）** 估计的，这些信息都存储在系统目录`pg_statistics`中，并可通过`pg_stats`视图查询。这里通过一个具体的例子来简要介绍选择率的计算方法，细节可以参考[官方文档](https://www.postgresql.org/docs/10/row-estimation-examples.html)。
 >
 > 表中每一列的高频值都在`pg_stats`视图的`most_common_vals`和`most_common_freqs`中成对存储。
 >
@@ -712,7 +712,7 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240;
 
 > ##### `seq_page_cost`和`random_page_cost`
 >
-> [`seq_page_cost`](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/10/static/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别为1.0和4.0。这意味着PostgreSQL假设随机扫描比顺序扫描慢4倍；显然，PostgreSQL的默认值是基于HDD（普通硬盘）设置的。
+> [`seq_page_cost`](https://www.postgresql.org/docs/10/runtime-config-query.html#GUC-SEQ-PAGE-COST)和[`random_page_cost`](https://www.postgresql.org/docs/10/runtime-config-query.html#GUC-RANDOM-PAGE-COST)的默认值分别为1.0和4.0。这意味着PostgreSQL假设随机扫描比顺序扫描慢4倍；显然，PostgreSQL的默认值是基于HDD（普通硬盘）设置的。
 >
 > 另一方面，近年来SSD得到了广泛的应用，`random_page_cost`的默认值就显得太大了。使用SSD时如果仍然采用`random_page_cost`的默认值，则计划器有可能会选择低效的计划。因此当使用SSD时最好将`random_page_cost`的值设为1.0。
 >
@@ -787,7 +787,7 @@ PostgreSQL中的计划器会执行三个处理步骤：
 2. 在所有可能的访问路径中，找出代价最小的访问路径
 3. 按照代价最小的路径，创建计划树
 
-**访问路径（access path）**是估算代价时的处理单元；比如，顺序扫描，索引扫描，排序以及各种连接操作都有其对应的**路径**。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是[`relation.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/relation.h)中定义的`Path`结构体。它就相当于是顺序扫描。所有其他的访问路径都基于该结构，下面会介绍细节。
+**访问路径（access path）**是估算代价时的处理单元；比如，顺序扫描，索引扫描，排序以及各种连接操作都有其对应的**路径**。访问路径只在计划器创建查询计划树的时候使用。最基本的访问路径数据结构就是[`pathnodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/pathnodes.h)中定义的`Path`结构体。它就相当于是顺序扫描。所有其他的访问路径都基于该结构，下面会介绍细节。
 
 计划器为了处理上述步骤，会在内部创建一个`PlannerInfo`数据结构。在该数据结构中包含着查询树，查询所涉及关系信息，访问路径等等。
 
@@ -1065,7 +1065,7 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
 **图3.10 如何得到例1中代价最小的路径**
 
-![](/img/fig-3-10.png)
+![图3.10 如何得到例1中代价最小的路径](/img/fig-3-10.png)
 
 1. 创建一个`RelOptInfo`结构，将其保存在`PlannerInfo`结构的`simple_rel_array`字段中。
 
@@ -1085,7 +1085,7 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
 **图3.11 如何得到例1中代价最小的路径（接图3.10）**
 
-![](/img/fig-3-11.png)
+![图3.11 如何得到例1中代价最小的路径（接图3.10）](/img/fig-3-11.png)
 
 5. 创建一个新的`RelOptInfo`结构，用于处理`ORDER BY`子句。
 
@@ -1104,7 +1104,7 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
     注意顺序扫描路径中`parent`字段，该字段指向之前的`RelOptInfo`结构体（也就是在`baserestrictinfo`中存储着`WHERE`子句的那个`RelOptInfo`）。因此在下一步创建计划树的过程中，尽管新的`RelOptInfo`结构并未包含`baserestrictinfo`，但计划器可以创建一个包含`Filter`的顺序扫描节点，将`WHERE`子句作为过滤条件。
 
-这里已经获得了代价最小的访问路径，然后就可以基于此生成一颗计划树。3.3.3节描述了相关的细节。
+这里已经获得了代价最小的访问路径，然后就可以基于此生成一棵计划树。3.3.3节描述了相关的细节。
 
 #### 3.3.2.2 例2
 
@@ -1136,7 +1136,7 @@ testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 
 **图3.12 如何得到例2中代价最小的路径**
 
-![](/img/fig-3-12.png)
+![图3.12 如何得到例2中代价最小的路径](/img/fig-3-12.png)
 
 ```c
 typedef struct IndexPath
@@ -1241,7 +1241,7 @@ typedef struct IndexOptInfo
 
 **图3.13 如何得到例2中代价最小的路径（接图3.12）**
 
-![](/img/fig-3-13.png)
+![图3.13 如何得到例2中代价最小的路径（接图3.12）](/img/fig-3-13.png)
 
 6. 创建一个新的`RelOptInfo`结构
 
@@ -1251,23 +1251,23 @@ typedef struct IndexOptInfo
 
 **图3.14 如何得到例2中代价最小的路径（接图3.13）**
 
-![](/img/fig-3-14.png)
+![图3.14 如何得到例2中代价最小的路径（接图3.13）](/img/fig-3-14.png)
 
 ### 3.3.3 创建计划树
 
-在最后一步中，计划器按照代价最小的路径生成一颗计划树。 
+在最后一步中，计划器按照代价最小的路径生成一棵计划树。 
 
 计划树的根节点是定义在[`plannodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/plannodes.h)中的`PlannedStmt`结构，包含19个字段，其中有4个代表性字段：
 
 + **`commandType`** 存储操作的类型，诸如`SELECT`，`UPDATE`和`INSERT`。
 + **`rtable`** 存储范围表的列表（`RangeTblEntry`的列表）。
 + **`relationOids`** 存储与查询相关表的`oid`。
-+ **`plantree`** 存储着一颗由计划节点组成的计划树，每个计划节点对应着一种特定操作，诸如顺序扫描，排序和索引扫描。
++ **`plantree`** 存储着一棵由计划节点组成的计划树，每个计划节点对应着一种特定操作，诸如顺序扫描，排序和索引扫描。
 
 ```c
 /* ----------------
  *		PlannedStmt 节点
- * 计划器的输出是一颗计划树，PlannedStmt是计划树的根节点。
+ * 计划器的输出是一棵计划树，PlannedStmt是计划树的根节点。
  * PlannedStmt存储着执行器所需的“一次性”信息。
  * ----------------*/
 typedef struct PlannedStmt
@@ -1387,7 +1387,7 @@ typedef struct Sort
 
 **图3.15. 计划树的例子**
 
-![](/img/fig-3-15.png)
+![图3.15. 计划树的例子](/img/fig-3-15.png)
 
 
 
@@ -1427,7 +1427,7 @@ typedef struct IndexScan
 
 在单表查询的例子中，执行器从计划树中取出计划节点，按照自底向上的顺序进行处理，并调用节点相应的处理函数。
 
-每个计划节点都有相应的函数，用于执行节点对应的操作。这些函数在[`src/backend/executor`](https://github.com/postgres/postgres/blob/master/src/backend/executor/)目录中。例如，执行顺序扫描的的函数（`SeqScan`）定义于[`nodeSeqscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；执行索引扫描的函数（`IndexScanNode`）定义在[`nodeIndexScan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)中；`SortNode`节点对应的排序函数定义在[`nodeSort.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)中，诸如此类。
+每个计划节点都有相应的函数，用于执行节点对应的操作。这些函数位于[`src/backend/executor`](https://github.com/postgres/postgres/blob/master/src/backend/executor/)目录中。例如，执行顺序扫描的函数（`SeqScan`）定义于[`nodeSeqscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSeqscan.c)；执行索引扫描的函数（`IndexScan`）定义于[`nodeIndexscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)；`Sort`节点对应的排序函数定义于[`nodeSort.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)。
 
 当然，理解执行器如何工作的最好方式，就是阅读`EXPLAIN`命令的输出。因为PostgreSQL的`EXPLAIN`命令几乎就是照着计划树输出的。下面以3.3.3节的例1为例。
 
@@ -1484,7 +1484,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
 ## 3.5 连接
 
-PostgreSQL 中支持三种 **连接（JOIN）** 操作：**嵌套循环连接（Nested Loop Join）**，**归并连接（Merge Join）** ，**散列连接（Hash Join）**。在PostgreSQL中，嵌套循环连接与归并连接有几种变体。
+PostgreSQL 中支持三种 **连接（JOIN）** 操作：**嵌套循环连接（Nested Loop Join）**、**归并连接（Merge Join）**、**散列连接（Hash Join）**。在PostgreSQL中，嵌套循环连接与归并连接有几种变体。
 
 在下文中，我们会假设读者已经对这三种操作的基本行为有了解。如果读者对这些概念不熟悉，可以参阅[[1](https://www.amazon.com/dp/0073523321), [2](https://www.amazon.com/dp/0321523067)]。PostgreSQL支持一种针对数据倾斜的**混合散列连接（hybrid hash join）**，关于这方面的资料不多，因此这里会详细描述该操作。
 
@@ -1510,7 +1510,7 @@ $$
 
 **图3.16 嵌套循环连接**
 
-![](/img/fig-3-16.png)
+![图3.16 嵌套循环连接](/img/fig-3-16.png)
 
 嵌套循环连接的代价总是会被估计，但实际中很少会使用这种连接操作，因为它有几种更高效的变体，下面将会讲到。
 
@@ -1524,7 +1524,7 @@ $$
 
 **图3.17 物化嵌套循环连接**
 
-![](/img/fig-3-17.png)
+![图3.17 物化嵌套循环连接](/img/fig-3-17.png)
 
 > #### 临时元组存储
 >
@@ -1616,7 +1616,7 @@ $$
 
 **图3.18 索引嵌套循环连接**
 
-![](/img/fig-3-18.png)
+![图3.18 索引嵌套循环连接](/img/fig-3-18.png)
 
 下面是索引嵌套循环连接的一个具体例子。
 
@@ -1745,7 +1745,7 @@ $$
 
 **图3.20 归并连接**
 
-![](/img/fig-3-20.png)
+![图3.20 归并连接](/img/fig-3-20.png)
 
 如果所有元组都可以存储在内存中，那么排序操作就能在内存中进行，否则会使用临时文件。
 
@@ -1777,7 +1777,7 @@ $$
 
 **图3.21 物化归并连接**
 
-![](/img/fig-3-21.png)
+![图3.21 物化归并连接](/img/fig-3-21.png)
 
 这里是物化归并连接的`EXPLAIN`结果，很容易发现，与普通归并连接的差异是第9行：`Materialize`。
 
@@ -1809,7 +1809,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 
 **图3.22 归并连接的三种变体，使用外表索引扫描**
 
-![](/img/fig-3-22.png)
+![图3.22 归并连接的三种变体，使用外表索引扫描](/img/fig-3-22.png)
 
 这些连接的`EXPLAIN`结果如下。
 
@@ -1907,7 +1907,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
 **图3.23 内存散列连接的构建阶段**
 
-![](/img/fig-3-23.png)
+![图3.23 内存散列连接的构建阶段](/img/fig-3-23.png)
 
 1. 在工作内存上创建一个处理批次。
 
@@ -1931,7 +1931,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
 **图3.24. 内存散列连接的探测阶段**
 
-![](/img/fig-3-24.png)
+![图3.24. 内存散列连接的探测阶段](/img/fig-3-24.png)
 
 4. 依外表的第一条元组进行探测。
 
@@ -1963,7 +1963,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
 **图3.25 混合散列连接中的多个处理批次**
 
-![](/img/fig-3-25.png)
+![图3.25 混合散列连接中的多个处理批次](/img/fig-3-25.png)
 
 在混合散列连接中，构建与探测阶段的执行次数与处理批次的数目相同，因为内外表元组都被存至相同数量的处理批次中。在第一轮构建与探测阶段中，除了处理第一个处理批次，还会创建所有的处理批次。另一方面，第二轮及后续的处理批次都需要读写临时文件，这属于代价巨大的操作。因此PostgreSQL还准备了一个名为**skew**的特殊处理批次，即倾斜批次，以便在第一轮中高效处理尽可能多的元组。
 
@@ -1984,7 +1984,7 @@ WHERE c.name = h.customer_name;
 
 **图3.26 混合散列连接的构建阶段的第一轮**
 
-![](/img/fig-3-26.png)
+![图3.26 混合散列连接的构建阶段的第一轮](/img/fig-3-26.png)
 
 1. 在工作内存中创建一个处理批次，以及一个倾斜批次。
 
@@ -2006,7 +2006,7 @@ WHERE c.name = h.customer_name;
 
 **图3.27 混合散列连接，探测阶段第一轮**
 
-![](/img/fig-3-27.png)
+![图3.27 混合散列连接，探测阶段第一轮](/img/fig-3-27.png)
 
 5. 创建临时处理批次文件，用于外表排序。
 
@@ -2024,7 +2024,7 @@ WHERE c.name = h.customer_name;
 
 **图3.28 构建阶段与探测阶段，第二轮**
 
-![](/img/fig-3-28.png)
+![图3.28 构建阶段与探测阶段，第二轮](/img/fig-3-28.png)
 
 9. 移除倾斜批次与`Batch_0`，为下一轮处理批次腾地方。
 
@@ -2034,7 +2034,7 @@ WHERE c.name = h.customer_name;
 
 **图3.29 构建阶段与探测阶段，第三轮及后续**
 
-![](/img/fig-3-29.png)
+![图3.29 构建阶段与探测阶段，第三轮及后续](/img/fig-3-29.png)
 
 12. 为批次文件`batch_2_in`与`batch_2_out`执行构建操作与探测操作。
 
@@ -2050,7 +2050,7 @@ WHERE c.name = h.customer_name;
 
 **图3.30 Join访问路径**
 
-![](/img/fig-3-30.png)
+![图3.30 Join访问路径](/img/fig-3-30.png)
 
 ```c
 typedef JoinPath NestPath;
@@ -2153,7 +2153,7 @@ typedef struct NestLoopParam
 typedef struct MergeJoin
 {
     Join    join;
-    List    *mergeclauses;        /* mergeclauses 是一颗表达式树 */
+    List    *mergeclauses;        /* mergeclauses 是一棵表达式树 */
     /* 这些字段都是数组，但与mergeclauses列表有着同样的长度： */
     Oid     *mergeFamilies;      /* B树运算符族的OID列表，每条子句一个 */
     Oid     *mergeCollations;    /* 排序规则的OID列表，每条子句一个 */
@@ -2207,7 +2207,7 @@ typedef struct HashJoin
 
 > #### 基因查询优化器
 >
-> 当执行一个多表连接查询时，大量时间耗费在了优化查询计划上。 为了应对这种情况，PostgreSQL实现了一个有趣的功能：[基因查询优化器](https://www.postgresql.org/docs/current/static/geqo.html)。 这种近似算法能在合理时间内确定一个合理的计划。 因此在查询优化阶段，如果参与连接的表数量超过参数[`geqo_threshold`](https://www.postgresql.org/docs/current/static/runtime-config-query.html#GUC-GEQO-THRESHOLD)指定的阈值（默认值为12），PostgreSQL将使用遗传算法来生成查询计划。
+> 当执行一个多表连接查询时，大量时间耗费在了优化查询计划上。 为了应对这种情况，PostgreSQL实现了一个有趣的功能：[基因查询优化器](https://www.postgresql.org/docs/current/geqo.html)。 这种近似算法能在合理时间内确定一个合理的计划。 因此在查询优化阶段，如果参与连接的表数量超过参数[`geqo_threshold`](https://www.postgresql.org/docs/current/runtime-config-query.html#GUC-GEQO-THRESHOLD)指定的阈值（默认值为12），PostgreSQL将使用遗传算法来生成查询计划。
 
 使用动态规划确定最佳计划树的过程，其步骤如下：
 
@@ -2232,7 +2232,7 @@ typedef struct HashJoin
 
 **图3.31 如何使用动态规划获取代价最小的访问路径**
 
-![](/img/fig-3-31.png)
+![图3.31 如何使用动态规划获取代价最小的访问路径](/img/fig-3-31.png)
 
 接下来会针对下面的查询，解释计划器是如何获取代价最小的计划的。
 
@@ -2262,7 +2262,7 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 
 **图3.32 第一层处理后的`PlannerInfo`与`RelOptInfo`**
 
-![](/img/fig-3-32.png)
+![图3.32 第一层处理后的PlannerInfo与RelOptInfo](/img/fig-3-32.png)
 
 表`tbl_a`的`RelOptInfo`有三条访问路径，它们被添加至`RelOptInfo`的路径列表中。这三条路径分别被三个指针所链接，即三个指向代价最小路径的指针：启动代价最小的路径，总代价最小的路径，参数化代价最小的路径。 启动代价最小的路径与总代价最小的路径涵义显而易见，因此，这里只会说一下**参数化索引扫描代价最小的路径（cheapest parameterized index scan path）**。
 
@@ -2276,7 +2276,7 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 
 **图3.33 第二层处理后的`PlannerInfo`和`RelOptInfo`**
 
-![](/img/fig-3-33.png)
+![图3.33 第二层处理后的PlannerInfo和RelOptInfo](/img/fig-3-33.png)
 
 表3.1展示了本例中连接访问路径的所有组合。本例中查询的连接类型为**等值连接（equi-join）**，因而对全部三种连接算法进行评估。 为方便起见，这里引入了一些有关访问路径的符号：
 
@@ -2391,7 +2391,7 @@ $$
 
 该查询的`EXPLAIN`命令结果如下所示：
 
-  ![](/img/fig-3-34.png)
+  ![图3.34 三表连接查询的执行计划](/img/fig-3-34.png)
 
 最外层的连接是索引嵌套循环连接（第5行），第13行显示了内表上的参数化索引扫描，外表则是一个散列连接的结果该散列连接的内表是`tbl_a`，外表是`tbl_b`（第7-12行）。 因此，执行程序首先执行`tbl_a`和`tbl_b`上的散列连接，再执行索引嵌套循环连接。
 

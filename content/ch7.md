@@ -1,7 +1,9 @@
 ---
 title: 7. 堆内元组与仅索引扫描
+description: HOT 更新如何降低索引写放大，以及仅索引扫描的工作条件。
+search_keywords: [HOT, heap-only tuple, index-only scan, pruning, 仅索引扫描, 行指针修剪]
+type: docs
 weight: 107
-breadcrumbs: false
 ---
 
 
@@ -63,10 +65,10 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 1. 找到指向目标数据元组的索引元组
 2. 按所获索引元组指向的位置访问行指针数组，找到行指针`1`
-3. 读取`Tuple_1`
+3. 读取`Tuple_1`
 4. 经由`Tuple_1`的`t_ctid`字段，读取`Tuple_2`。
 
-在这种情况下，PostgreSQL会读取两条元组，`Tuple_1`和`Tuple_2`，并通过[第5章](/ch5)所述的并发控制机制来判断哪条元组是可见的；但如果数据页中的 **死元组（dead tuple）** 已经被清理了，那就有问题了。比如在图7.4(a)中，如果`Tuple_1`由于是死元组而被清理了，就无法通过索引访问`Tuple_2`了。
+在这种情况下，PostgreSQL会读取两条元组，`Tuple_1`和`Tuple_2`，并通过[第5章](/ch5/)所述的并发控制机制来判断哪条元组是可见的；但如果数据页中的 **死元组（dead tuple）** 已经被清理了，那就有问题了。比如在图7.4(a)中，如果`Tuple_1`由于是死元组而被清理了，就无法通过索引访问`Tuple_2`了。
 
 为了解决这个问题，PostgreSQL会在合适的时候进行行指针重定向：将指向老元组的行指针重新指向新元组的行指针。在PostgreSQL中，这个过程称为**修剪（pruning）**。图7.4(b)说明了PostgreSQL在修剪之后如何访问更新的元组。
 
@@ -81,7 +83,7 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 **图 7.5 死元组的碎片整理**
 
-![](/img/fig-7-05.png)
+![图 7.5 死元组的碎片整理](/img/fig-7-05.png)
 
 
 
@@ -100,7 +102,7 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 >
 > ![notavaible](/img/fig-7-06.png)
 
-> [`pg_stat_all_tables`](https://www.postgresql.org/docs/current/static/monitoring-stats.html#PG-STAT-ALL-TABLES-VIEW)视图提供了每个表的统计信息视图，也可以参考这个[扩展](https://github.com/s-hironobu/pg_stats)。
+> [`pg_stat_all_tables`](https://www.postgresql.org/docs/current/monitoring-stats.html#PG-STAT-ALL-TABLES-VIEW)视图提供了每个表的统计信息视图，也可以参考这个[扩展](https://github.com/s-hironobu/pg_stats)。
 
 ## 7.2 仅索引扫描
 

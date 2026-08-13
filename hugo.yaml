@@ -1,169 +1,209 @@
-baseURL: 'https://pgint.vonng.com/'
-locale: 'zh-CN'
-title: 'PostgreSQL 技术内幕'
-
-
+baseURL: https://pgint.vonng.com/
+title: PostgreSQL 技术内幕
 enableRobotsTXT: true
-# Parse Git commit
 enableGitInfo: true
-# enableEmoji: false
+enableEmoji: true
 hasCJKLanguage: true
+defaultContentLanguage: zh
+defaultContentLanguageInSubdir: false
+
+server:
+  headers:
+    - for: /**
+      values:
+        Access-Control-Allow-Origin: "*"
 
 outputs:
-  home: [HTML]
-  page: [HTML]
-  section: [HTML, RSS]
+  home: [HTML, markdown, LLMS]
+  page: [HTML, markdown]
+  section: [HTML, RSS, print, markdown]
 
 module:
   imports:
-    - path: github.com/imfing/hextra
+    - path: github.com/pgsty/oink
+  hugoVersion:
+    extended: true
+    min: 0.160.1
 
-defaultContentLanguage: zh
 languages:
   zh:
+    contentDir: content
     label: 简体中文
-    locale: zh
+    locale: zh-CN
     weight: 1
     title: PostgreSQL 技术内幕
-
+    params:
+      description: 深入理解 PostgreSQL 的进程、查询、并发控制、存储、WAL、备份与复制机制。
+      time_format_blog: 2006年1月2日
+      time_format_default: 2006年1月2日
+      comments:
+        giscus:
+          ariaLabel: 评论
+          errorMessage: 评论加载失败，请稍后重试。
+    menus:
+      main:
+        - name: 开始阅读
+          identifier: reading
+          pageRef: /
+          weight: 10
+          params:
+            icon: fa-solid fa-book-open
+            description: 首页、序言与第一章入口
+        - name: 章节目录
+          identifier: chapters
+          parent: reading
+          url: /#chapters
+          weight: 10
+          params:
+            icon: fa-solid fa-list
+            description: 浏览全部 11 个中文章节
+        - name: 作者序
+          identifier: preface
+          parent: reading
+          pageRef: /preface
+          weight: 20
+          params:
+            icon: fa-solid fa-quote-left
+            description: Hironobu Suzuki 为中文版撰写的序言
+        - name: 译者序
+          identifier: translators-preface
+          parent: reading
+          pageRef: /preface2
+          weight: 30
+          params:
+            icon: fa-solid fa-language
+            description: 中文译者说明与阅读建议
+        - name: 第一章
+          identifier: first-chapter
+          parent: reading
+          pageRef: /ch1
+          weight: 40
+          params:
+            icon: fa-solid fa-database
+            description: 从数据库集簇、文件与页面开始
+        - name: 英文原著
+          identifier: original
+          url: https://www.interdb.jp/pg/
+          weight: 20
+          params:
+            icon: fa-solid fa-book
+        - name: GitHub
+          identifier: github
+          url: https://github.com/Vonng/pg-internal
+          weight: 30
+          params:
+            icon: fa-brands fa-github
 
 markup:
+  tableOfContents:
+    startLevel: 2
+    endLevel: 4
   highlight:
     noClasses: false
   goldmark:
+    parser:
+      attribute:
+        block: true
     renderer:
       unsafe: true
     extensions:
       passthrough:
+        enable: true
         delimiters:
           block: [['\[', '\]'], ['$$', '$$']]
-          inline: [['\(', '\)']]
-        enable: true
-
-menu:
-  main:
-    - name: Search
-      weight: 1
-      params:
-        type: search
-    - name: GitHub
-      weight: 2
-      url: "https://github.com/Vonng/pg-internal"
-      params:
-        icon: github
-
-  sidebar:
-    - identifier: more
-      name: 参考链接
-      params:
-        type: separator
-      weight: 1
-    - identifier: ddia
-      name: "设计数据密集型应用 ↗"
-      url: "https://ddia.vonng.com"
-      weight: 2
-    - identifier: pgint14
-      name: "PostgreSQL 内参 ↗"
-      url: "https://postgres-internals.cn"
-      weight: 3
-
-    - identifier: pigsty
-      name: "Pigsty 文档 ↗"
-      url: "https://pgsty.com/zh"
-      weight: 4
-    - identifier: pgext
-      name: "PG 扩展目录 ↗"
-      url: "https://ext.pgsty.com/zh"
-      weight: 5
-
-
+          inline: [['\(', '\)'], ['$', '$']]
 
 params:
-  description: PostgreSQL 技术内幕是一本深入浅出、全面系统的 PostgreSQL 数据库技术书籍，旨在帮助读者深入理解 PostgreSQL 的内部机制和最佳实践。
+  description: 深入理解 PostgreSQL 的进程、查询、并发控制、存储、WAL、备份与复制机制。
+  logo: postgresql.svg
+  productionURL: https://pgint.vonng.com
+  page_width: wide
 
-  navbar:
-    displayTitle: true
-    displayLogo: true
-    logo:
-      path: /postgresql.svg
-      dark: /postgresql.svg
-      # width: 40
-      # height: 20
-      # link: /
-    width: wide
+  copyright:
+    authors: >-
+      [Hironobu Suzuki](https://www.interdb.jp/) 原著；
+      [冯若航](https://vonng.com/)、刘阳明、张文升译
+    from_year: 2018
+    to_year: present
 
-  page:
-    # full (100%), wide (90rem), normal (80rem)
-    width: full
+  github_repo: https://github.com/Vonng/pg-internal
+  github_project_repo: https://github.com/Vonng/pg-internal
+  github_branch: main
+  github_subdir: ""
 
-  theme:
-    # light | dark | system
-    default: system
-    displayToggle: true
+  time_format_blog: 2006年1月2日
+  time_format_default: 2006年1月2日
 
-  footer:
-    enable: false
-    displayCopyright: true
-    displayPoweredBy: true
-    width: normal
+  offlineSearch: true
+  offlineSearchIndex: summary
+  offlineSearchSummaryLength: 160
+  offlineSearchMaxResults: 12
+  prism_syntax_highlighting: false
 
-  # Display the last modification date
-  displayUpdatedDate: true
-  dateFormat: "2006-01-02"
-
-  # Search
-  # flexsearch is enabled by default
-  search:
-    enable: true
-    type: flexsearch
-
-    flexsearch:
-      version: "0.8.212"
-      # index page by: content | summary | heading | title
-      index: content
-      # full | forward | reverse | strict
-      # https://github.com/nextapps-de/flexsearch/#tokenizer-prefix-search
-      tokenize: forward
-
-  editURL:
-    enable: true
-    base: "https://github.com/Vonng/pg-internal/edit/main/content"
-
-  toc:
-    displayTags: true
-
-  highlight:
-    copy:
+  ui:
+    quick_links: [reading, original]
+    sidebar_icon_policy: none
+    typography:
+      preset: system
+    image_zoom:
       enable: true
-      # hover | always
-      display: hover
+    page_context_menu:
+      enable: true
+      assistant_links: false
+      links: []
+    showLightDarkModeMenu: true
+    sidebar_menu_compact: false
+    sidebar_menu_foldable: false
+    sidebar_menu_truncate: 100
+    sidebar_search_disable: false
+    sidebar_width_min: 250
+    sidebar_width_max: 440
+    sidebar_item_overflow: wrap
+    breadcrumb_disable: true
+    scrollSpy:
+      disable: false
+    feedback:
+      enable: false
+    readingtime:
+      enable: true
+    command_palette:
+      commands:
+        - id: chapters
+          title: 浏览全部章节
+          description: 回到首页的章节目录
+          url: /#chapters
+          icon: fa-solid fa-list
+          keywords: [目录, 章节, 全书]
+        - id: original
+          title: 阅读英文原著
+          description: 打开持续更新的 The Internals of PostgreSQL
+          url: https://www.interdb.jp/pg/
+          icon: fa-solid fa-arrow-up-right-from-square
+          keywords: [英文, 原著, 最新版本, interdb]
+        - id: repository
+          title: 打开 GitHub 仓库
+          description: 查看源码、历史与问题反馈
+          url: https://github.com/Vonng/pg-internal
+          icon: fa-brands fa-github
+          keywords: [源码, 历史, issue, 勘误]
 
   comments:
     enable: true
     type: giscus
-
-    # https://giscus.app/
     giscus:
-      repo: "Vonng/pg-internal"
-      repoId: "MDEwOlJlcG9zaXRvcnkzOTQ1MTM4NDE="
-      category: "Announcements"
-      categoryId: "DIC_kwDOF4PNsc4CtkWO"
+      repo: Vonng/pg-internal
+      repoId: MDEwOlJlcG9zaXRvcnkzOTQ1MTM4NDE=
+      category: Announcements
+      categoryId: DIC_kwDOF4PNsc4CtkWO
       mapping: pathname
       strict: 0
       reactionsEnabled: 1
       emitMetadata: 0
       inputPosition: bottom
-      lang: zh-CN
-      theme: preferred_color_scheme
+      theme: auto
+      lightTheme: /css/giscus-oink-light.css?v=0.3.0
+      darkTheme: /css/giscus-oink-dark.css?v=0.3.0
+      loading: lazy
 
-      # repo: imfing/hextra
-      # repoId: R_kgDOJ9fJag
-      # category: General
-      # categoryId: DIC_kwDOJ9fJas4CY7gW
-      # mapping: pathname
-      # strict: 0
-      # reactionsEnabled: 1
-      # emitMetadata: 0
-      # inputPosition: top
-      # lang: en
-      # theme: noborder_dark
+  print:
+    disable_toc: false

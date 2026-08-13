@@ -1,11 +1,17 @@
+PYTHON ?= python3
+PUBLIC_DIR ?= public
+
 default: dev
 
-d:dev
 dev:
-	hugo serve
+	hugo serve --disableFastRender
 
-b:build
 build:
-	hugo build
+	hugo --gc --minify --printPathWarnings
 
-.PHONY: default d dev b build
+check:
+	hugo --gc --minify --printPathWarnings --panicOnWarning --cleanDestinationDir
+	$(PYTHON) scripts/check_links.py $(PUBLIC_DIR)
+	$(PYTHON) scripts/check_site.py $(PUBLIC_DIR)
+
+.PHONY: default dev build check
