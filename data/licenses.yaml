@@ -1,0 +1,7 @@
+# Site-specific upstream terms used by OINK's page annotation. The original
+# author explicitly retains copyright rather than publishing under a standard
+# open-content licence, so use SPDX's LicenseRef namespace instead of assigning
+# an inaccurate stock identifier.
+LicenseRef-InterDB:
+  name: InterDB Content Terms (All Rights Reserved)
+  url: https://www.interdb.jp/pg/

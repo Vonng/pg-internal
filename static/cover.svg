@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960" role="img" aria-labelledby="title desc">
+  <title id="title">PostgreSQL 技术内幕</title>
+  <desc id="desc">深蓝色技术书封面，以 PostgreSQL 大象和数据库结构线框为视觉中心。</desc>
+  <defs>
+    <linearGradient id="cover" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#102f49"/>
+      <stop offset="0.56" stop-color="#285d83"/>
+      <stop offset="1" stop-color="#3f7ba4"/>
+    </linearGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#d9edfa" stroke-opacity=".09" stroke-width="1"/>
+    </pattern>
+    <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#071724" flood-opacity=".38"/>
+    </filter>
+  </defs>
+
+  <rect width="720" height="960" fill="url(#cover)"/>
+  <rect width="720" height="960" fill="url(#grid)"/>
+  <rect x="34" y="34" width="652" height="892" rx="10" fill="none" stroke="#e7f5ff" stroke-opacity=".34"/>
+  <path d="M70 276H650M70 750H650" stroke="#d9edfa" stroke-opacity=".32"/>
+
+  <text x="72" y="105" fill="#d8eaf6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19" font-weight="700" letter-spacing="6">THE INTERNALS OF</text>
+  <text x="68" y="189" fill="#fff" font-family="Inter, Helvetica, Arial, sans-serif" font-size="70" font-weight="800" letter-spacing="-2">POSTGRESQL</text>
+  <text x="72" y="242" fill="#d8eaf6" font-family="PingFang SC, Noto Sans CJK SC, sans-serif" font-size="31" font-weight="600" letter-spacing="13">技术内幕</text>
+
+  <g opacity=".22" fill="none" stroke="#d9edfa" stroke-width="2">
+    <path d="M104 356H205L244 317H472L512 356H616"/>
+    <path d="M104 648H205L244 687H472L512 648H616"/>
+    <circle cx="104" cy="356" r="7" fill="#d9edfa"/>
+    <circle cx="616" cy="356" r="7" fill="#d9edfa"/>
+    <circle cx="104" cy="648" r="7" fill="#d9edfa"/>
+    <circle cx="616" cy="648" r="7" fill="#d9edfa"/>
+    <path d="M150 412H570M150 592H570" stroke-dasharray="5 10"/>
+  </g>
+
+  <g transform="translate(154 341) scale(16)" fill="#fff" filter="url(#soft-shadow)">
+    <path d="M23.535 15.6c-2.89.596-3.1-.383-3.1-.383 3.053-4.53 4.33-10.28 3.228-11.687-3.004-3.84-8.205-2.023-8.292-1.976l-.028.005a10.31 10.31 0 0 0-1.929-.201c-1.308-.02-2.3.343-3.054.914 0 0-9.278-3.822-8.846 4.807.092 1.836 2.63 13.9 5.66 10.25C8.29 15.987 9.36 14.86 9.36 14.86c.53.353 1.167.533 1.834.468l.052-.044a2.02 2.02 0 0 0 .021.518c-.78.872-.55 1.025-2.11 1.346-1.578.325-.65.904-.046 1.056.734.184 2.432.444 3.58-1.162l-.046.183c.306.245.52 1.593.484 2.815s-.06 2.06.18 2.716.48 2.13 2.53 1.7c1.713-.367 2.6-1.32 2.725-2.906.088-1.128.286-.962.3-1.97l.16-.478c.183-1.53.03-2.023 1.085-1.793l.257.023c.777.035 1.794-.125 2.39-.402 1.285-.596 2.047-1.592.78-1.33z"/>
+  </g>
+
+  <g fill="#d9edfa" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" letter-spacing="2.2">
+    <text x="72" y="802">FOR DATABASE ADMINISTRATORS</text>
+    <text x="72" y="830">AND SYSTEM DEVELOPERS</text>
+  </g>
+  <text x="72" y="884" fill="#fff" font-family="Inter, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="2">HIRONOBU SUZUKI</text>
+  <text x="648" y="884" fill="#d8eaf6" font-family="PingFang SC, Noto Sans CJK SC, sans-serif" font-size="18" text-anchor="end">2018 中文译稿</text>
+</svg>

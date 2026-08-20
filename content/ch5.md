@@ -1,9 +1,12 @@
 ---
-title: 5. 并发控制
+title: 并发控制
 description: 事务标识、元组版本、快照、可见性规则与可串行化快照隔离。
 search_keywords: [MVCC, transaction, XID, snapshot, visibility, SSI, serializable snapshot isolation, CLOG]
-type: docs
-weight: 105
+type: book
+book_kind: chapter
+book_number: "5"
+weight: 210
+breadcrumbs: false
 ---
 
 
@@ -78,13 +81,11 @@ PostgreSQL保留以下三个特殊`txid`：
 * **2**表示 **冻结（Frozen）** 的`txid`，详情参考第5.10.1节。
 
 `txid`可以相互比较大小。例如对于`txid=100`的事务，大于100的`txid`属于“未来”，且对于`txid=100`的事务而言都是 **不可见（invisible）** 的；
-小于100的`txid`属于“过去”，且对该事务可见，如图5.1(a)所示。
+小于100的`txid`属于“过去”，且对该事务可见，如{{< xref fig="5.1" anchor="fig-5.1" >}}图5.1{{< /xref >}}(a)所示。
 
-**图5.1  PostgreSQL中的事务标识**
+{{< fig num="5.1" src="/img/fig-5-01.png" caption="PostgreSQL中的事务标识" alt="图5.1 PostgreSQL中的事务标识" />}}
 
-![图5.1 PostgreSQL中的事务标识](/img/fig-5-01.png)
-
-因为`txid`在逻辑上是无限的，而实际系统中的`txid`空间不足（4字节取值空间约42亿），因此PostgreSQL将`txid`空间视为一个环。对于某个特定的`txid`，其前约21亿个`txid`属于过去，而其后约21亿个`txid`属于未来。如图5.1(b)所示。
+因为`txid`在逻辑上是无限的，而实际系统中的`txid`空间不足（4字节取值空间约42亿），因此PostgreSQL将`txid`空间视为一个环。对于某个特定的`txid`，其前约21亿个`txid`属于过去，而其后约21亿个`txid`属于未来。如{{< xref fig="5.1" anchor="fig-5.1" >}}图5.1{{< /xref >}}(b)所示。
 
 所谓的`txid`回卷问题将在5.10.1节中介绍。
 
@@ -96,11 +97,9 @@ PostgreSQL保留以下三个特殊`txid`：
 
 可以将表页中的堆元组分为两类：普通数据元组与TOAST元组。本节只会介绍普通元组。
 
-堆元组由三个部分组成，即`HeapTupleHeaderData`结构，空值位图，以及用户数据，如图5.2所示。
+堆元组由三个部分组成，即`HeapTupleHeaderData`结构，空值位图，以及用户数据，如{{< xref fig="5.2" anchor="fig-5.2" >}}图5.2{{< /xref >}}所示。
 
-**图5.2 元组结构**
-
-![图5.2 元组结构](/img/fig-5-02.png)
+{{< fig num="5.2" src="/img/fig-5-02.png" caption="元组结构" alt="图5.2 元组结构" />}}
 
 > `HeapTupleHeaderData`结构在[`src/include/access/htup_details.h`](https://github.com/postgres/postgres/blob/ee943004466418595363d567f18c053bae407792/src/include/access/htup_details.h)中定义。
 
@@ -158,19 +157,15 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 本节会介绍元组的增删改过程，并简要描述用于插入与更新元组的**自由空间映射（Free Space Map, FSM）**。
 
-这里主要关注元组，页首部与行指针不会在这里画出来，元组的具体表示如图5.3所示。
+这里主要关注元组，页首部与行指针不会在这里画出来，元组的具体表示如{{< xref fig="5.3" anchor="fig-5.3" >}}图5.3{{< /xref >}}所示。
 
-**图5.3 元组的表示**
-
-![图5.3 元组的表示](/img/fig-5-03.png)
+{{< fig num="5.3" src="/img/fig-5-03.png" caption="元组的表示" alt="图5.3 元组的表示" />}}
 
 ### 5.3.1 插入
 
-在插入操作中，新元组将直接插入到目标表的页面中，如图5.4所示。
+在插入操作中，新元组将直接插入到目标表的页面中，如{{< xref fig="5.4" anchor="fig-5.4" >}}图5.4{{< /xref >}}所示。
 
-**图5.4 插入元组**
-
-![图5.4 插入元组](/img/fig-5-04.png)
+{{< fig num="5.4" src="/img/fig-5-04.png" caption="插入元组" alt="图5.4 插入元组" />}}
 
 假设元组是由`txid=99`的事务插入页面中的，在这种情况下，被插入元组的首部字段会依以下步骤设置。
 
@@ -202,11 +197,9 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 ### 5.3.2 删除
 
-在删除操作中，目标元组只是在逻辑上被标记为删除。目标元组的`t_xmax`字段将被设置为执行`DELETE`命令事务的`txid`。如图5.5所示。
+在删除操作中，目标元组只是在逻辑上被标记为删除。目标元组的`t_xmax`字段将被设置为执行`DELETE`命令事务的`txid`。如{{< xref fig="5.5" anchor="fig-5.5" >}}图5.5{{< /xref >}}所示。
 
-**图5.5 删除元组**
-
-![图5.5 删除元组](/img/fig-5-05.png)
+{{< fig num="5.5" src="/img/fig-5-05.png" caption="删除元组" alt="图5.5 删除元组" />}}
 假设`Tuple_1`被`txid=111`的事务删除。在这种情况下，`Tuple_1`的首部字段会依以下步骤设置。
 
 `Tuple_1`：
@@ -219,11 +212,9 @@ typedef HeapTupleHeaderData *HeapTupleHeader;
 
 ### 5.3.3 更新
 
-在更新操作中，PostgreSQL在逻辑上实际执行的是删除最新的元组，并插入一条新的元组（图5.6）。
+在更新操作中，PostgreSQL在逻辑上实际执行的是删除最新的元组，并插入一条新的元组（{{< xref fig="5.6" anchor="fig-5.6" >}}图5.6{{< /xref >}}）。
 
-**图5.6 两次更新同一行**
-
-![图5.6 两次更新同一行](/img/fig-5-06.png)
+{{< fig num="5.6" src="/img/fig-5-06.png" caption="两次更新同一行" alt="图5.6 两次更新同一行" />}}
 
 假设由`txid=99`的事务插入的行，被`txid=100`的事务更新两次。
 
@@ -304,11 +295,9 @@ PostgreSQL定义了四种事务状态，即：`IN_PROGRESS`，`COMMITTED`，`ABO
 
 ### 5.4.2 提交日志如何工作
 
-提交日志（下称clog）在逻辑上是一个数组，由共享内存中一系列8KB页面组成。数组的序号索引对应着相应事务的标识，而其内容则是相应事务的状态。clog的工作方式如图5.7所示。
+提交日志（下称clog）在逻辑上是一个数组，由共享内存中一系列8KB页面组成。数组的序号索引对应着相应事务的标识，而其内容则是相应事务的状态。clog的工作方式如{{< xref fig="5.7" anchor="fig-5.7" >}}图5.7{{< /xref >}}所示。
 
-**图5.7 clog如何工作**
-
-![图5.7 clog如何工作](/img/fig-5-07.png)
+{{< fig num="5.7" src="/img/fig-5-07.png" caption="clog如何工作" alt="图5.7 clog如何工作" />}}
 
 > **T1**：`txid 200`提交；`txid 200`的状态从`IN_PROGRESS`变为`COMMITTED`。
 > **T2**：`txid 201`中止；`txid 201`的状态从`IN_PROGRESS`变为`ABORTED`。
@@ -382,11 +371,9 @@ clog的大小会不断增长，因为只要clog一填满就会追加新的页面
 
 使用获取的快照进行可见性检查时，所有**活跃**的事务都必须被当成`IN PROGRESS`的事务等同对待，无论它们实际上是否已经提交或中止。这条规则非常重要，因为它正是`READ COMMITTED`和`REPEATABLE READ/SERIALIZABLE`隔离级别中表现差异的根本来源，我们将在接下来几节中频繁回到这条规则上来。
 
-在本节的剩余部分中，我们会通过一个具体的场景来描述事务与事务管理器，如图5.9所示。
+在本节的剩余部分中，我们会通过一个具体的场景来描述事务与事务管理器，如{{< xref fig="5.9" anchor="fig-5.9" >}}图5.9{{< /xref >}}所示。
 
-**图5.9 事务管理器与事务**
-
-![图5.9 事务管理器与事务](/img/fig-5-09.png)
+{{< fig num="5.9" src="/img/fig-5-09.png" caption="事务管理器与事务" alt="图5.9 事务管理器与事务" />}}
 
 事务管理器始终保存着当前运行的事务的有关信息。假设三个事务一个接一个地开始，并且`Transaction_A`和`Transaction_B`的隔离级别是`READ COMMITTED`，`Transaction_C`的隔离级别是`REPEATABLE READ`。
 
@@ -523,13 +510,11 @@ Rule 10:            ELSE /* 删除有效，可见 */
 
 ### 5.7.1 可见性检查
 
-图5.10中的场景描述了可见性检查的过程。
+{{< xref fig="5.10" anchor="fig-5.10" >}}图5.10{{< /xref >}}中的场景描述了可见性检查的过程。
 
-**图5.10 可见性检查场景一例**
+{{< fig num="5.10" src="/img/fig-5-10.png" caption="可见性检查场景一例" alt="图5.10 可见性检查场景一例" />}}
 
-![图5.10 可见性检查场景一例](/img/fig-5-10.png)
-
-在图5.10所示的场景中，SQL命令按以下时序执行。
+在{{< xref fig="5.10" anchor="fig-5.10" >}}图5.10{{< /xref >}}所示的场景中，SQL命令按以下时序执行。
 
 * T1：启动事务`(txid=200)`
 * T2：启动事务`(txid=201)`
@@ -745,23 +730,21 @@ ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读�
 > 11. 中止当前事务，以防止丢失更新。
 > 12. 更新目标行，并回到步骤（1），因为目标行尚未被修改过，或者虽然已经被更新，但更新它的事务已经结束。已终止的事务更新，即存在写写冲突。
 
-此函数依次为每个待更新的目标行执行更新操作。 它有一个外层循环来更新每一行，而内部while循环则包含了三个分支，分支条件如图5.11所示。
+此函数依次为每个待更新的目标行执行更新操作。 它有一个外层循环来更新每一行，而内部while循环则包含了三个分支，分支条件如{{< xref fig="5.11" anchor="fig-5.11" >}}图5.11{{< /xref >}}所示。
 
-**图5.11 `ExecUpdate`内部的三个部分**
+{{< fig num="5.11" src="/img/fig-5-11.png" caption="`ExecUpdate`内部的三个部分" alt="Fig. 5.11. Three internal blocks in ExecUpdate." />}}
 
-![Fig. 5.11. Three internal blocks in ExecUpdate.](/img/fig-5-11.png)
-
-1. 目标行正在被更新，如图5.11[1]所示
+1. 目标行正在被更新，如{{< xref fig="5.11" anchor="fig-5.11" >}}图5.11{{< /xref >}}[1]所示
 
    “正在被更新”意味着该行正在被另一个事务同时更新，且另一个事务尚未结束。在这种情况下，当前事务必须等待更新目标行的事务结束，因为PostgreSQL的SI实现采用 **以先更新者为准（first-updater-win）** 的方案。例如，假设事务`Tx_A`和`Tx_B`同时运行，且`Tx_B`尝试更新某一行；但`Tx_A`已更新了这一行，且仍在进行中。在这种情况下`Tx_B`会等待`Tx_A`结束。
 
    在更新目标行的事务提交后，当前事务的更新操作将完成等待继续进行。如果当前事务处于`READ COMMITTED`隔离等级，则会更新目标行；而若处于`REPEATABLE READ`或`SERIALIZABLE`隔离等级时，当前事务则会立即中止，以防止丢失更新。
 
-2. 目标行**已经**被另一个并发事务所更新，如图5.11[2]所示
+2. 目标行**已经**被另一个并发事务所更新，如{{< xref fig="5.11" anchor="fig-5.11" >}}图5.11{{< /xref >}}[2]所示
 
    当前事务尝试更新目标元组，但另一个并发事务已经更新了目标行并提交。在这种情况下，如果当前事务处于`READ COMMITTED`级别，则会更新目标行；否则会立即中止以防止丢失更新。
 
-3. 没有冲突，如图5.11[3]所示
+3. 没有冲突，如{{< xref fig="5.11" anchor="fig-5.11" >}}图5.11{{< /xref >}}[3]所示
 
    当没有冲突时，当前事务可以直接更新目标行。
 
@@ -848,11 +831,9 @@ ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读�
 
 如果前趋图中存在由某些冲突构成的环，则会出现串行化异常。 这里使用一种最简单的异常来解释，即**写偏差（Write-Skew）**。
 
-图5.12(1)展示了一种调度方式。 这里`Transaction_A`读取了`Tuple_B`，`Transaction_B`读取了`Tuple_A`。 然后`Transaction_A`写`Tuple_A`，`Transaction_B`写`Tuple_B`。 在这种情况下存在两个**读-写冲突（rw-conflict）**，它们在该调度的前趋图中构成了一个环，如图5.12(2)所示。 故该调度存在串行化异常，即写偏差。
+{{< xref fig="5.12" anchor="fig-5.12" >}}图5.12{{< /xref >}}(1)展示了一种调度方式。 这里`Transaction_A`读取了`Tuple_B`，`Transaction_B`读取了`Tuple_A`。 然后`Transaction_A`写`Tuple_A`，`Transaction_B`写`Tuple_B`。 在这种情况下存在两个**读-写冲突（rw-conflict）**，它们在该调度的前趋图中构成了一个环，如{{< xref fig="5.12" anchor="fig-5.12" >}}图5.12{{< /xref >}}(2)所示。 故该调度存在串行化异常，即写偏差。
 
-**图5.12 存在写偏差的调度及其前趋图**
-
-![Fig. 5.11. Three internal blocks in ExecUpdate.](/img/fig-5-12.png)
+{{< fig num="5.12" src="/img/fig-5-12.png" caption="存在写偏差的调度及其前趋图" alt="Fig. 5.11. Three internal blocks in ExecUpdate." />}}
 
 从概念上讲，存在三种类型的冲突：**写-读冲突（wr-conflicts）**（脏读），**写-写冲突（ww-conflicts）**（丢失更新），以及**读写冲突（rw-conflicts）**。 但是这里无需考虑写-读冲突与写-写冲突，因为如前所述，PostgreSQL可以防止此类冲突。 因此PostgreSQL中的SSI实现只需要考虑读-写冲突。
 
@@ -898,17 +879,13 @@ testdb=# INSERT INTO tbl (id) SELECT generate_series(1,2000);
 testdb=# ANALYZE tbl;
 ```
 
-事务`Tx_A`和`Tx_B`执行以下命令，如图5.13所示。
+事务`Tx_A`和`Tx_B`执行以下命令，如{{< xref fig="5.13" anchor="fig-5.13" >}}图5.13{{< /xref >}}所示。
 
-**图5.13 写偏差场景一例**
+{{< fig num="5.13" src="/img/fig-5-13.png" caption="写偏差场景一例" alt="两个并发事务分别更新不同对象而产生写偏差" />}}
 
-![写偏](/img/fig-5-13.png)
+假设所有命令都使用索引扫描。 因此当执行命令时，它们会同时读取堆元组与索引页，每个索引页都包含指向相应堆元组的索引元组，如{{< xref fig="5.14" anchor="fig-5.14" >}}图5.14{{< /xref >}}所示。
 
-假设所有命令都使用索引扫描。 因此当执行命令时，它们会同时读取堆元组与索引页，每个索引页都包含指向相应堆元组的索引元组，如图5.14所示。
-
-**图5.14 例子中索引与表的关系**
-
-![索引和表的关系](/img/fig-5-14.png)
+{{< fig num="5.14" src="/img/fig-5-14.png" caption="例子中索引与表的关系" alt="写偏差示例中索引项与表元组之间的引用关系" />}}
 
 * **T1**：`Tx_A`执行`SELECT`命令，该命令读取堆元组`Tuple_2000`，以及包含主键的索引页`Pkey_2`。
 * **T2**：`Tx_B`执行`SELECT`命令。 此命令读取堆元组`Tuple_1`，以及包含主键的索引页`Pkey_1`。
@@ -917,11 +894,9 @@ testdb=# ANALYZE tbl;
 * **T5**：`Tx_A`提交。
 * **T6**：`Tx_B`提交，然而由于写偏差异常而被中止。
 
-图5.15展示了PostgreSQL如何检测和解决上述场景中描述的写偏差异常。
+{{< xref fig="5.15" anchor="fig-5.15" >}}图5.15{{< /xref >}}展示了PostgreSQL如何检测和解决上述场景中描述的写偏差异常。
 
-**图5.15 SIREA锁与读-写冲突，图5.13场景中的调度方式**
-
-![SIREAD锁和rw-conflict](/img/fig-5-15.png)
+{{< fig num="5.15" src="/img/fig-5-15.png" caption="SIREA锁与读-写冲突，图5.13场景中的调度方式" alt="SIREAD锁和rw-conflict" />}}
 
 * **T1**：
   执行`Tx_A`的`SELECT`命令时，`CheckTargetForConflictsOut`会创建SIREAD锁。在本例中该函数会创建两个SIREAD锁：`L1`与`L2`。`L1`和`L2`分别与`Pkey_2`和`Tuple_2000`相关联。
@@ -942,13 +917,11 @@ testdb=# ANALYZE tbl;
 * **T6**：
   当`Tx_B`尝试提交时，`PreCommit_CheckForSerializationFailure`检测到串行化异常，且`Tx_A`已经提交；因此`Tx_B`被中止。
 
-此外，如果在`Tx_A`提交之后（T5时刻），`Tx_B`执行了`UPDATE`命令，则`Tx_B`会立即中止。因为`Tx_B`的`UPDATE`命令会调用`CheckTargetForConflictsIn`，并检测到串行化异常，如图5.16(1)所示。
+此外，如果在`Tx_A`提交之后（T5时刻），`Tx_B`执行了`UPDATE`命令，则`Tx_B`会立即中止。因为`Tx_B`的`UPDATE`命令会调用`CheckTargetForConflictsIn`，并检测到串行化异常，如{{< xref fig="5.16" anchor="fig-5.16" >}}图5.16{{< /xref >}}(1)所示。
 
-如果`Tx_B`在T6时刻执行`SELECT`命令而不是`COMMIT`命令，则`Tx_B`也会立即中止。因为`Tx_B`的`SELECT`命令调用的`CheckTargetForConflictsOut`会检测到串行化异常，如图5.16(2)所示。
+如果`Tx_B`在T6时刻执行`SELECT`命令而不是`COMMIT`命令，则`Tx_B`也会立即中止。因为`Tx_B`的`SELECT`命令调用的`CheckTargetForConflictsOut`会检测到串行化异常，如{{< xref fig="5.16" anchor="fig-5.16" >}}图5.16{{< /xref >}}(2)所示。
 
-**图5.16 其他写偏差场景**
-
-![其他写偏](/img/fig-5-16.png)
+{{< fig num="5.16" src="/img/fig-5-16.png" caption="其他写偏差场景" alt="只读事务与两个读写事务之间的写偏差场景" />}}
 
 > 这里的[Wiki](https://wiki.postgresql.org/wiki/SSI)解释了几种更为复杂的异常。
 
@@ -956,23 +929,17 @@ testdb=# ANALYZE tbl;
 
 在可串行化模式下，因为永远不会检测到 **假阴性（false-negative，发生异常但未检测到）** 串行化异常，PostgreSQL能始终完全保证并发事务的可串行性。 但相应的是在某些情况下，可能会检测到假阳性异常（没有发生异常但误报发生），用户在使用`SERIALIZABLE`模式时应牢记这一点。 下文会描述PostgreSQL检测到假阳性异常的情况。
 
-图5.17展示了发生假阳性串行化异常的情况。
+{{< xref fig="5.17" anchor="fig-5.17" >}}图5.17{{< /xref >}}展示了发生假阳性串行化异常的情况。
 
-**图5.17 发生假阳性串行化异常的场景**
+{{< fig num="5.17" src="/img/fig-5-17.png" caption="发生假阳性串行化异常的场景" alt="假阳性串行化异常的场景" />}}
 
-![假阳性串行化异常的场景](/img/fig-5-17.png)
+当使用顺序扫描时，如SIREAD锁的解释中所述，PostgreSQL创建了一个关系级的SIREAD锁。 {{< xref fig="5.18" anchor="fig-5.18" >}}图5.18{{< /xref >}}(1)展示了PostgreSQL使用顺序扫描时的SIREAD锁和读-写冲突。 在这种情况下，产生了与`tbl`表上SIREAD锁相关联的读-写冲突：`C1`和`C2`，并且它们在前趋图中构成了一个环。 因此会检测到假阳性的写偏差异常（即，虽然实际上没有冲突，但`Tx_A`与`Tx_B`两者之一也将被中止）。
 
-当使用顺序扫描时，如SIREAD锁的解释中所述，PostgreSQL创建了一个关系级的SIREAD锁。 图5.18(1)展示了PostgreSQL使用顺序扫描时的SIREAD锁和读-写冲突。 在这种情况下，产生了与`tbl`表上SIREAD锁相关联的读-写冲突：`C1`和`C2`，并且它们在前趋图中构成了一个环。 因此会检测到假阳性的写偏差异常（即，虽然实际上没有冲突，但`Tx_A`与`Tx_B`两者之一也将被中止）。
+{{< fig num="5.18" src="/img/fig-5-18.png" caption="假阳性异常(1) - 使用顺序扫描" alt="使用顺序扫描时 SSI 冲突检测产生假阳性的过程" />}}
 
-**图 5.18 假阳性异常(1) - 使用顺序扫描**
+即使使用索引扫描，如果事务`Tx_A`和`Tx_B`都获取里相同的索引SIREAD锁，PostgreSQL也会误报假阳性异常。 {{< xref fig="5.19" anchor="fig-5.19" >}}图5.19{{< /xref >}}展示了这种情况。 假设索引页`Pkey_1`包含两条索引项，其中一条指向`Tuple_1`，另一条指向`Tuple_2`。 当`Tx_A`和`Tx_B`执行相应的`SELECT`和`UPDATE`命令时，`Pkey_1`同时被`Tx_A`和`Tx_B`读取与写入。 这时候会产生`Pkey_1`相关联的读-写冲突：`C1`和`C2`，并在前趋图中构成一个环，因而检测到假阳性写偏差异常（如果`Tx_A`和`Tx_B`获取不同索引页上的SIREAD锁则不会误报，并且两个事务都可以提交）。
 
-![使用顺序扫描](/img/fig-5-18.png)
-
-即使使用索引扫描，如果事务`Tx_A`和`Tx_B`都获取里相同的索引SIREAD锁，PostgreSQL也会误报假阳性异常。 图5.19展示了这种情况。 假设索引页`Pkey_1`包含两条索引项，其中一条指向`Tuple_1`，另一条指向`Tuple_2`。 当`Tx_A`和`Tx_B`执行相应的`SELECT`和`UPDATE`命令时，`Pkey_1`同时被`Tx_A`和`Tx_B`读取与写入。 这时候会产生`Pkey_1`相关联的读-写冲突：`C1`和`C2`，并在前趋图中构成一个环，因而检测到假阳性写偏差异常（如果`Tx_A`和`Tx_B`获取不同索引页上的SIREAD锁则不会误报，并且两个事务都可以提交）。
-
-**图5.19 假阳性异常(2) - 使用相同索引页的索引扫描**
-
-![使用相同索引页的索引扫描](/img/fig-5-19.png)
+{{< fig num="5.19" src="/img/fig-5-19.png" caption="假阳性异常(2) - 使用相同索引页的索引扫描" alt="使用相同索引页的索引扫描" />}}
 
 ## 5.10 所需的维护进程
 
@@ -991,11 +958,9 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 接下来将介绍 **事务标识回卷（txid wrap around）** 问题。
 
-假设元组`Tuple_1`是由`txid = 100`事务创建的，即`Tuple_1`的`t_xmin = 100`。服务器运行了很长时间，但`Tuple_1`一直未曾被修改。假设`txid`已经前进到了$2^{31}+100$，这时候正好执行了一条`SELECT`命令。此时，因为对当前事务而言`txid = 100`的事务属于过去的事务，因而`Tuple_1`对当前事务可见。然后再执行相同的`SELECT`命令，此时`txid`步进至$2^{31}+101$。但因对当前事务而言，`txid = 100`的事务是属于未来的，因此`Tuple_1`不再可见（图5.20）。这就是PostgreSQL中所谓的事务回卷问题。
+假设元组`Tuple_1`是由`txid = 100`事务创建的，即`Tuple_1`的`t_xmin = 100`。服务器运行了很长时间，但`Tuple_1`一直未曾被修改。假设`txid`已经前进到了$2^{31}+100$，这时候正好执行了一条`SELECT`命令。此时，因为对当前事务而言`txid = 100`的事务属于过去的事务，因而`Tuple_1`对当前事务可见。然后再执行相同的`SELECT`命令，此时`txid`步进至$2^{31}+101$。但因对当前事务而言，`txid = 100`的事务是属于未来的，因此`Tuple_1`不再可见（{{< xref fig="5.20" anchor="fig-5.20" >}}图5.20{{< /xref >}}）。这就是PostgreSQL中所谓的事务回卷问题。
 
-**图5.20 回卷问题**
-
-![图5.20 回卷问题](/img/fig-5-20.png)
+{{< fig num="5.20" src="/img/fig-5-20.png" caption="回卷问题" alt="图5.20 回卷问题" />}}
 
 为了解决这个问题，PostgreSQL引入了一个 **冻结事务标识（Frozen txid）** 的概念，并实现了一个名为`FREEZE`的过程。
 
@@ -1003,13 +968,11 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 **清理过程（`VACUUM`）**会调用冻结过程（**`FREEZE`**）。冻结过程将扫描所有表文件，如果元组的`t_xmin`比当前`txid - vacuum_freeze_min_age`（默认值为5000万）更老，则将该元组的`t_xmin`重写为冻结事务标识。在[第6章](/ch6/)中会有更详细的解释。
 
-举个例子，如图5.21(a)所示，当前`txid`为5000万，此时通过`VACUUM`命令调用冻结过程。在这种情况下，`Tuple_1`和`Tuple_2`的`t_xmin`都被重写为2。
+举个例子，如{{< xref fig="5.21" anchor="fig-5.21" >}}图5.21{{< /xref >}}(a)所示，当前`txid`为5000万，此时通过`VACUUM`命令调用冻结过程。在这种情况下，`Tuple_1`和`Tuple_2`的`t_xmin`都被重写为2。
 
-在版本9.4或更高版本中使用元组`t_infomask`字段中的`XMIN_FROZEN`标记位来标识冻结元组，而不是将元组的`t_xmin`重写为冻结的`txid`，如图5.21(b)所示。
+在版本9.4或更高版本中使用元组`t_infomask`字段中的`XMIN_FROZEN`标记位来标识冻结元组，而不是将元组的`t_xmin`重写为冻结的`txid`，如{{< xref fig="5.21" anchor="fig-5.21" >}}图5.21{{< /xref >}}(b)所示。
 
-**图5.21 冻结过程**
-
-![图5.21 冻结过程](/img/fig-5-21.png)
+{{< fig num="5.21" src="/img/fig-5-21.png" caption="冻结过程" alt="图5.21 冻结过程" />}}
 
 ## 参考文献
 

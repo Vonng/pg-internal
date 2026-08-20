@@ -1,8 +1,448 @@
-/* Keep long rendered equations inside the document column. */
+// PostgreSQL Internals publication layer ------------------------------------
+
+:root {
+  --pgint-serif: 'Iowan Old Style', 'Noto Serif CJK SC', 'Source Han Serif SC',
+    'Songti SC', STSong, Georgia, serif;
+  --pgint-blue: #336791;
+  --pgint-deep: #173e5b;
+  --pgint-sky: #6ca7ce;
+  --pgint-surface: color-mix(in srgb, var(--bs-body-bg) 94%, var(--pgint-blue));
+}
+
+[data-bs-theme='dark'] {
+  --pgint-blue: #83b8dc;
+  --pgint-deep: #a7d0eb;
+  --pgint-sky: #a4cee9;
+  --pgint-surface: color-mix(in srgb, var(--bs-body-bg) 89%, white);
+}
+
+// Book shell ----------------------------------------------------------------
+
+body.td-book {
+  --td-body-font-family: var(--pgint-serif);
+}
+
+.td-book .td-content {
+  font-family: var(--td-body-font-family);
+  font-size: clamp(1rem, calc(0.97rem + 0.13vw), 1.075rem);
+  line-height: 1.86;
+  text-wrap: pretty;
+}
+
+.td-book .td-content > h1 {
+  font-family: var(--td-heading-font-family);
+  font-size: clamp(2rem, calc(1.7rem + 1.4vw), 3.05rem);
+  letter-spacing: -0.026em;
+  line-height: 1.15;
+}
+
+.td-book .td-book-number {
+  color: var(--pgint-blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.td-book .td-content > :where(h2, h3, h4, h5, h6) {
+  font-family: var(--td-heading-font-family);
+  line-height: 1.38;
+  text-wrap: balance;
+}
+
+.td-book .td-content > h2 {
+  margin-block-start: 3.4rem;
+  padding-block-end: 0.5rem;
+  border-block-end: 1px solid var(--bs-border-color);
+}
+
+.td-book .td-content > blockquote {
+  padding-inline-start: 1.3rem;
+  border-inline-start: 3px solid color-mix(in srgb, var(--pgint-blue) 62%, transparent);
+  color: var(--bs-secondary-color);
+}
+
+.td-book .td-content img[src='/cover.svg'] {
+  display: block;
+  width: 18rem;
+  max-width: 100%;
+  margin: 0;
+  border-radius: 0.35rem 0.85rem 0.85rem 0.35rem;
+  box-shadow: 0 24px 54px rgba(17, 47, 70, 0.22);
+}
+
+.td-book .td-content .pgint-book-cover {
+  margin: 1.5rem 0 3rem;
+  text-align: center;
+}
+
+.td-book .td-content .pgint-book-cover .td-image-zoom__trigger {
+  display: inline-block;
+}
+
 .td-shell-main .katex-display {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   padding-block: 0.25rem;
   overscroll-behavior-x: contain;
+}
+
+.td-book-print-toc > ol {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.td-book-print-toc > ol > li {
+  margin-block: 0.38rem;
+}
+
+// Cover and homepage --------------------------------------------------------
+
+.td-landing-hero {
+  background:
+    radial-gradient(circle at 78% 36%, color-mix(in srgb, var(--pgint-sky) 15%, transparent), transparent 32%),
+    var(--bs-body-bg);
+}
+
+.td-landing-hero__media {
+  max-width: 330px;
+  aspect-ratio: 3 / 4;
+  border: 1px solid color-mix(in srgb, var(--bs-border-color) 68%, transparent);
+  border-radius: 0.25rem 0.75rem 0.75rem 0.25rem;
+  filter: drop-shadow(0 28px 36px rgba(17, 47, 70, 0.24));
+  transform: none;
+}
+
+[data-bs-theme='dark'] .td-landing-hero__media {
+  filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.56));
+}
+
+.td-landing-hero__title {
+  letter-spacing: -0.045em;
+}
+
+.td-landing-hero__title > span {
+  white-space: normal;
+}
+
+.pgint-people {
+  background:
+    radial-gradient(circle at 12% 9%, color-mix(in srgb, var(--pgint-blue) 9%, transparent), transparent 34%),
+    color-mix(in srgb, var(--bs-secondary-bg) 38%, transparent);
+}
+
+.pgint-people .td-landing-card {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  gap: 0 24px;
+  padding: clamp(24px, 3vw, 34px);
+  border-color: color-mix(in srgb, var(--td-line) 72%, var(--pgint-blue));
+}
+
+.pgint-people .book-person__portrait {
+  grid-row: 1 / 5;
+  display: flex;
+  width: 112px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pgint-people .book-person__role {
+  display: inline-flex;
+  min-height: 1.7rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  padding: 0.18rem 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--pgint-blue) 32%, var(--td-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pgint-blue) 8%, transparent);
+  color: var(--pgint-blue);
+  font-family: var(--td-meta-font-family);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+
+.pgint-people .td-landing-card__media {
+  width: 112px;
+  height: 112px;
+  margin: 0;
+  overflow: hidden;
+  border: 3px solid color-mix(in srgb, var(--td-paper) 78%, transparent);
+  border-radius: 50%;
+  background: var(--bs-secondary-bg);
+  box-shadow: 0 0 0 1px var(--td-line), 0 17px 36px rgba(17, 47, 70, 0.15);
+}
+
+.pgint-people .td-landing-card__media img {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+}
+
+.pgint-people .td-landing-card__meta,
+.pgint-people .td-landing-card h3,
+.pgint-people .td-landing-card__description,
+.pgint-people .td-landing-card-link {
+  grid-column: 2;
+}
+
+.pgint-people .td-landing-card__meta {
+  margin-bottom: 8px;
+  color: var(--pgint-blue);
+  font-family: var(--td-ui-font-family);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+.pgint-people .td-landing-card h3 {
+  margin-bottom: 10px;
+  font-size: clamp(1.2rem, 2vw, 1.52rem);
+}
+
+.pgint-people .td-landing-card__description {
+  font-size: 0.91rem;
+  line-height: 1.76;
+}
+
+.pgint-people .td-landing-card-link {
+  justify-self: start;
+}
+
+.pgint-preface {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--pgint-blue) 7%, transparent), transparent 44%),
+    var(--bs-body-bg);
+}
+
+.pgint-preface .td-landing-section__head {
+  width: 100%;
+  max-width: none;
+}
+
+.pgint-preface .td-landing-section__head h2 {
+  max-width: none;
+  font-size: clamp(1.75rem, 4vw, 3.15rem);
+  line-height: 1.12;
+}
+
+.pgint-preface .td-landing-markdown {
+  position: relative;
+  max-width: 900px;
+  margin-inline: auto;
+  padding: clamp(34px, 6vw, 68px) clamp(24px, 6vw, 76px);
+  border: 1px solid var(--td-line);
+  border-radius: clamp(14px, 2vw, 24px);
+  background: color-mix(in srgb, var(--td-paper) 95%, transparent);
+  box-shadow: 0 28px 72px rgba(17, 47, 70, 0.1);
+}
+
+.pgint-preface .td-landing-markdown::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--pgint-blue) 20%, transparent);
+  border-radius: calc(clamp(14px, 2vw, 24px) - 6px);
+}
+
+.pgint-preface .td-landing-markdown blockquote {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 clamp(30px, 5vw, 46px);
+  padding: 0 0 clamp(24px, 4vw, 34px);
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--pgint-blue) 34%, var(--td-line));
+  color: var(--td-ink);
+  font-family: var(--pgint-serif);
+  text-align: center;
+}
+
+.pgint-preface .td-landing-markdown blockquote::before {
+  content: '“';
+  display: block;
+  height: 0.72em;
+  color: color-mix(in srgb, var(--pgint-blue) 58%, transparent);
+  font-family: Georgia, serif;
+  font-size: 5rem;
+  line-height: 1;
+}
+
+.pgint-preface .td-landing-markdown blockquote p:first-child {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.5vw, 1.68rem);
+  font-weight: 700;
+}
+
+.pgint-preface .td-landing-markdown blockquote p:last-child {
+  margin: 0.85rem 0 0;
+  color: var(--td-muted);
+  font-family: var(--td-ui-font-family);
+  font-size: 0.78rem;
+  letter-spacing: 0.055em;
+}
+
+.pgint-preface .td-landing-markdown > p {
+  position: relative;
+  z-index: 1;
+  color: color-mix(in srgb, var(--td-ink) 88%, var(--td-soft));
+  font-family: var(--pgint-serif);
+  font-size: clamp(1rem, 1.4vw, 1.08rem);
+  line-height: 1.96;
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+
+.pgint-preface .td-landing-markdown > p:first-of-type::first-letter {
+  float: left;
+  margin: 0.1em 0.11em 0 0;
+  color: var(--pgint-blue);
+  font-family: var(--td-heading-font-family);
+  font-size: 3.1em;
+  font-weight: 800;
+  line-height: 0.82;
+}
+
+.pgint-chapters {
+  background: color-mix(in srgb, var(--bs-secondary-bg) 48%, transparent);
+}
+
+.pgint-chapters .td-landing-card-grid {
+  gap: clamp(14px, 1.8vw, 22px);
+}
+
+.pgint-chapters .td-landing-card {
+  padding: clamp(22px, 2.5vw, 30px);
+}
+
+.pgint-chapters .td-landing-card__meta {
+  color: var(--pgint-blue);
+}
+
+.pgint-chapters .td-landing-card h3 {
+  margin-bottom: 16px;
+  font-size: 1.16rem;
+  line-height: 1.35;
+}
+
+.pgint-chapters .td-landing-card h3 a {
+  color: var(--td-ink);
+}
+
+.pgint-chapters .td-landing-card h3 a::after {
+  content: ' →';
+  color: var(--pgint-blue);
+}
+
+.pgint-chapters ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.pgint-chapters li {
+  padding: 0.68rem 0 0.68rem 0.1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--td-line) 70%, transparent);
+  color: var(--td-muted);
+  font-family: var(--td-meta-font-family);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pgint-chapters li:last-child {
+  border-bottom: 0;
+}
+
+.pgint-chapters li::marker {
+  color: var(--pgint-blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pgint-chapters li a {
+  color: var(--td-ink);
+  font-family: var(--td-ui-font-family);
+  font-weight: 650;
+}
+
+.pgint-legal {
+  background:
+    radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--pgint-blue) 10%, transparent), transparent 34%),
+    color-mix(in srgb, var(--bs-body-bg) 88%, var(--bs-secondary-bg));
+}
+
+.pgint-legal .td-landing-card {
+  padding: clamp(24px, 3vw, 32px);
+}
+
+.pgint-legal .td-landing-card:nth-child(2) {
+  border-color: color-mix(in srgb, var(--pgint-blue) 42%, var(--td-line));
+}
+
+.pgint-legal .td-landing-card__media {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 20px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--pgint-blue) 28%, var(--td-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pgint-blue) 8%, transparent);
+  color: var(--pgint-blue);
+  font-size: 1.08rem;
+}
+
+.pgint-legal .td-landing-card__meta {
+  color: var(--pgint-blue);
+}
+
+.pgint-legal .td-landing-card__description {
+  font-size: 0.89rem;
+  line-height: 1.78;
+}
+
+@media (max-width: 1080px) {
+  .pgint-chapters .td-landing-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .td-landing-hero__media {
+    max-width: 220px;
+    justify-self: center;
+  }
+
+  .pgint-people .td-landing-card {
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 0 18px;
+  }
+
+  .pgint-people .book-person__portrait,
+  .pgint-people .td-landing-card__media {
+    width: 84px;
+  }
+
+  .pgint-people .td-landing-card__media {
+    height: 84px;
+  }
+
+  .pgint-chapters .td-landing-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pgint-preface .td-landing-markdown {
+    padding-inline: 24px;
+  }
+}
+
+@media print {
+  .td-book .td-content {
+    font-size: 10.5pt;
+    line-height: 1.72;
+  }
 }

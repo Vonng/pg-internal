@@ -1,0 +1,4 @@
+{{ define "main" -}}
+{{- $home := partial "landing/home-data.html" . -}}
+{{- partial "landing/render.html" (dict "page" . "data" $home) -}}
+{{- end }}

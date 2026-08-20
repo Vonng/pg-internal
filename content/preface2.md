@@ -2,8 +2,10 @@
 title: 译者序
 description: 中文译者介绍本书的阅读价值、翻译缘起与适用读者。
 search_keywords: [译者序, 冯若航, 刘阳明, 张文升, 探探 PostgreSQL DBA Team]
-type: docs
-weight: 60
+type: book
+book_kind: preface
+weight: 20
+breadcrumbs: false
 ---
 
 各位读者你们好，相信能选择这本书的读者，大多已经对PostgreSQL有所了解了。本书从PostgreSQL的整体架构展开，依次介绍了各个功能模块的来龙去脉，对于DBA与数据库系统开发人员了解数据库内部原理，阅读学习PostgreSQL源码是不可多得的一本好书。

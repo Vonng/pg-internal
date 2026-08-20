@@ -40,14 +40,21 @@ PostgreSQL是一个开源的关系型数据库，在世界各地被广泛用于�
 
 ## 本地预览
 
-站点使用 [OINK 0.3.0](https://github.com/pgsty/oink/tree/v0.3.0)，版本固定在
-`go.mod` 中。构建需要 Hugo Extended 0.160.1 或更高版本与 Go：
+生产构建使用 [OINK 0.6.0](https://github.com/pgsty/oink/tree/v0.6.0)，版本固定在
+`go.mod` 中。`make dev` 会通过 `HUGO_MODULE_REPLACEMENTS` 强制使用
+`~/pgsty/oink` 当前工作树。构建需要 Hugo Extended 0.160.1 或更高版本与 Go：
 
 ```bash
 make dev
 ```
 
-提交前运行生产构建、渲染后链接检查，以及 OINK 搜索索引和内容卫生检查：
+验证本地 OINK 当前工作树时运行：
+
+```bash
+make check-local
+```
+
+提交前再用 `go.mod` 中固定的发布版本运行生产构建、渲染后链接检查、搜索索引检查与 OINK Book 契约检查：
 
 ```bash
 make check

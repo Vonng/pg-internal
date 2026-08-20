@@ -1,5 +1,5 @@
 module github.com/Vonng/pg-internal
 
-go 1.24.5
+go 1.26.6
 
-require github.com/pgsty/oink v0.3.0 // indirect
+require github.com/pgsty/oink v0.6.0 // indirect

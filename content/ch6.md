@@ -1,9 +1,12 @@
 ---
-title: 6. 清理过程
+title: 清理过程
 description: VACUUM、可见性映射、冻结、提交日志回收与自动清理机制。
 search_keywords: [VACUUM, autovacuum, visibility map, VM, freeze, freezing, dead tuple, 冻结]
-type: docs
-weight: 106
+type: book
+book_kind: chapter
+book_number: "6"
+weight: 220
+breadcrumbs: false
 ---
 
 **清理（VACUUM）** 是一种维护过程，有助于 PostgreSQL 的持久运行。它的两个主要任务是删除死元组，以及冻结事务标识，两者都在第5.10节中简要提到过。
@@ -97,12 +100,10 @@ weight: 106
 
 ### 6.1.2 第二部分
 
-这一部分会移除死元组，并逐页更新FSM和VM。图6.1展示了一个例子：
+这一部分会移除死元组，并逐页更新FSM和VM。{{< xref fig="6.1" anchor="fig-6.1" >}}图6.1{{< /xref >}}展示了一个例子：
 
-**图6.1 删除死元组**
-
-![图6.1 删除死元组](/img/fig-6-01.png)
-假设该表包含三个页面，这里先关注0号页面（即第一个页面）。该页面包含三条元组， 其中`Tuple_2`是一条死元组，如图6.1(1)所示。在这里PostgreSQL移除了`Tuple_2`，并重排剩余元组来整理碎片空间，然后更新该页面的FSM和VM，如图6.1(2)所示。 PostgreSQL不断重复该过程直至最后一页。
+{{< fig num="6.1" src="/img/fig-6-01.png" caption="删除死元组" alt="图6.1 删除死元组" />}}
+假设该表包含三个页面，这里先关注0号页面（即第一个页面）。该页面包含三条元组， 其中`Tuple_2`是一条死元组，如{{< xref fig="6.1" anchor="fig-6.1" >}}图6.1{{< /xref >}}(1)所示。在这里PostgreSQL移除了`Tuple_2`，并重排剩余元组来整理碎片空间，然后更新该页面的FSM和VM，如{{< xref fig="6.1" anchor="fig-6.1" >}}图6.1{{< /xref >}}(2)所示。 PostgreSQL不断重复该过程直至最后一页。
 
 请注意，非必需的行指针是不会被移除的，它们会在将来被重用。因为如果移除了行指针，就必须同时更新所有相关索引中的索引元组。
 
@@ -125,11 +126,9 @@ weight: 106
 
 VM的基本概念很简单。 每个表都拥有各自的可见性映射，用于保存表文件中每个页面的可见性。 页面的可见性确定了每个页面是否包含死元组。清理过程可以跳过没有死元组的页面。
 
-图6.2展示了VM的使用方式。 假设该表包含三个页面，第0页和第2页包含死元组，而第1页不包含死元组。 表的可见性映射中保存着哪些页面包含死元组的信息。 在这种情况下，清理过程可以参考VM中的信息，跳过第一个页面。
+{{< xref fig="6.2" anchor="fig-6.2" >}}图6.2{{< /xref >}}展示了VM的使用方式。 假设该表包含三个页面，第0页和第2页包含死元组，而第1页不包含死元组。 表的可见性映射中保存着哪些页面包含死元组的信息。 在这种情况下，清理过程可以参考VM中的信息，跳过第一个页面。
 
-**图6.2 VM的使用方式**
-
-![图6.2 VM的使用方式](/img/fig-6-02.png)
+{{< fig num="6.2" src="/img/fig-6-02.png" caption="VM的使用方式" alt="图6.2 VM的使用方式" />}}
 
 每个VM由一个或多个8 KB页面组成，文件以后缀`_vm`存储。 例如，一个表文件的`relfilenode`是18751，其FSM（`18751_fsm`）和VM（`18751_vm`）文件如下所示。
 
@@ -172,11 +171,9 @@ $$
 
 而`OldestXmin`是当前正在运行的事务中最早的**事务标识（txid）**。 举个例子，如果在执行`VACUUM`命令时，还有其他三个事务正在运行，且其`txid`分别为`100,101,102`，那么这里`OldestXmin`就是100。如果不存在其他事务，`OldestXmin` 就是执行此`VACUUM`命令的事务标识。 这里`vacuum_freeze_min_age`是一个配置参数（默认值为`50,000,000`）。
 
-图6.3给出了一个具体的例子。这里`Table_1`由三个页面组成，每个页面包含三条元组。 执行`VACUUM`命令时，当前`txid`为`50,002,500`且没有其他事务。在这种情况下，`OldestXmin`就是`50,002,500`；因此`freezeLimit_txid`为`2500`。冻结过程按照如下步骤执行。
+{{< xref fig="6.3" anchor="fig-6.3" >}}图6.3{{< /xref >}}给出了一个具体的例子。这里`Table_1`由三个页面组成，每个页面包含三条元组。 执行`VACUUM`命令时，当前`txid`为`50,002,500`且没有其他事务。在这种情况下，`OldestXmin`就是`50,002,500`；因此`freezeLimit_txid`为`2500`。冻结过程按照如下步骤执行。
 
-**图6.3 冻结元组——惰性模式**
-
-![图6.3 冻结元组——惰性模式](/img/fig-6-03.png)
+{{< fig num="6.3" src="/img/fig-6-03.png" caption="冻结元组——惰性模式" alt="图6.3 冻结元组——惰性模式" />}}
 
 * 第0页：
 
@@ -206,13 +203,11 @@ $$
 $$
 在上面的条件中，`pg_database.datfrozenxid`是系统视图`pg_database`中的列，并保存着每个数据库中最老的已冻结的事务标识。细节将在后面描述；因此这里我们假设所有`pg_database.datfrozenxid`的值都是`1821`（这是在9.5版本中安装新数据库集群之后的初始值）。 `vacuum_freeze_table_age`是配置参数（默认为`150,000,000`）。
 
-图6.4给出了一个具体的例子。在表1中，`Tuple_1`和`Tuple_7`都已经被删除。`Tuple_10`和`Tuple_11`则已经插入第2页中。执行`VACUUM`命令时的事务标识为`150,002,000`，且没有其他事务。因此，`OldestXmin=150,002,000`，`freezeLimit_txid=100,002,000`。在这种情况下满足了上述条件：因为`1821 < (150002000 - 150000000)`，因而冻结过程会以迫切模式执行，如下所示。
+{{< xref fig="6.4" anchor="fig-6.4" >}}图6.4{{< /xref >}}给出了一个具体的例子。在表1中，`Tuple_1`和`Tuple_7`都已经被删除。`Tuple_10`和`Tuple_11`则已经插入第2页中。执行`VACUUM`命令时的事务标识为`150,002,000`，且没有其他事务。因此，`OldestXmin=150,002,000`，`freezeLimit_txid=100,002,000`。在这种情况下满足了上述条件：因为`1821 < (150002000 - 150000000)`，因而冻结过程会以迫切模式执行，如下所示。
 
 （注意，这里是版本9.5或更早版本的行为；最新版本的行为将在第6.3.3节中描述。）
 
-**图6.4 冻结旧元组——迫切模式（9.5或更早版本）**
-
-![图6.4 冻结旧元组——迫切模式（9.5或更早版本）](/img/fig-6-04.png)
+{{< fig num="6.4" src="/img/fig-6-04.png" caption="冻结旧元组——迫切模式（9.5或更早版本）" alt="图6.4 冻结旧元组——迫切模式（9.5或更早版本）" />}}
 
 * 第0页：
 
@@ -228,11 +223,9 @@ $$
 
 冻结一张表后，目标表的`pg_class.relfrozenxid`将被更新。 [`pg_class`](https://www.postgresql.org/docs/current/catalog-pg-class.html)是一个系统视图，每个`pg_class.relfrozenxid`列都保存着相应表的最近冻结的事务标识。本例中表1的`pg_class.relfrozenxid`会被更新为当前的`freezeLimit_txid`（即`100,002,000`），这意味着表1中`t_xmin`小于`100,002,000`的所有元组都已被冻结。
 
-在完成清理过程之前，必要时会更新`pg_database.datfrozenxid`。每个`pg_database.datfrozenxid`列都包含相应数据库中的最小`pg_class.relfrozenxid`。例如，如果在迫切模式下仅仅对表1做冻结处理，则不会更新该数据库的`pg_database.datfrozenxid`，因为其他关系的`pg_class.relfrozenxid`（当前数据库可见的其他表和系统视图）还没有发生变化，如图6.5(1)所示。如果当前数据库中的所有关系都以迫切模式冻结，则数据库的`pg_database.datfrozenxid`就会被更新，因为此数据库的所有关系的`pg_class.relfrozenxid`都被更新为当前的`freezeLimit txid`，如图6.5(2)所示。
+在完成清理过程之前，必要时会更新`pg_database.datfrozenxid`。每个`pg_database.datfrozenxid`列都包含相应数据库中的最小`pg_class.relfrozenxid`。例如，如果在迫切模式下仅仅对表1做冻结处理，则不会更新该数据库的`pg_database.datfrozenxid`，因为其他关系的`pg_class.relfrozenxid`（当前数据库可见的其他表和系统视图）还没有发生变化，如{{< xref fig="6.5" anchor="fig-6.5" >}}图6.5{{< /xref >}}(1)所示。如果当前数据库中的所有关系都以迫切模式冻结，则数据库的`pg_database.datfrozenxid`就会被更新，因为此数据库的所有关系的`pg_class.relfrozenxid`都被更新为当前的`freezeLimit txid`，如{{< xref fig="6.5" anchor="fig-6.5" >}}图6.5{{< /xref >}}(2)所示。
 
-**图6.5  `pg_database.datfrozenxid`与`pg_class.relfrozenxid`之间的关系**
-
-![图6.5 pg_database.datfrozenxid与pg_class.relfrozenxid之间的关系](/img/fig-6-05.png)
+{{< fig num="6.5" src="/img/fig-6-05.png" caption="`pg_database.datfrozenxid`与`pg_class.relfrozenxid`之间的关系" alt="图6.5 pg_database.datfrozenxid与pg_class.relfrozenxid之间的关系" />}}
 
 > ####  如何显示`pg_class.relfrozenxid`与`pg_database.datfrozenxid`
 >
@@ -282,21 +275,17 @@ $$
 
 为了解决这一问题，9.6版本改进了可见性映射VM与冻结过程。如第6.2.1节所述，新VM包含着每个页面中所有元组是否都已被冻结的信息。在迫切模式下进行冻结处理时，可以跳过仅包含冻结元组的页面。
 
-图6.6给出了一个例子。 根据VM中的信息，冻结此表时会跳过第0页。在更新完1号页面后，相关的VM信息会被更新，因为该页中所有的元组都已经被冻结了。
+{{< xref fig="6.6" anchor="fig-6.6" >}}图6.6{{< /xref >}}给出了一个例子。 根据VM中的信息，冻结此表时会跳过第0页。在更新完1号页面后，相关的VM信息会被更新，因为该页中所有的元组都已经被冻结了。
 
-**图6.6  冻结旧元组——迫切模式（9.6或更高版本）**
-
-![图6.6 冻结旧元组——迫切模式（9.6或更高版本）](/img/fig-6-06.png)
+{{< fig num="6.6" src="/img/fig-6-06.png" caption="冻结旧元组——迫切模式（9.6或更高版本）" alt="图6.6 冻结旧元组——迫切模式（9.6或更高版本）" />}}
 
 ## 6.4 移除不必要的提交日志文件
 
 如5.4节中所述，**提交日志（clog）** 存储着事务的状态。 当更新`pg_database.datfrozenxid`时，PostgreSQL会尝试删除不必要的clog文件。 注意相应的clog页面也会被删除。
 
-图6.7给出了一个例子。 如果clog文件`0002`中包含最小的`pg_database.datfrozenxid`，则可以删除旧文件（`0000`和`0001`），因为存储在这些文件中的所有事务在整个数据库集簇中已经被视为冻结了。
+{{< xref fig="6.7" anchor="fig-6.7" >}}图6.7{{< /xref >}}给出了一个例子。 如果clog文件`0002`中包含最小的`pg_database.datfrozenxid`，则可以删除旧文件（`0000`和`0001`），因为存储在这些文件中的所有事务在整个数据库集簇中已经被视为冻结了。
 
-**图6.7  删除不必要的clog文件和页面**
-
-![图6.7 删除不必要的clog文件和页面](/img/fig-6-07.png)
+{{< fig num="6.7" src="/img/fig-6-07.png" caption="删除不必要的clog文件和页面" alt="图6.7 删除不必要的clog文件和页面" />}}
 
 > ###  `pg_database.datfrozenxid`与clog文件
 >
@@ -336,11 +325,9 @@ $$
 
 虽然并发清理对于运维至关重要，但光有它还不够。比如，即使删除了许多死元组，也无法压缩表大小的情况。
 
-图6.8给出了一个极端的例子。假设一个表由三个页面组成，每个页面包含六条元组。执行以下`DELETE`命令以删除元组，并执行`VACUUM`命令以移除死元组：
+{{< xref fig="6.8" anchor="fig-6.8" >}}图6.8{{< /xref >}}给出了一个极端的例子。假设一个表由三个页面组成，每个页面包含六条元组。执行以下`DELETE`命令以删除元组，并执行`VACUUM`命令以移除死元组：
 
-**图6.8 并发清理的缺陷示例**
-
-![图6.8 并发清理的缺陷示例](/img/fig-6-08.png)
+{{< fig num="6.8" src="/img/fig-6-08.png" caption="并发清理的缺陷示例" alt="图6.8 并发清理的缺陷示例" />}}
 
 ```sql
 testdb=# DELETE FROM tbl WHERE id % 6 != 0;
@@ -349,21 +336,19 @@ testdb=# VACUUM tbl;
 
 死元组虽然都被移除了，但表的尺寸没有减小。 这种情况既浪费了磁盘空间，又会对数据库性能产生负面影响。 例如在上面的例子中，当读取表中的三条元组时，必须从磁盘加载三个页面。
 
-为了解决这种情况，PostgreSQL提供了**完整清理**模式。 图6.9概述了该模式。
+为了解决这种情况，PostgreSQL提供了**完整清理**模式。 {{< xref fig="6.9" anchor="fig-6.9" >}}图6.9{{< /xref >}}概述了该模式。
 
-**图6.9 完整清理模式概述**
+{{< fig num="6.9" src="/img/fig-6-09.png" caption="完整清理模式概述" alt="图6.9 完整清理模式概述" />}}
 
-![图6.9 完整清理模式概述](/img/fig-6-09.png)
-
-1. 创建新的表文件：见图6.9(1)
+1. 创建新的表文件：见{{< xref fig="6.9" anchor="fig-6.9" >}}图6.9{{< /xref >}}(1)
 
    当对表执行`VACUUM FULL`命令时，PostgreSQL首先获取表上的`AccessExclusiveLock`锁，并创建一个大小为8 KB的新的表文件。 `AccessExclusiveLock`锁不允许任何其他访问。
 
-2. 将活元组复制到新表：见图6.9(2)
+2. 将活元组复制到新表：见{{< xref fig="6.9" anchor="fig-6.9" >}}图6.9{{< /xref >}}(2)
 
    PostgreSQL只将旧表文件中的活元组复制到新表中。
 
-3. 删除旧文件，重建索引，并更新统计信息，FSM和VM，见图6.9(3)
+3. 删除旧文件，重建索引，并更新统计信息，FSM和VM，见{{< xref fig="6.9" anchor="fig-6.9" >}}图6.9{{< /xref >}}(3)
 
    复制完所有活元组后，PostgreSQL将删除旧文件，重建所有相关的表索引，更新表的FSM和VM，并更新相关的统计信息和系统视图。
 

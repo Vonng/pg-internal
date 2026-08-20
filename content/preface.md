@@ -2,8 +2,10 @@
 title: 作者序
 description: Hironobu Suzuki 为 2018 年中文译本撰写的序言与作者简介。
 search_keywords: [Hironobu Suzuki, 鈴木啓修, 作者序, 中文版序言]
-type: docs
-weight: 50
+type: book
+book_kind: preface
+weight: 10
+breadcrumbs: false
 ---
 
 中国的PostgreSQL用户们，你们好！
@@ -48,8 +50,6 @@ weight: 50
 当我年轻时，曾在厄瓜多尔住了两年，有时我会回到那里去。
 
 目前我住在爱尔兰，都柏林。
-
-
 
 
 

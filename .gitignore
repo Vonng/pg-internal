@@ -1,4 +1,10 @@
 .code
+.cache/
+/en/
+/hugo.en.yaml
+/resources/
+/static/images/en/
+__pycache__/
 .idea
 .claude
 public/

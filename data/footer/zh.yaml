@@ -1,0 +1,29 @@
+brand:
+  name: PostgreSQL 技术内幕
+  logo: postgresql.svg
+  tagline: 从数据库集簇到流复制的内部机制
+  slogan: Hironobu Suzuki 原著 · 2018 中文译稿
+columns:
+  - title: 阅读
+    links:
+      - { label: 章节目录, url: toc/ }
+      - { label: 作者序, url: preface/ }
+      - { label: 译者序, url: preface2/ }
+      - { label: 打印本书, url: _print/ }
+  - title: 章节路径
+    links:
+      - { label: 基础架构与查询执行, url: ch1/ }
+      - { label: 事务、存储与持久性, url: ch5/ }
+      - { label: 恢复与高可用, url: ch10/ }
+      - { label: 流复制, url: ch11/ }
+  - title: 权威来源
+    links:
+      - { label: 英文原著, url: 'https://www.interdb.jp/pg/', external: true }
+      - { label: PostgreSQL 文档, url: 'https://www.postgresql.org/docs/current/', external: true }
+      - { label: PostgreSQL 源码, url: 'https://github.com/postgres/postgres', external: true }
+  - title: 项目
+    links:
+      - { label: GitHub 仓库, url: 'https://github.com/Vonng/pg-internal', external: true }
+      - { label: 提交问题, url: 'https://github.com/Vonng/pg-internal/issues', external: true }
+      - { label: 冯若航 / Vonng, url: 'https://vonng.com', external: true }
+      - { label: Oink 主题, url: 'https://oink.pgsty.com', external: true }

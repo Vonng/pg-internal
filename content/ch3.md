@@ -1,9 +1,12 @@
 ---
-title: 3. 查询处理
+title: 查询处理
 description: PostgreSQL 的解析、重写、代价估算、计划树、执行器与连接算法。
 search_keywords: [query planner, query optimizer, executor, parse tree, query tree, EXPLAIN, nested loop, merge join, hash join]
-type: docs
-weight: 103
+type: book
+book_kind: chapter
+book_number: "3"
+weight: 130
+breadcrumbs: false
 ---
 
 
@@ -51,9 +54,7 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 
    执行器按照计划树中的顺序访问表和索引，执行相应查询。
 
-**图3.1 查询处理**
-
-![QueryProcessing](/img/fig-3-01.png)
+{{< fig num="3.1" src="/img/fig-3-01.png" caption="查询处理" alt="PostgreSQL 查询处理的四个阶段及其内部组件" />}}
 
 
 
@@ -71,7 +72,7 @@ PostgreSQL支持三种技术上很有趣，而且也很实用的功能：[**外�
 testdb=# SELECT id, data FROM tbl_a WHERE id < 300 ORDER BY data;
 ```
 
-语法解析树的根节点是一个定义在[`parsenodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中的`SelectStmt`数据结构。图3.2(a)展示了一个查询，而图3.2(b)则是该查询对应的语法解析树。
+语法解析树的根节点是一个定义在[`parsenodes.h`](https://github.com/postgres/postgres/blob/master/src/include/nodes/parsenodes.h)中的`SelectStmt`数据结构。{{< xref fig="3.2" anchor="fig-3.2" >}}图3.2{{< /xref >}}(a)展示了一个查询，而{{< xref fig="3.2" anchor="fig-3.2" >}}图3.2{{< /xref >}}(b)则是该查询对应的语法解析树。
 
 ```c
 typedef struct SelectStmt
@@ -110,9 +111,7 @@ typedef struct SelectStmt
 } SelectStmt;
 ```
 
-**图3.2. 语法解析树的例子**
-
-![ParseTree](/img/fig-3-02.png)
+{{< fig num="3.2" src="/img/fig-3-02.png" caption="语法解析树的例子" alt="简单 SELECT 查询对应的 PostgreSQL 语法解析树" />}}
 
 `SELECT`查询中的元素和语法解析树中的元素有着对应关系。比如，(1)是目标列表中的一个元素，与目标表的`'id'`列相对应，(4)是一个`WHERE`子句，诸如此类。
 
@@ -176,9 +175,7 @@ typedef struct Query
 } Query;
 ```
 
-**图3.3 查询树一例**
-
-![QueyTree](/img/fig-3-03.png)
+{{< fig num="3.3" src="/img/fig-3-03.png" caption="查询树一例" alt="简单 SELECT 查询对应的 PostgreSQL 查询树" />}}
 
 简要介绍一下上图中的查询树：
 
@@ -242,11 +239,9 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 (4 rows)
 ```
 
-图3.5展示了结果相应的计划树。
+{{< xref fig="3.5" anchor="fig-3.5" >}}图3.5{{< /xref >}}展示了结果相应的计划树。
 
-**图3.5 一个简单的计划树以及其与EXPLAIN命令的关系**
-
-![planTree](/img/fig-3-05.png)
+{{< fig num="3.5" src="/img/fig-3-05.png" caption="一个简单的计划树以及其与EXPLAIN命令的关系" alt="简单计划树中的节点与 EXPLAIN 输出之间的对应关系" />}}
 
 
 
@@ -254,13 +249,11 @@ testdb=# EXPLAIN SELECT * FROM tbl_a WHERE id < 300 ORDER BY data;
 
 每个计划节点都包含着执行器进行处理所必需的信息，在单表查询的场景中，执行器会按照从终端节点往根节点的顺序依次处理这些节点。
 
-比如图3.5中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表`tbl_a`执行顺序扫描，并对获取的结果进行排序。
+比如{{< xref fig="3.5" anchor="fig-3.5" >}}图3.5{{< /xref >}}中的计划树就是一个列表，包含一个排序节点和一个顺序扫描节点；因而执行器会首先对表`tbl_a`执行顺序扫描，并对获取的结果进行排序。
 
 执行器会通过[第8章](/ch8/)将介绍的缓冲区管理器来访问数据库集簇的表和索引。当处理一个查询时，执行器会使用预先分配的内存空间，比如`temp_buffers`和`work_mem`，必要时还会创建临时文件。
 
-**图3.6 执行器，缓冲管理器，临时文件之间的关系**
-
-![dd](/img/fig-3-06.png)
+{{< fig num="3.6" src="/img/fig-3-06.png" caption="执行器，缓冲管理器，临时文件之间的关系" alt="查询执行器通过缓冲区管理器与临时文件读写数据" />}}
 
 除此之外，当访问元组的时候，PostgreSQL还会使用并发控制机制来维护运行中事务的一致性和隔离性。[第五章](/ch5/)介绍了并发控制机制。
 
@@ -942,11 +935,9 @@ typedef struct PlannerInfo {
 
    SQL标准中的AND/OR是二元操作符；但在PostgreSQL内部它们是多元操作符。而计划器总是会假设所有的嵌套AND/OR都应当被压平。
 
-   这里有一个具体的例子。考虑这样一个布尔表达式`(id = 1) OR (id = 2) OR (id = 3)`，图3.9(a) 展示了使用二元表达式时的查询树，预处理会将这些二元算子简化压平为一个三元算子，如图3.9(b)所示。
+   这里有一个具体的例子。考虑这样一个布尔表达式`(id = 1) OR (id = 2) OR (id = 3)`，{{< xref fig="3.9" anchor="fig-3.9" >}}图3.9{{< /xref >}}(a) 展示了使用二元表达式时的查询树，预处理会将这些二元算子简化压平为一个三元算子，如{{< xref fig="3.9" anchor="fig-3.9" >}}图3.9{{< /xref >}}(b)所示。
 
-   **图3.9. 压平布尔表达式的例子**
-
-   ![扁平化](/img/fig-3-09.png)
+{{< fig num="3.9" src="/img/fig-3-09.png" caption="压平布尔表达式的例子" alt="嵌套布尔表达式经过预处理后被压平的结构变化" />}}
 
 ### 3.3.2 找出代价最小的访问路径
 
@@ -954,7 +945,7 @@ typedef struct PlannerInfo {
 
 1. 创建一个`RelOptInfo`数据结构，存储访问路径及其代价。
 
-   `RelOptInfo`结构体是通过`make_one_rel()`函数创建的，并存储于`PlannerInfo`结构体的`simple_rel_array`字段中，如图3.10所示。在初始状态时`RelOptInfo`持有着`baserestrictinfo`变量，如果存在相应索引，还会持有`indexlist`变量。`baserestrictinfo`存储着查询的`WHERE子`句，而`indexlist`存储着目标表上相关的索引。
+   `RelOptInfo`结构体是通过`make_one_rel()`函数创建的，并存储于`PlannerInfo`结构体的`simple_rel_array`字段中，如{{< xref fig="3.10" anchor="fig-3.10" >}}图3.10{{< /xref >}}所示。在初始状态时`RelOptInfo`持有着`baserestrictinfo`变量，如果存在相应索引，还会持有`indexlist`变量。`baserestrictinfo`存储着查询的`WHERE子`句，而`indexlist`存储着目标表上相关的索引。
 
    ```c
    typedef enum RelOptKind
@@ -1061,11 +1052,9 @@ testdb=# \d tbl_1
 testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 ```
 
-图3.10和图3.11展示了本例中计划器的处理过程。
+{{< xref fig="3.10" anchor="fig-3.10" >}}图3.10{{< /xref >}}和{{< xref fig="3.11" anchor="fig-3.11" >}}图3.11{{< /xref >}}展示了本例中计划器的处理过程。
 
-**图3.10 如何得到例1中代价最小的路径**
-
-![图3.10 如何得到例1中代价最小的路径](/img/fig-3-10.png)
+{{< fig num="3.10" src="/img/fig-3-10.png" caption="如何得到例1中代价最小的路径" alt="图3.10 如何得到例1中代价最小的路径" />}}
 
 1. 创建一个`RelOptInfo`结构，将其保存在`PlannerInfo`结构的`simple_rel_array`字段中。
 
@@ -1083,9 +1072,7 @@ testdb=# SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
 在本例中，因为目标表上没有索引，计划器只估计了顺序扫描的代价，因此最小代价是自动确定的。
 
-**图3.11 如何得到例1中代价最小的路径（接图3.10）**
-
-![图3.11 如何得到例1中代价最小的路径（接图3.10）](/img/fig-3-11.png)
+{{< fig num="3.11" src="/img/fig-3-11.png" caption="如何得到例1中代价最小的路径（接图3.10）" alt="图3.11 如何得到例1中代价最小的路径（接图3.10）" />}}
 
 5. 创建一个新的`RelOptInfo`结构，用于处理`ORDER BY`子句。
 
@@ -1124,7 +1111,7 @@ Indexes:
 testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 ```
 
-图3.12到3.14展示了本例中计划器的处理过程。
+{{< xref fig="3.12" anchor="fig-3.12" >}}图3.12{{< /xref >}}到3.14展示了本例中计划器的处理过程。
 
 1. 创建一个`RelOptInfo`结构体
 
@@ -1134,9 +1121,7 @@ testdb=# SELECT * FROM tbl_2 WHERE id < 240;
 
 3. 创建一条路径，估计其顺序扫描代价，并添加到`RelOptInfo`的`pathlist`中。
 
-**图3.12 如何得到例2中代价最小的路径**
-
-![图3.12 如何得到例2中代价最小的路径](/img/fig-3-12.png)
+{{< fig num="3.12" src="/img/fig-3-12.png" caption="如何得到例2中代价最小的路径" alt="图3.12 如何得到例2中代价最小的路径" />}}
 
 ```c
 typedef struct IndexPath
@@ -1239,9 +1224,7 @@ typedef struct IndexOptInfo
 
 > 注意`add_path()`函数并不总是真的会将路径添加到路径列表中。这一操作相当复杂，故这里就省去了具体描述。详细细节可以参考`add_path()`函数的注释。
 
-**图3.13 如何得到例2中代价最小的路径（接图3.12）**
-
-![图3.13 如何得到例2中代价最小的路径（接图3.12）](/img/fig-3-13.png)
+{{< fig num="3.13" src="/img/fig-3-13.png" caption="如何得到例2中代价最小的路径（接图3.12）" alt="图3.13 如何得到例2中代价最小的路径（接图3.12）" />}}
 
 6. 创建一个新的`RelOptInfo`结构
 
@@ -1249,9 +1232,7 @@ typedef struct IndexOptInfo
 
    本例中代价最小的路径是使用`tbl_2_pkey`的索引路径；故将该路径添加到新的`RelOptInfo`中。
 
-**图3.14 如何得到例2中代价最小的路径（接图3.13）**
-
-![图3.14 如何得到例2中代价最小的路径（接图3.13）](/img/fig-3-14.png)
+{{< fig num="3.14" src="/img/fig-3-14.png" caption="如何得到例2中代价最小的路径（接图3.13）" alt="图3.14 如何得到例2中代价最小的路径（接图3.13）" />}}
 
 ### 3.3.3 创建计划树
 
@@ -1367,7 +1348,7 @@ typedef Scan SeqScan;
 
 #### 3.3.3.1 例1
 
-第一个例子是3.3.2.1节例1对应的计划树。图3.11所示的代价最小的路径，是由一个排序路径和一个顺序扫描路径组合而成。根路径是排序路径，而其子路径为顺序扫描路径。尽管这里忽略了大量细节，但是从代价最小的路径中生成计划树的过程是显而易见的。在本例中，一个 `SortNode`被添加到`PlannedStmt`结构中，而`SortNode`的左子树上则挂载了一个`SeqScanNode`，如图3.15(a)所示。
+第一个例子是3.3.2.1节例1对应的计划树。{{< xref fig="3.11" anchor="fig-3.11" >}}图3.11{{< /xref >}}所示的代价最小的路径，是由一个排序路径和一个顺序扫描路径组合而成。根路径是排序路径，而其子路径为顺序扫描路径。尽管这里忽略了大量细节，但是从代价最小的路径中生成计划树的过程是显而易见的。在本例中，一个 `SortNode`被添加到`PlannedStmt`结构中，而`SortNode`的左子树上则挂载了一个`SeqScanNode`，如{{< xref fig="3.15" anchor="fig-3.15" >}}图3.15{{< /xref >}}(a)所示。
 
 在`SortNode`中，左子树`lefttree`指向`SeqScanNode`。
 
@@ -1385,15 +1366,13 @@ typedef struct Sort
 } Sort;
 ```
 
-**图3.15. 计划树的例子**
-
-![图3.15. 计划树的例子](/img/fig-3-15.png)
+{{< fig num="3.15" src="/img/fig-3-15.png" caption="计划树的例子" alt="图3.15. 计划树的例子" />}}
 
 
 
 #### 3.3.3.2 例2
 
-第二个例子是3.3.2.2节例2对应的计划树。其代价最小的路径为索引扫描路径，如图3.14所示。因此计划树由单个`IndexScanNode`独立组成，如图3.15(b)所示。
+第二个例子是3.3.2.2节例2对应的计划树。其代价最小的路径为索引扫描路径，如{{< xref fig="3.14" anchor="fig-3.14" >}}图3.14{{< /xref >}}所示。因此计划树由单个`IndexScanNode`独立组成，如{{< xref fig="3.15" anchor="fig-3.15" >}}图3.15{{< /xref >}}(b)所示。
 
 在本例中，`WHERE`子句`id < 240`是一个访问谓词，它储存在`IndexScanNode`的`indexqual`字段中。
 
@@ -1508,9 +1487,7 @@ $$
 $$
 这里$C_{\verb|outer|}$和$C_{\verb|inner|}$分别是内表和外表顺序扫描的代价；
 
-**图3.16 嵌套循环连接**
-
-![图3.16 嵌套循环连接](/img/fig-3-16.png)
+{{< fig num="3.16" src="/img/fig-3-16.png" caption="嵌套循环连接" alt="图3.16 嵌套循环连接" />}}
 
 嵌套循环连接的代价总是会被估计，但实际中很少会使用这种连接操作，因为它有几种更高效的变体，下面将会讲到。
 
@@ -1520,11 +1497,9 @@ $$
 
 在运行嵌套循环连接之前，执行器会使用 **临时元组存储（temporary tuple storage）** 模块对内表进行一次扫描，将内表元组加载到工作内存或临时文件中。在处理内表元组时，临时元组存储比缓冲区管理器更为高效，特别是当所有的元组都能放入工作内存中时。
 
-图 3.17说明了物化嵌套循环连接的处理过程。扫描物化元组在内部被称为**重扫描（rescan）**。
+{{< xref fig="3.17" anchor="fig-3.17" >}}图 3.17{{< /xref >}}说明了物化嵌套循环连接的处理过程。扫描物化元组在内部被称为**重扫描（rescan）**。
 
-**图3.17 物化嵌套循环连接**
-
-![图3.17 物化嵌套循环连接](/img/fig-3-17.png)
+{{< fig num="3.17" src="/img/fig-3-17.png" caption="物化嵌套循环连接" alt="图3.17 物化嵌套循环连接" />}}
 
 > #### 临时元组存储
 >
@@ -1612,11 +1587,9 @@ $$
 
 #### 3.5.1.3 索引嵌套循环连接
 
-如果内表上有索引，且该索引能用于搜索满足连接条件的元组。那么计划器在为外表的每条元组搜索内表中的匹配元组时，会考虑使用索引进行直接搜索，以替代顺序扫描。这种变体叫做**索引嵌套循环连接（indexed nested loop join）**，如图3.18所示。尽管这种变体叫做索引"嵌套循环连接"，但该算法基本上只需要在在外表上循环一次，因此连接操作执行起来相当高效。
+如果内表上有索引，且该索引能用于搜索满足连接条件的元组。那么计划器在为外表的每条元组搜索内表中的匹配元组时，会考虑使用索引进行直接搜索，以替代顺序扫描。这种变体叫做**索引嵌套循环连接（indexed nested loop join）**，如{{< xref fig="3.18" anchor="fig-3.18" >}}图3.18{{< /xref >}}所示。尽管这种变体叫做索引"嵌套循环连接"，但该算法基本上只需要在在外表上循环一次，因此连接操作执行起来相当高效。
 
-**图3.18 索引嵌套循环连接**
-
-![图3.18 索引嵌套循环连接](/img/fig-3-18.png)
+{{< fig num="3.18" src="/img/fig-3-18.png" caption="索引嵌套循环连接" alt="图3.18 索引嵌套循环连接" />}}
 
 下面是索引嵌套循环连接的一个具体例子。
 
@@ -1659,11 +1632,9 @@ $$
 
 如果在外表上存在一个与连接条件相关的索引，那么在外表上也可以以索引扫描替代顺序扫描。特别是，当`WHERE`子句中的访问谓词可以使用该索引时，能缩小外表上的搜索范围，嵌套循环连接的代价可能会急剧减少。
 
-当使用外表索引扫描时，PostgreSQL支持三种嵌套循环连接的变体，如图3.19所示。
+当使用外表索引扫描时，PostgreSQL支持三种嵌套循环连接的变体，如{{< xref fig="3.19" anchor="fig-3.19" >}}图3.19{{< /xref >}}所示。
 
-**图3.19 嵌套循环连接的三种变体，使用外表索引扫描**
-
-![out](/img/fig-3-19.png)
+{{< fig num="3.19" src="/img/fig-3-19.png" caption="嵌套循环连接的三种变体，使用外表索引扫描" alt="使用外表索引扫描时三种嵌套循环连接变体的执行路径" />}}
 
 这些连接的`EXPLAIN`结果如下：
 
@@ -1741,11 +1712,9 @@ $$
 
 #### 3.5.2.1 归并连接
 
-图3.20是归并连接的概念示意图。
+{{< xref fig="3.20" anchor="fig-3.20" >}}图3.20{{< /xref >}}是归并连接的概念示意图。
 
-**图3.20 归并连接**
-
-![图3.20 归并连接](/img/fig-3-20.png)
+{{< fig num="3.20" src="/img/fig-3-20.png" caption="归并连接" alt="图3.20 归并连接" />}}
 
 如果所有元组都可以存储在内存中，那么排序操作就能在内存中进行，否则会使用临时文件。
 
@@ -1775,9 +1744,7 @@ $$
 
 与嵌套循环连接类似，归并连接还支持**物化归并连接（Materialized Merge Join）**，物化内表，使内表扫描更为高效。
 
-**图3.21 物化归并连接**
-
-![图3.21 物化归并连接](/img/fig-3-21.png)
+{{< fig num="3.21" src="/img/fig-3-21.png" caption="物化归并连接" alt="图3.21 物化归并连接" />}}
 
 这里是物化归并连接的`EXPLAIN`结果，很容易发现，与普通归并连接的差异是第9行：`Materialize`。
 
@@ -1807,9 +1774,7 @@ testdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
 
 与嵌套循环连接类似，当外表上可以进行索引扫描时，归并连接也存在相应的变体。
 
-**图3.22 归并连接的三种变体，使用外表索引扫描**
-
-![图3.22 归并连接的三种变体，使用外表索引扫描](/img/fig-3-22.png)
+{{< fig num="3.22" src="/img/fig-3-22.png" caption="归并连接的三种变体，使用外表索引扫描" alt="图3.22 归并连接的三种变体，使用外表索引扫描" />}}
 
 这些连接的`EXPLAIN`结果如下。
 
@@ -1903,11 +1868,9 @@ PostgreSQL中的散列连接的行为因表的大小而异。 如果目标表足
 SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.attr2;
 ```
 
-散列连接的过程如图3.23和3.24所示。
+散列连接的过程如{{< xref fig="3.23" anchor="fig-3.23" >}}图3.23{{< /xref >}}和3.24所示。
 
-**图3.23 内存散列连接的构建阶段**
-
-![图3.23 内存散列连接的构建阶段](/img/fig-3-23.png)
+{{< fig num="3.23" src="/img/fig-3-23.png" caption="内存散列连接的构建阶段" alt="图3.23 内存散列连接的构建阶段" />}}
 
 1. 在工作内存上创建一个处理批次。
 
@@ -1929,9 +1892,7 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
 3. 插入内表中的其余元组。
 
-**图3.24. 内存散列连接的探测阶段**
-
-![图3.24. 内存散列连接的探测阶段](/img/fig-3-24.png)
+{{< fig num="3.24" src="/img/fig-3-24.png" caption="内存散列连接的探测阶段" alt="图3.24. 内存散列连接的探测阶段" />}}
 
 4. 依外表的第一条元组进行探测。
 
@@ -1959,11 +1920,9 @@ SELECT * FROM tbl_outer AS outer, tbl_inner AS inner WHERE inner.attr1 = outer.a
 
 首先，这里会描述混合散列连接的基本概念。在第一个构建和探测阶段，PostgreSQL准备多个批次。与桶的数目类似，处理批次的数目由函数`ExecChooseHashTableSize()`决定，也总是2的整数次幂。工作内存中只会分配一个处理批次，而其他批次作都以临时文件的形式创建。属于这些批次的元组将通过临时元组存储功能，被写入到相应的文件中。
 
-图3.25说明了如何将元组存储在四个（$ 2 ^ 2 $）处理批次中。在本例中元组散列键的最后五个比特位决定了元组所属的批次与桶，因为处理批次的数量为$2^2$，而桶的数量为$2^3$，因此需要5个比特位来表示，其中前两位决定了元组所属的批次，而后三位决定了元组在该批次中所属的桶。例如：`Batch_0`存储着散列键介于$\textcolor{red}{00}000$与$\textcolor{red}{00}111$的元组；而`Batch_1`存储着散列键介于$\textcolor{red}{01}000$与$\textcolor{red}{01}111$的元组，依此类推。
+{{< xref fig="3.25" anchor="fig-3.25" >}}图3.25{{< /xref >}}说明了如何将元组存储在四个（$ 2 ^ 2 $）处理批次中。在本例中元组散列键的最后五个比特位决定了元组所属的批次与桶，因为处理批次的数量为$2^2$，而桶的数量为$2^3$，因此需要5个比特位来表示，其中前两位决定了元组所属的批次，而后三位决定了元组在该批次中所属的桶。例如：`Batch_0`存储着散列键介于$\textcolor{red}{00}000$与$\textcolor{red}{00}111$的元组；而`Batch_1`存储着散列键介于$\textcolor{red}{01}000$与$\textcolor{red}{01}111$的元组，依此类推。
 
-**图3.25 混合散列连接中的多个处理批次**
-
-![图3.25 混合散列连接中的多个处理批次](/img/fig-3-25.png)
+{{< fig num="3.25" src="/img/fig-3-25.png" caption="混合散列连接中的多个处理批次" alt="图3.25 混合散列连接中的多个处理批次" />}}
 
 在混合散列连接中，构建与探测阶段的执行次数与处理批次的数目相同，因为内外表元组都被存至相同数量的处理批次中。在第一轮构建与探测阶段中，除了处理第一个处理批次，还会创建所有的处理批次。另一方面，第二轮及后续的处理批次都需要读写临时文件，这属于代价巨大的操作。因此PostgreSQL还准备了一个名为**skew**的特殊处理批次，即倾斜批次，以便在第一轮中高效处理尽可能多的元组。
 
@@ -1980,11 +1939,9 @@ WHERE c.name = h.customer_name;
 
 如果`customers`是内表，而`purchase_history`是外表，则PostgreSQL将使用`purchase_history`表的高频值值，将前10％的`customers`元组存储于倾斜批次中。 请注意这里引用的是外表上的高频值，而插入倾斜批次的是内表元组。 在第一轮的探测阶段，外表（`purchase_history`）中70％的元组将与倾斜批次中存储的元组相连接。 因此，外表分布越是不均匀，第一轮中越是可以处理尽可能多的元组。
 
-接下来会介绍带倾斜批次的混合散列连接的工作原理，如图3.26至3.29所示。
+接下来会介绍带倾斜批次的混合散列连接的工作原理，如{{< xref fig="3.26" anchor="fig-3.26" >}}图3.26{{< /xref >}}至3.29所示。
 
-**图3.26 混合散列连接的构建阶段的第一轮**
-
-![图3.26 混合散列连接的构建阶段的第一轮](/img/fig-3-26.png)
+{{< fig num="3.26" src="/img/fig-3-26.png" caption="混合散列连接的构建阶段的第一轮" alt="图3.26 混合散列连接的构建阶段的第一轮" />}}
 
 1. 在工作内存中创建一个处理批次，以及一个倾斜批次。
 
@@ -2004,9 +1961,7 @@ WHERE c.name = h.customer_name;
 
 4. 对内表其余元组依次执行构建操作。
 
-**图3.27 混合散列连接，探测阶段第一轮**
-
-![图3.27 混合散列连接，探测阶段第一轮](/img/fig-3-27.png)
+{{< fig num="3.27" src="/img/fig-3-27.png" caption="混合散列连接，探测阶段第一轮" alt="图3.27 混合散列连接，探测阶段第一轮" />}}
 
 5. 创建临时处理批次文件，用于外表排序。
 
@@ -2022,9 +1977,7 @@ WHERE c.name = h.customer_name;
 
    注意在本例中，外表中70％的元组已经在第一轮中的倾斜批次中处理了。
 
-**图3.28 构建阶段与探测阶段，第二轮**
-
-![图3.28 构建阶段与探测阶段，第二轮](/img/fig-3-28.png)
+{{< fig num="3.28" src="/img/fig-3-28.png" caption="构建阶段与探测阶段，第二轮" alt="图3.28 构建阶段与探测阶段，第二轮" />}}
 
 9. 移除倾斜批次与`Batch_0`，为下一轮处理批次腾地方。
 
@@ -2032,9 +1985,7 @@ WHERE c.name = h.customer_name;
 
 11. 为批次文件`batch_1_out`中的外表元组依次执行探测操作。
 
-**图3.29 构建阶段与探测阶段，第三轮及后续**
-
-![图3.29 构建阶段与探测阶段，第三轮及后续](/img/fig-3-29.png)
+{{< fig num="3.29" src="/img/fig-3-29.png" caption="构建阶段与探测阶段，第三轮及后续" alt="图3.29 构建阶段与探测阶段，第三轮及后续" />}}
 
 12. 为批次文件`batch_2_in`与`batch_2_out`执行构建操作与探测操作。
 
@@ -2048,9 +1999,7 @@ WHERE c.name = h.customer_name;
 
 下图列出了所有的连接访问路径，细节略过不提。
 
-**图3.30 Join访问路径**
-
-![图3.30 Join访问路径](/img/fig-3-30.png)
+{{< fig num="3.30" src="/img/fig-3-30.png" caption="Join访问路径" alt="图3.30 Join访问路径" />}}
 
 ```c
 typedef JoinPath NestPath;
@@ -2230,9 +2179,7 @@ typedef struct HashJoin
 
 通过这种方式，在每个层级都能解决最小代价问题的一部分，且其结果能被更高层级的计算复用，从而使代价最小的计划树能够被高效地计算出来。
 
-**图3.31 如何使用动态规划获取代价最小的访问路径**
-
-![图3.31 如何使用动态规划获取代价最小的访问路径](/img/fig-3-31.png)
+{{< fig num="3.31" src="/img/fig-3-31.png" caption="如何使用动态规划获取代价最小的访问路径" alt="图3.31 如何使用动态规划获取代价最小的访问路径" />}}
 
 接下来会针对下面的查询，解释计划器是如何获取代价最小的计划的。
 
@@ -2260,9 +2207,7 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 
 在第一层中，计划器会为查询中涉及的关系创建相应的`RelOptInfo`结构，并估计每个关系上的最小代价。 在这一步中，`RelOptInfo`结构会被添加至该查询对应`PlannerInfo`的`simple_rel_arrey`数组字段中。
 
-**图3.32 第一层处理后的`PlannerInfo`与`RelOptInfo`**
-
-![图3.32 第一层处理后的PlannerInfo与RelOptInfo](/img/fig-3-32.png)
+{{< fig num="3.32" src="/img/fig-3-32.png" caption="第一层处理后的`PlannerInfo`与`RelOptInfo`" alt="图3.32 第一层处理后的PlannerInfo与RelOptInfo" />}}
 
 表`tbl_a`的`RelOptInfo`有三条访问路径，它们被添加至`RelOptInfo`的路径列表中。这三条路径分别被三个指针所链接，即三个指向代价最小路径的指针：启动代价最小的路径，总代价最小的路径，参数化代价最小的路径。 启动代价最小的路径与总代价最小的路径涵义显而易见，因此，这里只会说一下**参数化索引扫描代价最小的路径（cheapest parameterized index scan path）**。
 
@@ -2272,11 +2217,9 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 
 #### 3.6.2.2 第二层的处理
 
-在第二层中，计划器会在`PlannerInfo`的`join_rel_list`字段中创建一个`RelOptInfo`结构。 然后估计所有可能连接路径的代价，并且选择代价最小的那条访问路径。 `RelOptInfo`会将最佳访问路径作为总代价最小的路径， 如图3.33所示。
+在第二层中，计划器会在`PlannerInfo`的`join_rel_list`字段中创建一个`RelOptInfo`结构。 然后估计所有可能连接路径的代价，并且选择代价最小的那条访问路径。 `RelOptInfo`会将最佳访问路径作为总代价最小的路径， 如{{< xref fig="3.33" anchor="fig-3.33" >}}图3.33{{< /xref >}}所示。
 
-**图3.33 第二层处理后的`PlannerInfo`和`RelOptInfo`**
-
-![图3.33 第二层处理后的PlannerInfo和RelOptInfo](/img/fig-3-33.png)
+{{< fig num="3.33" src="/img/fig-3-33.png" caption="第二层处理后的`PlannerInfo`和`RelOptInfo`" alt="图3.33 第二层处理后的PlannerInfo和RelOptInfo" />}}
 
 表3.1展示了本例中连接访问路径的所有组合。本例中查询的连接类型为**等值连接（equi-join）**，因而对全部三种连接算法进行评估。 为方便起见，这里引入了一些有关访问路径的符号：
 
@@ -2316,7 +2259,7 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 
 例如在嵌套循环连接的部分总共评估了七条连接路径。 第一条表示在外表`tbl_a`和内表`tbl_b`上都使用顺序扫描路径；第二条表示在外表`tbl_a`上使用路径顺序扫描路径，而在内表`tbl_b`上使用物化顺序扫描路径，诸如此类。
 
-计划器最终从估计的连接访问路径中选择代价最小的那条，并且将其添加至`RelOptInfo{tbl_a,tbl_b}`的路径列表中，如图3.33所示。
+计划器最终从估计的连接访问路径中选择代价最小的那条，并且将其添加至`RelOptInfo{tbl_a,tbl_b}`的路径列表中，如{{< xref fig="3.33" anchor="fig-3.33" >}}图3.33{{< /xref >}}所示。
 
 在本例中，如下面`EXPLAIN`的结果所示，计划器选择了在内表`tbl_b`和外表`tbl_c`上进行散列连接。
 
@@ -2389,9 +2332,9 @@ $$
 
 计划器以同样的方式处理`{tbl_a,{tbl_b,tbl_c}}`与`{tbl_b,{tbl_a,tbl_c}}`对应的`RelOptInfo`，并最终从所有估好的路径中选择代价最小的访问路径。
 
-该查询的`EXPLAIN`命令结果如下所示：
+该查询的 `EXPLAIN` 命令结果如{{< xref fig="3.34" anchor="fig-3.34" >}}图3.34{{< /xref >}}所示：
 
-  ![图3.34 三表连接查询的执行计划](/img/fig-3-34.png)
+{{< fig num="3.34" src="/img/fig-3-34.png" caption="三表连接查询的执行计划" alt="图3.34 三表连接查询的执行计划" />}}
 
 最外层的连接是索引嵌套循环连接（第5行），第13行显示了内表上的参数化索引扫描，外表则是一个散列连接的结果该散列连接的内表是`tbl_a`，外表是`tbl_b`（第7-12行）。 因此，执行程序首先执行`tbl_a`和`tbl_b`上的散列连接，再执行索引嵌套循环连接。
 

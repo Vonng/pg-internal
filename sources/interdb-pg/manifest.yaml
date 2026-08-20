@@ -1,0 +1,4347 @@
+version: 1
+source:
+  base_url: https://www.interdb.jp/pg/
+  sitemap_url: https://www.interdb.jp/pg/sitemap.xml
+  sitemap_sha256: 854c91616068900df4ec39e33c562aaef71c4416346dd9dfc481b0dd03871ea3
+  inventory_checked_at: '2026-07-31T07:47:49+08:00'
+  excluded:
+  - url: https://www.interdb.jp/pg/tags/index.html
+    reason: Hugo taxonomy aggregation, not book content
+expected_source_pages: 83
+expected_assets: 209
+pages:
+- id: home
+  chapter: null
+  section: null
+  subsection: null
+  target: en/_index.md
+  permalink: /
+  weight: null
+  source_url: https://www.interdb.jp/pg/
+  title: The Internals of PostgreSQL
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/title3.png
+  fetched_at: '2026-07-30T22:47:54+08:00'
+  source_sha256: d50dc30bc45d2b0749d6685ce36ffc307fe9eb2d74ce14a53b3f2921a7cac423
+  source_bytes: 46923
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/
+  etag: '"b74b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/home.html
+  target_sha256: cc609444ca685cd47ca9d2ea1cf14c8a31457dce33a155ab73eebf371114856b
+  converted_at: '2026-07-31T07:47:53+08:00'
+- id: ch01-index
+  chapter: 1
+  section: 0
+  subsection: 0
+  target: en/docs/ch01/_index.md
+  permalink: /docs/ch01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql01/index.html
+  title: 1. Database Cluster, Databases and Tables
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T22:47:58+08:00'
+  source_sha256: 4b85d65cbc06ad9bc5a2c9ec10fa39f9465dd9802f6d21263fe91214b72010af
+  source_bytes: 25730
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql01/index.html
+  etag: '"6482-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch01-index.html
+  target_sha256: d7a309edc8823e2ff29592cf993dd4bbf189f19da091f3da09f94bc1d3b75db8
+  converted_at: '2026-07-31T07:47:54+08:00'
+- id: ch01-01
+  chapter: 1
+  section: 1
+  subsection: 0
+  target: en/docs/ch01/01.md
+  permalink: /docs/ch01/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql01/01.html
+  title: 1.1. Logical Structure of Database Cluster
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql01/fig-1-01.png
+  fetched_at: '2026-07-30T22:48:00+08:00'
+  source_sha256: e913d785e38fcdf1d37b97d584fa8a029a20c5010a3ec3e916e38445dcb75df7
+  source_bytes: 35630
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql01/01.html
+  etag: '"8b2e-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch01-01.html
+  target_sha256: e17fd7fe3f8e91a23a6b02fcd2509605b04fa56fbd8dec2d4f7a0dced5caccf5
+  converted_at: '2026-07-31T07:47:54+08:00'
+- id: ch01-02
+  chapter: 1
+  section: 2
+  subsection: 0
+  target: en/docs/ch01/02.md
+  permalink: /docs/ch01/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql01/02.html
+  title: 1.2. Physical Structure of Database Cluster
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql01/fig-1-02.png
+  - https://www.interdb.jp/pg/pgsql01/fig-1-03.png
+  fetched_at: '2026-07-30T22:48:02+08:00'
+  source_sha256: 53e08a8cda66dea39cab66e1f31ad1ea2dd1cb328ff439e499797539fd081f4d
+  source_bytes: 47820
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql01/02.html
+  etag: '"bacc-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch01-02.html
+  target_sha256: d21d619d446575a157203aeaa179203632dc071e0c1600a54d9ec5efc5a937d6
+  converted_at: '2026-07-31T07:47:55+08:00'
+- id: ch01-03
+  chapter: 1
+  section: 3
+  subsection: 0
+  target: en/docs/ch01/03.md
+  permalink: /docs/ch01/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql01/03.html
+  title: 1.3. Heap Table Structure
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql01/fig-1-04.png
+  - https://www.interdb.jp/pg/pgsql01/fig-1-05.png
+  fetched_at: '2026-07-30T22:48:05+08:00'
+  source_sha256: 7cbe29760d8ed6349222d42df3326ad2a29ddb7fc7404a7842817911136d7a8d
+  source_bytes: 52853
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql01/03.html
+  etag: '"ce75-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch01-03.html
+  target_sha256: beb377b67754eb45ca249f0317e225e93c15a4e68ccc5c4b74e00fce69d4b85a
+  converted_at: '2026-07-31T07:47:58+08:00'
+- id: ch01-04
+  chapter: 1
+  section: 4
+  subsection: 0
+  target: en/docs/ch01/04.md
+  permalink: /docs/ch01/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql01/04.html
+  title: 1.4. The Methods of Writing and Reading Tuples
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql01/fig-1-06.png
+  - https://www.interdb.jp/pg/pgsql01/fig-1-07.png
+  fetched_at: '2026-07-30T22:48:19+08:00'
+  source_sha256: 21f07348ca93f773b5d446b35270150fae25325a04e6572f5d53211ab6498844
+  source_bytes: 30575
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql01/04.html
+  etag: '"776f-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch01-04.html
+  target_sha256: e7be6107161fda72327609f4bf106832d734d8956e51fae5f7c251de01b0dcf4
+  converted_at: '2026-07-31T07:47:59+08:00'
+- id: ch02-index
+  chapter: 2
+  section: 0
+  subsection: 0
+  target: en/docs/ch02/_index.md
+  permalink: /docs/ch02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql02/index.html
+  title: 2. Process and Memory Architecture
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T22:48:22+08:00'
+  source_sha256: 9a0cbaccd6d745b19f52cb0b4f60ed3d14686961c36441295e164d7c2256c4e8
+  source_bytes: 25506
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql02/index.html
+  etag: '"63a2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch02-index.html
+  target_sha256: 6edafb592145b5fe297029e607ea1e488758db99ba67a75e88a3733ef71bd6e6
+  converted_at: '2026-07-31T07:47:59+08:00'
+- id: ch02-01
+  chapter: 2
+  section: 1
+  subsection: 0
+  target: en/docs/ch02/01.md
+  permalink: /docs/ch02/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql02/01.html
+  title: 2.1. Process Architecture
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql02/fig-2-01.png
+  fetched_at: '2026-07-30T22:48:24+08:00'
+  source_sha256: 8a91f3cc833d101e793ac073a4685326ad70c1fa45e01e1fbc471a3f6e2f25bc
+  source_bytes: 37839
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql02/01.html
+  etag: '"93cf-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch02-01.html
+  target_sha256: db4b1cdf80515d04a35a140addaad7ebb402597bddc789ebc8d0834707e29a11
+  converted_at: '2026-07-31T07:48:00+08:00'
+- id: ch02-02
+  chapter: 2
+  section: 2
+  subsection: 0
+  target: en/docs/ch02/02.md
+  permalink: /docs/ch02/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql02/02.html
+  title: 2.2. Memory Architecture
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql02/fig-2-02.png
+  fetched_at: '2026-07-30T22:48:28+08:00'
+  source_sha256: fe5fb65c6f0fed64f15ef6861f2db132665a7dc771fceb551d216102055feb6e
+  source_bytes: 29847
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql02/02.html
+  etag: '"7497-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch02-02.html
+  target_sha256: 887b5577033b689f0a43aa755d6852c9eb92d3f5c9fde0f52b49c60091ff5a27
+  converted_at: '2026-07-31T07:48:00+08:00'
+- id: ch03-index
+  chapter: 3
+  section: 0
+  subsection: 0
+  target: en/docs/ch03/_index.md
+  permalink: /docs/ch03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql03/index.html
+  title: 3. Query Processing
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T22:48:56+08:00'
+  source_sha256: 42366def1a2d04f542220675056283687b7fe4cbf92a29adfb3e25318be0da04
+  source_bytes: 27639
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/index.html
+  etag: '"6bf7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-index.html
+  target_sha256: 29ea8e9d0e3c9dea65578738b6ac31c0688eefba407d5f86fe2b2c6ab7820257
+  converted_at: '2026-07-31T07:48:00+08:00'
+- id: ch03-01
+  chapter: 3
+  section: 1
+  subsection: 0
+  target: en/docs/ch03/01.md
+  permalink: /docs/ch03/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql03/01.html
+  title: 3.1. Overview
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/fig-3-01.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-02.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-03.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-04.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-05.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-06.png
+  fetched_at: '2026-07-30T22:50:00+08:00'
+  source_sha256: a4573a770b9520386301158ba8effdf02a023631f2b2bbad372618f58d4a2cbb
+  source_bytes: 69704
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/01.html
+  etag: '"11048-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-01.html
+  target_sha256: 53ad67a5258a1e3f634209348b3842c54972b82448bfe61013147f9a88125a55
+  converted_at: '2026-07-31T07:48:01+08:00'
+- id: ch03-02
+  chapter: 3
+  section: 2
+  subsection: 0
+  target: en/docs/ch03/02.md
+  permalink: /docs/ch03/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql03/02.html
+  title: 3.2. Cost Estimation in Single-Table Query
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/fig-3-07.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-08.png
+  fetched_at: '2026-07-30T22:51:20+08:00'
+  source_sha256: 426f0022f6b7e2ea0d64e3107560270570326bfbb6322ad9b2b9ea8d7ed1ee45
+  source_bytes: 180744
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/02.html
+  etag: '"2c208-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-02.html
+  target_sha256: 5132dabf85945b3eabf4b574d8d419845a7c1dec2bc69d571a398ad3f591cc67
+  converted_at: '2026-07-31T07:48:02+08:00'
+- id: ch03-03
+  chapter: 3
+  section: 3
+  subsection: 0
+  target: en/docs/ch03/03.md
+  permalink: /docs/ch03/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql03/03.html
+  title: 3.3. Creating the Plan Tree of a Single-Table Query
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/fig-3-09.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-10.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-11.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-12.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-13.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-14.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-15.png
+  fetched_at: '2026-07-30T22:53:12+08:00'
+  source_sha256: 62564503ed75a56227f0e355d1ec14b3b42612e9c18e42a2214b8f394ecdccea
+  source_bytes: 179017
+  content_type: text/html
+  fetched_url: http://www.interdb.jp/pg/pgsql03/03.html
+  etag: '"2bb49-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-03.html
+  target_sha256: 2319c4b545775b1a8cfae4452ade6db1083dc88541e65b5e22bd9eaacba89a5f
+  converted_at: '2026-07-31T07:48:02+08:00'
+- id: ch03-04
+  chapter: 3
+  section: 4
+  subsection: 0
+  target: en/docs/ch03/04.md
+  permalink: /docs/ch03/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql03/04.html
+  title: 3.4. Executor Performance
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/fig-3-16.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-17.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-18.png
+  fetched_at: '2026-07-30T22:54:25+08:00'
+  source_sha256: 45b328cf40803c611eea9e91855c85c96bf4f9e843b830b1f6cecea98204984a
+  source_bytes: 78274
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/04.html
+  etag: '"131c2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-04.html
+  target_sha256: ba4ee479cef83fca7646dfdd18b33cd072741968ba79adb6f8a154f28bad3be1
+  converted_at: '2026-07-31T07:48:03+08:00'
+- id: ch03-05
+  chapter: 3
+  section: 5
+  subsection: 0
+  target: en/docs/ch03/05.md
+  permalink: /docs/ch03/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql03/05/index.html
+  title: 3.5. Join Operations
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T22:55:30+08:00'
+  source_sha256: 01ad4b90a424f095d4fb681c382d116026cd064ce67ef93c47bb4f941ca91439
+  source_bytes: 35095
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/05/index.html
+  etag: '"8917-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-05.html
+  target_sha256: aacb46407381a12e7bdbddbaf81d950d29f513bd5e44a9a7f39d0960b20e4189
+  converted_at: '2026-07-31T07:48:04+08:00'
+- id: ch03-05-01
+  chapter: 3
+  section: 5
+  subsection: 1
+  target: en/docs/ch03/05-01.md
+  permalink: /docs/ch03/05-01/
+  weight: 51
+  source_url: https://www.interdb.jp/pg/pgsql03/05/01.html
+  title: 3.5.1. Nested Loop Join
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-19.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-20.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-21.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-22.png
+  fetched_at: '2026-07-30T22:56:36+08:00'
+  source_sha256: e3bb972db80812864912708066022d9c93ea8b592bc8856cc336a4e7a93f56a4
+  source_bytes: 58733
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/05/01.html
+  etag: '"e56d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-05-01.html
+  target_sha256: bd20a0a6661026cdcb437c779d555226260b3336b2f1c897814fcd7529539469
+  converted_at: '2026-07-31T07:48:05+08:00'
+- id: ch03-05-02
+  chapter: 3
+  section: 5
+  subsection: 2
+  target: en/docs/ch03/05-02.md
+  permalink: /docs/ch03/05-02/
+  weight: 52
+  source_url: https://www.interdb.jp/pg/pgsql03/05/02.html
+  title: 3.5.2. Merge Join
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-23.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-24.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-25.png
+  fetched_at: '2026-07-30T22:56:40+08:00'
+  source_sha256: 913af71064a7b9f1c6559e1b8e1ac1d53c6f6c07cb347d7e0e7e2b8842913c74
+  source_bytes: 56292
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/05/02.html
+  etag: '"dbe4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-05-02.html
+  target_sha256: 56ade211f780cb6c1adcad1546d84c26923bb9fe5211c1d99aa3afe97ccd38ba
+  converted_at: '2026-07-31T07:48:05+08:00'
+- id: ch03-05-03
+  chapter: 3
+  section: 5
+  subsection: 3
+  target: en/docs/ch03/05-03.md
+  permalink: /docs/ch03/05-03/
+  weight: 53
+  source_url: https://www.interdb.jp/pg/pgsql03/05/03.html
+  title: 3.5.3. Hash Join
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-26.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-27.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-28.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-29.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-30.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-31.png
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-32.png
+  fetched_at: '2026-07-30T22:56:45+08:00'
+  source_sha256: dbdbd2e3ee0095acfced86aaaad0ab542a0523d38aab8d443e60e5bc6fb44c1a
+  source_bytes: 46002
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/05/03.html
+  etag: '"b3b2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-05-03.html
+  target_sha256: 1422bf78d27c3a66651b5650a38a65bc1763ff176f681e65b5f58d222bdf0169
+  converted_at: '2026-07-31T07:48:06+08:00'
+- id: ch03-05-04
+  chapter: 3
+  section: 5
+  subsection: 4
+  target: en/docs/ch03/05-04.md
+  permalink: /docs/ch03/05-04/
+  weight: 54
+  source_url: https://www.interdb.jp/pg/pgsql03/05/04.html
+  title: 3.5.4. Join Access Paths and Join Nodes
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/05/fig-3-33.png
+  fetched_at: '2026-07-30T22:56:57+08:00'
+  source_sha256: 7f53040245a1b264415ad35acbbc70536f4a665ea82ea5032fe5700e752a3d07
+  source_bytes: 60412
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/05/04.html
+  etag: '"ebfc-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-05-04.html
+  target_sha256: ac047fba37f28ca5daa7646173bd2c161c2794314ec6adfd72e779379e929fb9
+  converted_at: '2026-07-31T07:48:06+08:00'
+- id: ch03-06
+  chapter: 3
+  section: 6
+  subsection: 0
+  target: en/docs/ch03/06.md
+  permalink: /docs/ch03/06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql03/06.html
+  title: 3.6. Creating the Plan Tree of Multiple-Table Query
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/fig-3-34.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-35.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-36.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-37.png
+  fetched_at: '2026-07-30T22:57:13+08:00'
+  source_sha256: cdd44a95af31cdf31c2a30f5a25d1a6ef1e9a31415243ca7300539d51cedaee8
+  source_bytes: 58978
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/06.html
+  etag: '"e662-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-06.html
+  target_sha256: 0a3ac31fd8ca287844e53369753ae28966e4510509ba10d42354f0f8da7b4806
+  converted_at: '2026-07-31T07:48:06+08:00'
+- id: ch03-07
+  chapter: 3
+  section: 7
+  subsection: 0
+  target: en/docs/ch03/07.md
+  permalink: /docs/ch03/07/
+  weight: 70
+  source_url: https://www.interdb.jp/pg/pgsql03/07.html
+  title: 3.7. Parallel Query
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql03/fig-3-38.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-39.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-40.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-41.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-42.png
+  - https://www.interdb.jp/pg/pgsql03/fig-3-43.png
+  fetched_at: '2026-07-30T22:57:17+08:00'
+  source_sha256: 128ec3bad584b0af5ee8f52517663bab903e548d2f0ce794a3c785f4ba1a1e19
+  source_bytes: 104025
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql03/07.html
+  etag: '"19659-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch03-07.html
+  target_sha256: 2e6fc9b7047086c579235f69f11d764a09be0828d69b08f976b2629ceaf44453
+  converted_at: '2026-07-31T07:48:07+08:00'
+- id: ch04-index
+  chapter: 4
+  section: 0
+  subsection: 0
+  target: en/docs/ch04/_index.md
+  permalink: /docs/ch04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql04/index.html
+  title: 4. Foreign Data Wrappers (FDW)
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql04/fig-4-01.png
+  fetched_at: '2026-07-30T22:57:24+08:00'
+  source_sha256: 4f80825fe92a290daffdc8dc047b382d2c37c89f7b15f8eac7e6e894ddb57ae8
+  source_bytes: 29908
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql04/index.html
+  etag: '"74d4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch04-index.html
+  target_sha256: 7609ffe19339857c9eee15f787e78877c4d44c29a70cd882ca0fbddc54c63e28
+  converted_at: '2026-07-31T07:48:08+08:00'
+- id: ch04-01
+  chapter: 4
+  section: 1
+  subsection: 0
+  target: en/docs/ch04/01.md
+  permalink: /docs/ch04/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql04/01.html
+  title: 4.1. Overview
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql04/fig-4-02.png
+  - https://www.interdb.jp/pg/pgsql04/fig-4-03.png
+  - https://www.interdb.jp/pg/pgsql04/fig-4-04.png
+  - https://www.interdb.jp/pg/pgsql04/fig-4-05.png
+  fetched_at: '2026-07-30T22:57:26+08:00'
+  source_sha256: 7089ff8b84bab3d8c8145de3f7c3663ed5e9f2c9b33b411f2f6fb231d3b81952
+  source_bytes: 42826
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql04/01.html
+  etag: '"a74a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch04-01.html
+  target_sha256: c8fcaa4491b4b91a3f3605d43709fdf67c8a9b9d58daea352330d7cf470f0ece
+  converted_at: '2026-07-31T07:48:09+08:00'
+- id: ch04-02
+  chapter: 4
+  section: 2
+  subsection: 0
+  target: en/docs/ch04/02.md
+  permalink: /docs/ch04/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql04/02.html
+  title: 4.2. How the Postgres_fdw Extension Performs
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql04/fig-4-06.png
+  - https://www.interdb.jp/pg/pgsql04/fig-4-07.png
+  fetched_at: '2026-07-30T23:00:36+08:00'
+  source_sha256: 8a781ab30a19d8745da9ec5993e95bf4765e7cd79abbe3022980574832ca5736
+  source_bytes: 106847
+  content_type: text/html
+  fetched_url: http://www.interdb.jp/pg/pgsql04/02.html
+  etag: '"1a15f-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch04-02.html
+  target_sha256: 7dea6225ae460431a80e958f47fcf4e3601e1a4805d425fcae1218765cc1ab9d
+  converted_at: '2026-07-31T07:48:10+08:00'
+- id: ch05-index
+  chapter: 5
+  section: 0
+  subsection: 0
+  target: en/docs/ch05/_index.md
+  permalink: /docs/ch05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql05/index.html
+  title: 5. Concurrency Control
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:00:53+08:00'
+  source_sha256: f4d58d215198a7540b8a4fb082ed4c6107e0544e65d5d82e8f86ed227dc91c0c
+  source_bytes: 31661
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/index.html
+  etag: '"7bad-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-index.html
+  target_sha256: a031f8a89e56088aed5776c65c15be34c4df5fcf22af523807c1eb5cb4d2a057
+  converted_at: '2026-07-31T07:48:10+08:00'
+- id: ch05-01
+  chapter: 5
+  section: 1
+  subsection: 0
+  target: en/docs/ch05/01.md
+  permalink: /docs/ch05/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql05/01.html
+  title: 5.1 Transaction ID
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-01.png
+  fetched_at: '2026-07-30T23:01:57+08:00'
+  source_sha256: 9993f5e86ec84e92576250ea65ca3d5bc8714b42f4e6af0bfe4aaa2d6178c9fd
+  source_bytes: 28123
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/01.html
+  etag: '"6ddb-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-01.html
+  target_sha256: cea22f1d7dd042868a020585bf6dd7e0bd69d1b8f5a1f794a6af21a35278b220
+  converted_at: '2026-07-31T07:48:10+08:00'
+- id: ch05-02
+  chapter: 5
+  section: 2
+  subsection: 0
+  target: en/docs/ch05/02.md
+  permalink: /docs/ch05/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql05/02.html
+  title: 5.2 Tuple Structure
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-02.png
+  fetched_at: '2026-07-30T23:02:09+08:00'
+  source_sha256: 778be28453c8f3117be034c71d19f8032113d3871bb96a290921d3892447d383
+  source_bytes: 32490
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/02.html
+  etag: '"7eea-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-02.html
+  target_sha256: 4ff1b93ed1135e4d429419c6d9f4afcf2f8fe82f86611494c4a76375c45e930e
+  converted_at: '2026-07-31T07:48:11+08:00'
+- id: ch05-03
+  chapter: 5
+  section: 3
+  subsection: 0
+  target: en/docs/ch05/03.md
+  permalink: /docs/ch05/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql05/03.html
+  title: 5.3. Inserting, Deleting and Updating Tuples
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-03.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-04.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-05.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-06.png
+  fetched_at: '2026-07-30T23:02:30+08:00'
+  source_sha256: ed69fe689b75dbb63bdf712f8b05c2ec2948f0ce550cdcd9daaf3a4a5c572814
+  source_bytes: 37373
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/03.html
+  etag: '"91fd-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-03.html
+  target_sha256: a440e671f2c498fe36cffbb6f744e93bf8e39e102376a187544159222edabea0
+  converted_at: '2026-07-31T07:48:11+08:00'
+- id: ch05-04
+  chapter: 5
+  section: 4
+  subsection: 0
+  target: en/docs/ch05/04.md
+  permalink: /docs/ch05/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql05/04.html
+  title: 5.4. Commit Log (clog)
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-07.png
+  fetched_at: '2026-07-30T23:02:32+08:00'
+  source_sha256: 711831452c69b946df28f3971836b812b60f49ac47c8dde3a82670557ea186a7
+  source_bytes: 29301
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/04.html
+  etag: '"7275-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-04.html
+  target_sha256: b8d08c7f3408f0c3d1a70bfac547c9667d8df4fb1b5e5d449a3b8d6860e4c58b
+  converted_at: '2026-07-31T07:48:12+08:00'
+- id: ch05-05
+  chapter: 5
+  section: 5
+  subsection: 0
+  target: en/docs/ch05/05.md
+  permalink: /docs/ch05/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql05/05.html
+  title: 5.5. Transaction Snapshot
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-08.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-09.png
+  fetched_at: '2026-07-30T23:02:48+08:00'
+  source_sha256: 310b72a2bbc0196ab1f259fcf741b6cb445bd61b7c58d828c05728bfc9c8b314
+  source_bytes: 31889
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/05.html
+  etag: '"7c91-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-05.html
+  target_sha256: 88ccebf69fe682c14ca63fabb76ba7c197055e4ed83cf292ee11621410bdd310
+  converted_at: '2026-07-31T07:48:13+08:00'
+- id: ch05-06
+  chapter: 5
+  section: 6
+  subsection: 0
+  target: en/docs/ch05/06.md
+  permalink: /docs/ch05/06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql05/06.html
+  title: 5.6. Visibility Check Rules
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:03:28+08:00'
+  source_sha256: 656e27b94892f6579bb284fed3f3c76d7275cb4f0c38d1b7e81268084f93b960
+  source_bytes: 39120
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/06.html
+  etag: '"98d0-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-06.html
+  target_sha256: 5c78af2f960b35107290eb6a2b3f0a1f6d3a07b5fb4d6af24278cd478a2b8350
+  converted_at: '2026-07-31T07:48:14+08:00'
+- id: ch05-07
+  chapter: 5
+  section: 7
+  subsection: 0
+  target: en/docs/ch05/07.md
+  permalink: /docs/ch05/07/
+  weight: 70
+  source_url: https://www.interdb.jp/pg/pgsql05/07.html
+  title: 5.7. Visibility Check
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-10.png
+  fetched_at: '2026-07-30T23:04:34+08:00'
+  source_sha256: dee89f7e0aaa4e546b5dd97b9a6925a4e1fe5165a1e653e0daad420a12c0ab96
+  source_bytes: 45387
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/07.html
+  etag: '"b14b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-07.html
+  target_sha256: e5f0a4afd729c4812ec64fb11e35d027ac6c13db5e4ab9371421f7da45e1872b
+  converted_at: '2026-07-31T07:48:14+08:00'
+- id: ch05-08
+  chapter: 5
+  section: 8
+  subsection: 0
+  target: en/docs/ch05/08.md
+  permalink: /docs/ch05/08/
+  weight: 80
+  source_url: https://www.interdb.jp/pg/pgsql05/08.html
+  title: 5.8. Preventing Lost Updates
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-11.png
+  fetched_at: '2026-07-30T23:05:30+08:00'
+  source_sha256: ace496694bbb7ce175e293680261cdc3f006bdefc2a35c8ed62b12e8e9c5e86c
+  source_bytes: 49431
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/08.html
+  etag: '"c117-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-08.html
+  target_sha256: 642428e6c1e000f96d141ba349ac14ab2cf6fbbb88a9bdd681e9869d16f0c28b
+  converted_at: '2026-07-31T07:48:15+08:00'
+- id: ch05-09
+  chapter: 5
+  section: 9
+  subsection: 0
+  target: en/docs/ch05/09.md
+  permalink: /docs/ch05/09/
+  weight: 90
+  source_url: https://www.interdb.jp/pg/pgsql05/09.html
+  title: 5.9. Serializable Snapshot Isolation
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-12.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-13.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-14.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-15.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-16.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-17.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-18.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-19.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-20.png
+  fetched_at: '2026-07-30T23:05:48+08:00'
+  source_sha256: 572a91ab65e48d77a7047725af5d63f117a17f517d23db73510595c21f243cd4
+  source_bytes: 43617
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/09.html
+  etag: '"aa61-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-09.html
+  target_sha256: 8c6e871bf52debc309f7d0bbedbcf03eb8e542a8bab9a97858e7a21da9cb3533
+  converted_at: '2026-07-31T07:48:15+08:00'
+- id: ch05-10
+  chapter: 5
+  section: 10
+  subsection: 0
+  target: en/docs/ch05/10.md
+  permalink: /docs/ch05/10/
+  weight: 100
+  source_url: https://www.interdb.jp/pg/pgsql05/10.html
+  title: 5.10. Required Maintenance Processes
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql05/fig-5-21.png
+  - https://www.interdb.jp/pg/pgsql05/fig-5-22.png
+  fetched_at: '2026-07-30T23:05:51+08:00'
+  source_sha256: 0de7d88703d87433b79bd78d3ac20c2414b420843fea2b71870c4d811859c33c
+  source_bytes: 29051
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql05/10.html
+  etag: '"717b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch05-10.html
+  target_sha256: b59d6ef730906784a5ab770728114d0d65be7eaa6bb4755fc768971959dcf6c0
+  converted_at: '2026-07-31T07:48:16+08:00'
+- id: ch06-index
+  chapter: 6
+  section: 0
+  subsection: 0
+  target: en/docs/ch06/_index.md
+  permalink: /docs/ch06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql06/index.html
+  title: 6. VACUUM Processing
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:05:52+08:00'
+  source_sha256: 66341618659da42f125cbf71089e28e537d022f979f6065f9a5bc2b87c0cd9b6
+  source_bytes: 27355
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/index.html
+  etag: '"6adb-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-index.html
+  target_sha256: 1c35f3c273cf28a480020aff86cdf66fca04efb515f6679ad9e0cd42934d3554
+  converted_at: '2026-07-31T07:48:16+08:00'
+- id: ch06-01
+  chapter: 6
+  section: 1
+  subsection: 0
+  target: en/docs/ch06/01.md
+  permalink: /docs/ch06/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql06/01.html
+  title: 6.1. Outline of VACUUM Processing
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql06/fig-6-01.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-02.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-03.png
+  fetched_at: '2026-07-30T23:05:56+08:00'
+  source_sha256: c0e87289a613810bb73d4aece57032ca1b3dcec5fce7bcfa6724a2c3aa6a5afd
+  source_bytes: 40535
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/01.html
+  etag: '"9e57-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-01.html
+  target_sha256: 9533f12bec77a7252c92a7f6de0b3a662c186483d59e59877d25d4e1c60c57e0
+  converted_at: '2026-07-31T07:48:17+08:00'
+- id: ch06-02
+  chapter: 6
+  section: 2
+  subsection: 0
+  target: en/docs/ch06/02.md
+  permalink: /docs/ch06/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql06/02.html
+  title: 6.2. Visibility Map
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql06/fig-6-04.png
+  fetched_at: '2026-07-30T23:06:13+08:00'
+  source_sha256: 826368ceed631fe280f6c3f2f0e1b17f38c59e04a8d04792d3b2a9910587884b
+  source_bytes: 27928
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/02.html
+  etag: '"6d18-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-02.html
+  target_sha256: caf50f001126a523f0340c7e04fdc818d2393dec2de8829a80e1ee7dd055af5d
+  converted_at: '2026-07-31T07:48:17+08:00'
+- id: ch06-03
+  chapter: 6
+  section: 3
+  subsection: 0
+  target: en/docs/ch06/03.md
+  permalink: /docs/ch06/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql06/03.html
+  title: 6.3. Freeze Processing
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql06/fig-6-05.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-06.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-07.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-08.png
+  fetched_at: '2026-07-30T23:06:18+08:00'
+  source_sha256: 8ff5feecaa263f9d1f847ba0fc0261075223125bebd9df2c4dba8ca832bcd201
+  source_bytes: 40996
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/03.html
+  etag: '"a024-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-03.html
+  target_sha256: 120c10026e831165b716c8f8ef3ad0c6ca70a7706be343031b2de7bfdf819b72
+  converted_at: '2026-07-31T07:48:18+08:00'
+- id: ch06-04
+  chapter: 6
+  section: 4
+  subsection: 0
+  target: en/docs/ch06/04.md
+  permalink: /docs/ch06/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql06/04.html
+  title: 6.4. Removing Unnecessary Clog Files
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql06/fig-6-09.png
+  fetched_at: '2026-07-30T23:06:21+08:00'
+  source_sha256: 0959988eddfafffbbb16a87d90b0f9702e51dcda4b1826f37ac0abc5881ba658
+  source_bytes: 28921
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/04.html
+  etag: '"70f9-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-04.html
+  target_sha256: 07026a843086dbb1dc6639617c618e2d0059176056ae4b9ac120687baae6d6e4
+  converted_at: '2026-07-31T07:48:19+08:00'
+- id: ch06-05
+  chapter: 6
+  section: 5
+  subsection: 0
+  target: en/docs/ch06/05.md
+  permalink: /docs/ch06/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql06/05.html
+  title: 6.5. Autovacuum Daemon
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:07:25+08:00'
+  source_sha256: d86f1b15058a37d43ee83ea9506b28bd3da8f4b89f1a1d341fcfec4a53fbaa47
+  source_bytes: 34920
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/05.html
+  etag: '"8868-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-05.html
+  target_sha256: eb019c524eb42fb49c60b71bb65e1c2c365a5a14e2cb5713fbdbfe1eb22ce709
+  converted_at: '2026-07-31T07:48:19+08:00'
+- id: ch06-06
+  chapter: 6
+  section: 6
+  subsection: 0
+  target: en/docs/ch06/06.md
+  permalink: /docs/ch06/06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql06/06.html
+  title: 6.6. Reclaiming Bloated Space
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql06/fig-6-10.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-11.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-12.png
+  - https://www.interdb.jp/pg/pgsql06/fig-6-13.png
+  fetched_at: '2026-07-30T23:07:39+08:00'
+  source_sha256: 87a74d4c8d1b5640ca9604a9043a31c3b6fd37b084446ffd2686c3ce37085a82
+  source_bytes: 44539
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql06/06.html
+  etag: '"adfb-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch06-06.html
+  target_sha256: 0bca702c8cb265de07dacb207fd2121e0743daf6e53860e09b21fa69d737c4cd
+  converted_at: '2026-07-31T07:48:20+08:00'
+- id: ch07-index
+  chapter: 7
+  section: 0
+  subsection: 0
+  target: en/docs/ch07/_index.md
+  permalink: /docs/ch07/
+  weight: 70
+  source_url: https://www.interdb.jp/pg/pgsql07/index.html
+  title: 7. HOT and Index-Only Scans
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:07:42+08:00'
+  source_sha256: 102749f2426efa3daf839e293b68384a404928fe1c02a466e0f8bf34a59ebb7b
+  source_bytes: 25424
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql07/index.html
+  etag: '"6350-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch07-index.html
+  target_sha256: 5828b0975b7d1118a0f067e391b431c5e4bc941aafc292caa9a887043970495b
+  converted_at: '2026-07-31T07:48:20+08:00'
+- id: ch07-01
+  chapter: 7
+  section: 1
+  subsection: 0
+  target: en/docs/ch07/01.md
+  permalink: /docs/ch07/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql07/01.html
+  title: 7.1. Heap Only Tuple (HOT)
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql07/fig-7-01.png
+  - https://www.interdb.jp/pg/pgsql07/fig-7-02.png
+  - https://www.interdb.jp/pg/pgsql07/fig-7-03.png
+  - https://www.interdb.jp/pg/pgsql07/fig-7-04.png
+  - https://www.interdb.jp/pg/pgsql07/fig-7-05.png
+  - https://www.interdb.jp/pg/pgsql07/fig-7-06.png
+  fetched_at: '2026-07-30T23:07:48+08:00'
+  source_sha256: c177a52cf61f5c3f428e89f5bfaec608878bf9760404f14143b5ca3e6c58c98c
+  source_bytes: 33812
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql07/01.html
+  etag: '"8414-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch07-01.html
+  target_sha256: 722f001dc5a4163ca6b162a0a2bf55989e46b6eeec46a65293b5513ad0b320d3
+  converted_at: '2026-07-31T07:48:21+08:00'
+- id: ch07-02
+  chapter: 7
+  section: 2
+  subsection: 0
+  target: en/docs/ch07/02.md
+  permalink: /docs/ch07/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql07/02.html
+  title: 7.2. Index-Only Scans
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql07/fig-7-07.png
+  fetched_at: '2026-07-30T23:08:04+08:00'
+  source_sha256: 1aefedc8810c4892df20da149a07a13fedffbc40bc91f440af8d029ec421b997
+  source_bytes: 30434
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql07/02.html
+  etag: '"76e2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch07-02.html
+  target_sha256: 40a93b9a918353db55b7c74b6be6379a9b02d2eef10c18caba02e80c850cf844
+  converted_at: '2026-07-31T07:48:22+08:00'
+- id: ch08-index
+  chapter: 8
+  section: 0
+  subsection: 0
+  target: en/docs/ch08/_index.md
+  permalink: /docs/ch08/
+  weight: 80
+  source_url: https://www.interdb.jp/pg/pgsql08/index.html
+  title: 8. Buffer Manager
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql08/fig-8-01.png
+  fetched_at: '2026-07-30T23:08:07+08:00'
+  source_sha256: 842ade615a32310cea98aa9c5067743afc23df136fc0ff36d9183eb7faf17a82
+  source_bytes: 26641
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/index.html
+  etag: '"6811-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-index.html
+  target_sha256: db941228ee0d05fae64b6ba7d0137f89ed71f16746da3748f6b2334b41286d6c
+  converted_at: '2026-07-31T07:48:22+08:00'
+- id: ch08-01
+  chapter: 8
+  section: 1
+  subsection: 0
+  target: en/docs/ch08/01.md
+  permalink: /docs/ch08/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql08/01.html
+  title: 8.1. Overview
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql08/fig-8-02.png
+  fetched_at: '2026-07-30T23:08:10+08:00'
+  source_sha256: 4f84b57d4778e6a0460df52aaf95b054a2bda9a8b426b0d9b6ccb3ca4486698d
+  source_bytes: 35906
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/01.html
+  etag: '"8c42-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-01.html
+  target_sha256: f96f8e50572f5e16fdf5c453c86263e8019571dbbc095aacffee042510db6717
+  converted_at: '2026-07-31T07:48:23+08:00'
+- id: ch08-02
+  chapter: 8
+  section: 2
+  subsection: 0
+  target: en/docs/ch08/02.md
+  permalink: /docs/ch08/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql08/02.html
+  title: 8.2. Buffer Manager Structure
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql08/fig-8-03.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-04.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-05.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-06.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-07.png
+  fetched_at: '2026-07-30T23:08:18+08:00'
+  source_sha256: 41f7b95936a25f466752221fe45ba2d89380f7bda6471117c452fe5dc37db352
+  source_bytes: 47041
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/02.html
+  etag: '"b7c1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-02.html
+  target_sha256: df2fe095e42f877d247120870e1ca642d122b57f5969cc5a722b43b8d0f4ae61
+  converted_at: '2026-07-31T07:48:25+08:00'
+- id: ch08-03
+  chapter: 8
+  section: 3
+  subsection: 0
+  target: en/docs/ch08/03.md
+  permalink: /docs/ch08/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql08/03.html
+  title: 8.3. Buffer Manager Locks
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql08/fig-8-08.png
+  fetched_at: '2026-07-30T23:08:23+08:00'
+  source_sha256: 942992825177d59119bf5b25d2022f3c7fee6b94e258ae695ba42bdda4bf167d
+  source_bytes: 29107
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/03.html
+  etag: '"71b3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-03.html
+  target_sha256: ce7d2592f57d97ea73807fb6c18ac8c5504f6a8d15ca8067ef7920725c7b4503
+  converted_at: '2026-07-31T07:48:26+08:00'
+- id: ch08-04
+  chapter: 8
+  section: 4
+  subsection: 0
+  target: en/docs/ch08/04.md
+  permalink: /docs/ch08/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql08/04.html
+  title: 8.4. Buffer management mechanisms
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql08/fig-8-09.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-10.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-11.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-12.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-13.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-14.png
+  fetched_at: '2026-07-30T23:08:29+08:00'
+  source_sha256: a82bf03e49c4af9b50b2f53fe241f1bed69b6f46bc26c659e071251e0b116d32
+  source_bytes: 57944
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/04.html
+  etag: '"e258-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-04.html
+  target_sha256: 1581605028eb29ae31a0ab5b6a3e31549792c2f6923c8d28e4d69ec2ab1ba611
+  converted_at: '2026-07-31T07:48:26+08:00'
+- id: ch08-05
+  chapter: 8
+  section: 5
+  subsection: 0
+  target: en/docs/ch08/05.md
+  permalink: /docs/ch08/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql08/05.html
+  title: 8.5. Asynchronous I/O in PostgreSQL
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql08/fig-8-15.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-16.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-17.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-18.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-19.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-20.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-21.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-22.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-23.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-24.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-25.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-26.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-27.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-28.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-29.png
+  - https://www.interdb.jp/pg/pgsql08/fig-8-30.png
+  fetched_at: '2026-07-30T23:08:58+08:00'
+  source_sha256: 682d99069155a097c2323c5dda47e8e057effbde2b6e526fb4bbb3374b0d3370
+  source_bytes: 120346
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/05.html
+  etag: '"1d61a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-05.html
+  target_sha256: 6bf52ab0a5582051ecee0ca912d6e13bb81bd2aa77ede99eaf551577f3457dfa
+  converted_at: '2026-07-31T07:48:28+08:00'
+- id: ch08-06
+  chapter: 8
+  section: 6
+  subsection: 0
+  target: en/docs/ch08/06.md
+  permalink: /docs/ch08/06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql08/06.html
+  title: 8.6. Dirty Pages Flushing
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:09:08+08:00'
+  source_sha256: 5fc766985f282be6dd48aa75062a5d8e413d9a99f46c320726562c7854706e7b
+  source_bytes: 28401
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql08/06.html
+  etag: '"6ef1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch08-06.html
+  target_sha256: 542a7b2eb005bd049db658580e04457fcbf8efb15cb2ce86677ff9d3fac1e655
+  converted_at: '2026-07-31T07:48:29+08:00'
+- id: ch09-index
+  chapter: 9
+  section: 0
+  subsection: 0
+  target: en/docs/ch09/_index.md
+  permalink: /docs/ch09/
+  weight: 90
+  source_url: https://www.interdb.jp/pg/pgsql09/index.html
+  title: 9. Write Ahead Logging (WAL)
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:10:14+08:00'
+  source_sha256: 197c8abfdbe12a448ccd7c4496210943735a8d92285e6153e147bf68ec044c9a
+  source_bytes: 28042
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/index.html
+  etag: '"6d8a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-index.html
+  target_sha256: bc1a9a90bde9a27496b5078cd6176baf63b0fc44ef98b2a8d71c646fa876209a
+  converted_at: '2026-07-31T07:48:29+08:00'
+- id: ch09-01
+  chapter: 9
+  section: 1
+  subsection: 0
+  target: en/docs/ch09/01.md
+  permalink: /docs/ch09/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql09/01.html
+  title: 9.1. Overview
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-01.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-02.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-03.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-04.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-05.png
+  fetched_at: '2026-07-30T23:10:31+08:00'
+  source_sha256: aafa55600c6727eb89b2e3bb4b88faa930717f9934f0c69859748662f7a988c1
+  source_bytes: 37061
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/01.html
+  etag: '"90c5-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-01.html
+  target_sha256: 4915781a52a040c9f2b39f4289954ce92b28e65b286f8dc0f3f09de920b19379
+  converted_at: '2026-07-31T07:48:30+08:00'
+- id: ch09-02
+  chapter: 9
+  section: 2
+  subsection: 0
+  target: en/docs/ch09/02.md
+  permalink: /docs/ch09/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql09/02.html
+  title: 9.2. Transaction Log and WAL Segment Files
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-06.png
+  fetched_at: '2026-07-30T23:10:37+08:00'
+  source_sha256: 2213b474c6b2f8a377a31fd4f47e7cacdeb3909dee1c3221bd6d30f6f2f1bb43
+  source_bytes: 29446
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/02.html
+  etag: '"7306-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-02.html
+  target_sha256: 9ca3f3a193e37b123d9bd51b8af707ed5091ce0f267df960e2ee2479a89da3ce
+  converted_at: '2026-07-31T07:48:31+08:00'
+- id: ch09-03
+  chapter: 9
+  section: 3
+  subsection: 0
+  target: en/docs/ch09/03.md
+  permalink: /docs/ch09/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql09/03.html
+  title: 9.3. Internal Layout of WAL Segment
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-07.png
+  fetched_at: '2026-07-30T23:10:42+08:00'
+  source_sha256: d9057b5bdf0bd2a9ce595421788a3d2f0f47b1d1bbde5183ac9d6bb28c23899f
+  source_bytes: 31623
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/03.html
+  etag: '"7b87-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-03.html
+  target_sha256: 5fc7ea20cdfef0dbe18416bf54cab917a6c2864b62d51bf1953850fa9b27e35a
+  converted_at: '2026-07-31T07:48:32+08:00'
+- id: ch09-04
+  chapter: 9
+  section: 4
+  subsection: 0
+  target: en/docs/ch09/04.md
+  permalink: /docs/ch09/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql09/04.html
+  title: 9.4. Internal Layout of XLOG Record
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-08.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-09.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-10.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-11.png
+  fetched_at: '2026-07-30T23:11:06+08:00'
+  source_sha256: 78df2b9ab663e3aa0c3ac915bf4308becf49f4cbf7fb3676625c85ce53ed9c0c
+  source_bytes: 68481
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/04.html
+  etag: '"10b81-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-04.html
+  target_sha256: 52a179b227f1a0ca089b4b04c121b2f29cdf3c9601d9a84f1cbd9f2fbe3b8dda
+  converted_at: '2026-07-31T07:48:33+08:00'
+- id: ch09-05
+  chapter: 9
+  section: 5
+  subsection: 0
+  target: en/docs/ch09/05.md
+  permalink: /docs/ch09/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql09/05.html
+  title: 9.5. Writing of XLOG Records
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-12.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-13.png
+  fetched_at: '2026-07-30T23:11:08+08:00'
+  source_sha256: a1b6661d1f2b2f7185c08488dc0762e79061f04ae585efaab826ad9df6cd6aff
+  source_bytes: 36012
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/05.html
+  etag: '"8cac-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-05.html
+  target_sha256: 91bf89e7aaa92d16e417c3413868095108b9bec7391c873d3b92584f71187ee5
+  converted_at: '2026-07-31T07:48:33+08:00'
+- id: ch09-06
+  chapter: 9
+  section: 6
+  subsection: 0
+  target: en/docs/ch09/06.md
+  permalink: /docs/ch09/06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql09/06.html
+  title: 9.6. WAL related processes
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-14.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-15.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-16.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-17.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-18.png
+  fetched_at: '2026-07-30T23:11:24+08:00'
+  source_sha256: 7bb8c11152bb8145a25db29ef7cde091606f82f463ef706a854074f7975e6962
+  source_bytes: 62843
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/06.html
+  etag: '"f57b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-06.html
+  target_sha256: a8376e9bc9afd32fcf9c6c0971a41c4f9d46e329f387331d5868c53201a192e0
+  converted_at: '2026-07-31T07:48:33+08:00'
+- id: ch09-07
+  chapter: 9
+  section: 7
+  subsection: 0
+  target: en/docs/ch09/07.md
+  permalink: /docs/ch09/07/
+  weight: 70
+  source_url: https://www.interdb.jp/pg/pgsql09/07.html
+  title: 9.7. Checkpoint Processing in PostgreSQL
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-19.png
+  fetched_at: '2026-07-30T23:12:40+08:00'
+  source_sha256: e2c7a3cd97de81ce1019df3540e09a05d13a05a8361e2e368a381cf4a6b88898
+  source_bytes: 37319
+  content_type: text/html
+  fetched_url: http://www.interdb.jp/pg/pgsql09/07.html
+  etag: '"91c7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-07.html
+  target_sha256: 4854880fb0a324bf7df7ede6401db45f423934ab379fb397a6d024ef8cd93bea
+  converted_at: '2026-07-31T07:48:34+08:00'
+- id: ch09-08
+  chapter: 9
+  section: 8
+  subsection: 0
+  target: en/docs/ch09/08.md
+  permalink: /docs/ch09/08/
+  weight: 80
+  source_url: https://www.interdb.jp/pg/pgsql09/08.html
+  title: 9.8. Database Recovery in PostgreSQL
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-20.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-21.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-22.png
+  fetched_at: '2026-07-30T23:12:45+08:00'
+  source_sha256: 56c9c918d356717f5e48550d3d92dfca8fa5384918b074ca4cc862e5ba1d7cd6
+  source_bytes: 30378
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/08.html
+  etag: '"76aa-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-08.html
+  target_sha256: 02e3a78f35da1fb28aff7638f6283e2252b92648aa4e51dee8bf55f74669813c
+  converted_at: '2026-07-31T07:48:35+08:00'
+- id: ch09-09
+  chapter: 9
+  section: 9
+  subsection: 0
+  target: en/docs/ch09/09.md
+  permalink: /docs/ch09/09/
+  weight: 90
+  source_url: https://www.interdb.jp/pg/pgsql09/09.html
+  title: 9.9. WAL Segment Files Management
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-23.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-24.png
+  - https://www.interdb.jp/pg/pgsql09/fig-9-25.png
+  fetched_at: '2026-07-30T23:12:46+08:00'
+  source_sha256: 02b8c9f0d9f847e6fa525d2a6976e29108555db5c261f2c2918655ac27d615bc
+  source_bytes: 30989
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/09.html
+  etag: '"790d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-09.html
+  target_sha256: b306518e277c4bce9bf0eb71c1176b0633b8792009d59326738f5b99f60c0eb2
+  converted_at: '2026-07-31T07:48:35+08:00'
+- id: ch09-10
+  chapter: 9
+  section: 10
+  subsection: 0
+  target: en/docs/ch09/10.md
+  permalink: /docs/ch09/10/
+  weight: 100
+  source_url: https://www.interdb.jp/pg/pgsql09/10.html
+  title: 9.10. Continuous Archiving and Archive Logs
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql09/fig-9-26.png
+  fetched_at: '2026-07-30T23:12:51+08:00'
+  source_sha256: 214bbe54bcb0d05b5bbba977c8824d42585daab720b2d9015bb03a6268e65afb
+  source_bytes: 29190
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql09/10.html
+  etag: '"7206-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch09-10.html
+  target_sha256: 750b85d4c7018d24b7872ceb741c7d9acd2cfa7e9ca1958d218684a817ecff30
+  converted_at: '2026-07-31T07:48:35+08:00'
+- id: ch10-index
+  chapter: 10
+  section: 0
+  subsection: 0
+  target: en/docs/ch10/_index.md
+  permalink: /docs/ch10/
+  weight: 100
+  source_url: https://www.interdb.jp/pg/pgsql10/index.html
+  title: 10. Online Backup and Point-In-Time Recovery (PITR)
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:12:57+08:00'
+  source_sha256: b405648c7762fdee1fbeb0b3b0fdda5fd652c6dada7fab4f1dbb828643b1d345
+  source_bytes: 27468
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql10/index.html
+  etag: '"6b4c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch10-index.html
+  target_sha256: 71921a1e3933f806c57154672e5f554b0341379b5523a57587a7a292a7c3b15b
+  converted_at: '2026-07-31T07:48:36+08:00'
+- id: ch10-01
+  chapter: 10
+  section: 1
+  subsection: 0
+  target: en/docs/ch10/01.md
+  permalink: /docs/ch10/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql10/01.html
+  title: 10.1. Base Backup
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql10/fig-10-01.png
+  - https://www.interdb.jp/pg/pgsql10/fig-10-02.png
+  fetched_at: '2026-07-30T23:13:11+08:00'
+  source_sha256: ef61baae3d4786f6cfb4b4fc25eed729725d94f9ed638be10a81c8095d6b883d
+  source_bytes: 48685
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql10/01.html
+  etag: '"be2d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch10-01.html
+  target_sha256: 744b776d3db4a677c5436952b47df57028a1f725d0d657d621f50ba53999f7a2
+  converted_at: '2026-07-31T07:48:36+08:00'
+- id: ch10-02
+  chapter: 10
+  section: 2
+  subsection: 0
+  target: en/docs/ch10/02.md
+  permalink: /docs/ch10/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql10/02.html
+  title: 10.2. How Point-in-Time Recovery Works
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql10/fig-10-03.png
+  fetched_at: '2026-07-30T23:14:27+08:00'
+  source_sha256: 596f754ad7b21032c1fd6462334d3ae8edff50ed359da194186e2ff82f2277e5
+  source_bytes: 40748
+  content_type: text/html
+  fetched_url: http://www.interdb.jp/pg/pgsql10/02.html
+  etag: '"9f2c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch10-02.html
+  target_sha256: 16ef3f2da75817d43dc78d80f0f881ee7d01d6a1747f36a1a1ed5ebd40f1bcb8
+  converted_at: '2026-07-31T07:48:37+08:00'
+- id: ch10-03
+  chapter: 10
+  section: 3
+  subsection: 0
+  target: en/docs/ch10/03.md
+  permalink: /docs/ch10/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql10/03.html
+  title: 10.3. timelineId and Timeline History File
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql10/fig-10-04.png
+  - https://www.interdb.jp/pg/pgsql10/fig-10-05.png
+  fetched_at: '2026-07-30T23:14:29+08:00'
+  source_sha256: 01365e5e2d9068a49227eb1e1cadfd11e9738c2f60d859533d8ad3688514144b
+  source_bytes: 31510
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql10/03.html
+  etag: '"7b16-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch10-03.html
+  target_sha256: f6d33ac9ecbbf46b6e8c834b67891cb2eeedd1951d98748063531fa1ec9656db
+  converted_at: '2026-07-31T07:48:38+08:00'
+- id: ch10-04
+  chapter: 10
+  section: 4
+  subsection: 0
+  target: en/docs/ch10/04.md
+  permalink: /docs/ch10/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql10/04.html
+  title: 10.4. Point-in-Time Recovery with Timeline History File
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql10/fig-10-06.png
+  fetched_at: '2026-07-30T23:14:54+08:00'
+  source_sha256: 694a18508d231da0682adfcd83f95da011c1169d4c24d06944d9a88617a605f1
+  source_bytes: 30140
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql10/04.html
+  etag: '"75bc-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch10-04.html
+  target_sha256: b5636d0636749a357cbdfd095e5d68ffe8f5fe889b7d6f4e78c0aa88e80a7a01
+  converted_at: '2026-07-31T07:48:38+08:00'
+- id: ch10-05
+  chapter: 10
+  section: 5
+  subsection: 0
+  target: en/docs/ch10/05.md
+  permalink: /docs/ch10/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql10/05.html
+  title: 10.5. Incremental Backup
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql10/fig-10-07.png
+  - https://www.interdb.jp/pg/pgsql10/fig-10-08.png
+  - https://www.interdb.jp/pg/pgsql10/fig-10-09.png
+  - https://www.interdb.jp/pg/pgsql10/fig-10-10.png
+  - https://www.interdb.jp/pg/pgsql10/fig-10-11.png
+  fetched_at: '2026-07-30T23:14:56+08:00'
+  source_sha256: a247c591c51db1eac0fb9d73fa3ea0535157addb363af18ebb702e76c1275530
+  source_bytes: 38128
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql10/05.html
+  etag: '"94f0-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch10-05.html
+  target_sha256: 70317b49883b7dff971b03f71c8abaf18dc75c97a053d0d2faf4cfce9aa5bba3
+  converted_at: '2026-07-31T07:48:39+08:00'
+- id: ch11-index
+  chapter: 11
+  section: 0
+  subsection: 0
+  target: en/docs/ch11/_index.md
+  permalink: /docs/ch11/
+  weight: 110
+  source_url: https://www.interdb.jp/pg/pgsql11/index.html
+  title: 11. Streaming Replication
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:14:58+08:00'
+  source_sha256: 00be8bab3700047467d8f6e966a2c35f55ff16851f2c8a281c77959640d2ed9c
+  source_bytes: 26756
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql11/index.html
+  etag: '"6884-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch11-index.html
+  target_sha256: f3147dfbc95c3f42ce82631900e73a04788e05ef8c57e3e54ca5637771173552
+  converted_at: '2026-07-31T07:48:40+08:00'
+- id: ch11-01
+  chapter: 11
+  section: 1
+  subsection: 0
+  target: en/docs/ch11/01.md
+  permalink: /docs/ch11/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql11/01.html
+  title: 11.1. Starting the Streaming Replication
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql11/fig-11-01.png
+  fetched_at: '2026-07-30T23:15:01+08:00'
+  source_sha256: a748a6f0ec12397b1495b15b67eac2cf3f95ea9a9013a13afb2d3e455ffe20cb
+  source_bytes: 31090
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql11/01.html
+  etag: '"7972-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch11-01.html
+  target_sha256: 423a74ef0a325d2a2fc381cda974661280ede05a682e53d199a7edbc1ce8f21e
+  converted_at: '2026-07-31T07:48:41+08:00'
+- id: ch11-02
+  chapter: 11
+  section: 2
+  subsection: 0
+  target: en/docs/ch11/02.md
+  permalink: /docs/ch11/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql11/02.html
+  title: 11.2. How to Conduct Streaming Replication
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql11/fig-11-02.png
+  - https://www.interdb.jp/pg/pgsql11/fig-11-03.png
+  fetched_at: '2026-07-30T23:15:11+08:00'
+  source_sha256: b9dcbb61d0cab052110ef026b0f034c98e4ae818049c64c4bb79a11d98b455b2
+  source_bytes: 56650
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql11/02.html
+  etag: '"dd4a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch11-02.html
+  target_sha256: d45c31a7e1aef734904d00a9f05a8ffc2646e3fe32b0d19b46eb9eb53caef385
+  converted_at: '2026-07-31T07:48:42+08:00'
+- id: ch11-03
+  chapter: 11
+  section: 3
+  subsection: 0
+  target: en/docs/ch11/03.md
+  permalink: /docs/ch11/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql11/03.html
+  title: 11.3. Managing Multiple-Standby Servers
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql11/fig-11-04.png
+  - https://www.interdb.jp/pg/pgsql11/fig-11-05.png
+  - https://www.interdb.jp/pg/pgsql11/fig-11-06.png
+  - https://www.interdb.jp/pg/pgsql11/fig-11-07.png
+  fetched_at: '2026-07-30T23:15:26+08:00'
+  source_sha256: 32125f9cdeacbe1107e048cdceb8ec707ba1d2ab7cd524751b80581e8ab78227
+  source_bytes: 40301
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql11/03.html
+  etag: '"9d6d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch11-03.html
+  target_sha256: fb94132f90da181c2c97c115de9251b6ef13b661eecc7fce86aa6b4d222ea532
+  converted_at: '2026-07-31T07:48:42+08:00'
+- id: ch11-04
+  chapter: 11
+  section: 4
+  subsection: 0
+  target: en/docs/ch11/04.md
+  permalink: /docs/ch11/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql11/04.html
+  title: 11.4. Replication Slots
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql11/fig-11-08.png
+  - https://www.interdb.jp/pg/pgsql11/fig-11-09.png
+  fetched_at: '2026-07-30T23:15:33+08:00'
+  source_sha256: f99caa638c3aa369b8a7e75100cf0a2e9961ccff4b2ad1835e23818fc2954311
+  source_bytes: 58438
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql11/04.html
+  etag: '"e446-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch11-04.html
+  target_sha256: 117872102fcc3a58624378423aebd92e6a210d3b9d97ac48f46c01d429b7df32
+  converted_at: '2026-07-31T07:48:43+08:00'
+- id: ch12-index
+  chapter: 12
+  section: 0
+  subsection: 0
+  target: en/docs/ch12/_index.md
+  permalink: /docs/ch12/
+  weight: 120
+  source_url: https://www.interdb.jp/pg/pgsql12/index.html
+  title: 12. Logical Replication
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-01.png
+  fetched_at: '2026-07-30T23:15:35+08:00'
+  source_sha256: 49688972df153fa02e73f9b827d7a07bc7748c30668812018dd387bcf7027224
+  source_bytes: 30258
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/index.html
+  etag: '"7632-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-index.html
+  target_sha256: 732cea848443410ad0f97b1bea3424067b57702dd0f56d88eadf5eaf09b59d49
+  converted_at: '2026-07-31T07:48:44+08:00'
+- id: ch12-01
+  chapter: 12
+  section: 1
+  subsection: 0
+  target: en/docs/ch12/01.md
+  permalink: /docs/ch12/01/
+  weight: 10
+  source_url: https://www.interdb.jp/pg/pgsql12/01.html
+  title: 12.1. Overview and Key Concepts
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-02.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-03.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-04.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-05.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-06.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-07.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-08.png
+  fetched_at: '2026-07-30T23:15:40+08:00'
+  source_sha256: a4d503d60140c2e080b00c689b6c5200ff11d7f8e815b3f6222c7ceac1e95b33
+  source_bytes: 60279
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/01.html
+  etag: '"eb77-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-01.html
+  target_sha256: e8b49f7dc531cbadad83cd93be839ca246ac1f56c7eaffd0fac7de71cd8b60f4
+  converted_at: '2026-07-31T07:48:44+08:00'
+- id: ch12-02
+  chapter: 12
+  section: 2
+  subsection: 0
+  target: en/docs/ch12/02.md
+  permalink: /docs/ch12/02/
+  weight: 20
+  source_url: https://www.interdb.jp/pg/pgsql12/02.html
+  title: 12.2. Starting Logical Replication
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-09.png
+  fetched_at: '2026-07-30T23:16:49+08:00'
+  source_sha256: 27fcb45b3ee1bc314c90d7deb244eedfe5941204c38b9273644bdb109246cedd
+  source_bytes: 51528
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/02.html
+  etag: '"c948-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-02.html
+  target_sha256: 2520a424df234c2e056301e10e285bf299e9acbb8496ed399d3a1f6d1e511662
+  converted_at: '2026-07-31T07:48:45+08:00'
+- id: ch12-03
+  chapter: 12
+  section: 3
+  subsection: 0
+  target: en/docs/ch12/03.md
+  permalink: /docs/ch12/03/
+  weight: 30
+  source_url: https://www.interdb.jp/pg/pgsql12/03.html
+  title: 12.3. ReorderBuffer Structure
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-11.png
+  fetched_at: '2026-07-30T23:16:52+08:00'
+  source_sha256: d047a5e58ca3d377c84428112538ddf5c7be8fc14966efcb85ad7b6b72f75a68
+  source_bytes: 47828
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/03.html
+  etag: '"bad4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-03.html
+  target_sha256: cc2da3294e961354b48eda804183a2cc641ac69f1c983fcce3bbc391afe1810e
+  converted_at: '2026-07-31T07:48:45+08:00'
+- id: ch12-04
+  chapter: 12
+  section: 4
+  subsection: 0
+  target: en/docs/ch12/04.md
+  permalink: /docs/ch12/04/
+  weight: 40
+  source_url: https://www.interdb.jp/pg/pgsql12/04.html
+  title: 12.4. WAL Data Filtering and Buffering
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-12.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-13.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-14.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-15.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-16.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-17.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-18.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-19.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-20.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-21.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-22.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-23.png
+  fetched_at: '2026-07-30T23:16:56+08:00'
+  source_sha256: 4aa28026fda42e7accd0fa23773b8e461b72698550da06eaad4b770855bc7b8b
+  source_bytes: 58410
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/04.html
+  etag: '"e42a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-04.html
+  target_sha256: a26785d070cd51953b2862b68307dd5f4e61a94bd8fcae62401672053e04466b
+  converted_at: '2026-07-31T07:48:46+08:00'
+- id: ch12-05
+  chapter: 12
+  section: 5
+  subsection: 0
+  target: en/docs/ch12/05.md
+  permalink: /docs/ch12/05/
+  weight: 50
+  source_url: https://www.interdb.jp/pg/pgsql12/05.html
+  title: '12.5. Logical Decoding Output Plugins: pgoutput'
+  status: converted
+  warnings: []
+  assets: []
+  fetched_at: '2026-07-30T23:17:02+08:00'
+  source_sha256: 30554133fbb867c023e26d3bdd747236cf43419b2a5e363dc1f60840efd8db68
+  source_bytes: 54423
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/05.html
+  etag: '"d497-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-05.html
+  target_sha256: 258c688104ae3e4125ce64b785efcdf79b504d605ee42b2a3c1f7b16e6d99356
+  converted_at: '2026-07-31T07:48:46+08:00'
+- id: ch12-06
+  chapter: 12
+  section: 6
+  subsection: 0
+  target: en/docs/ch12/06.md
+  permalink: /docs/ch12/06/
+  weight: 60
+  source_url: https://www.interdb.jp/pg/pgsql12/06.html
+  title: 12.6. Transaction Reassembly and Sending Message
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-24.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-25.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-26.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-27.png
+  fetched_at: '2026-07-30T23:17:11+08:00'
+  source_sha256: 5a996f010bcf328a6a822ee0946317324430a74ec9d664c406eb9995bd326adf
+  source_bytes: 47626
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/06.html
+  etag: '"ba0a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-06.html
+  target_sha256: 3a3c60d02c3c9e8b18c1620be77ebb286cd9400eb3764c6269025300dc642241
+  converted_at: '2026-07-31T07:48:47+08:00'
+- id: ch12-07
+  chapter: 12
+  section: 7
+  subsection: 0
+  target: en/docs/ch12/07.md
+  permalink: /docs/ch12/07/
+  weight: 70
+  source_url: https://www.interdb.jp/pg/pgsql12/07.html
+  title: 12.7. Apply Worker and Transaction Replay
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-28.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-29.png
+  fetched_at: '2026-07-30T23:17:14+08:00'
+  source_sha256: a8efb72298939c54cdbc05a2760b0ad763bdaa1eed3915b62cb56ab05aab9847
+  source_bytes: 43376
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/07.html
+  etag: '"a970-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-07.html
+  target_sha256: f99a3c9f500d0da78caeb7b2d863921d316277614f5958ba576a8ad1fbe2a1c3
+  converted_at: '2026-07-31T07:48:47+08:00'
+- id: ch12-08
+  chapter: 12
+  section: 8
+  subsection: 0
+  target: en/docs/ch12/08.md
+  permalink: /docs/ch12/08/
+  weight: 80
+  source_url: https://www.interdb.jp/pg/pgsql12/08.html
+  title: 12.8. Internal Mechanism of Restart and Crash Recovery
+  status: converted
+  warnings: []
+  assets:
+  - https://www.interdb.jp/pg/pgsql12/fig-12-30.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-31.png
+  - https://www.interdb.jp/pg/pgsql12/fig-12-32.png
+  fetched_at: '2026-07-30T23:17:32+08:00'
+  source_sha256: 5da0a3f216a576fedc020eeb2ab678e854942561bf3e9fe29fdd7756a2f85e5d
+  source_bytes: 35493
+  content_type: text/html
+  fetched_url: https://www.interdb.jp/pg/pgsql12/08.html
+  etag: '"8aa5-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  cache: .cache/interdb-pg/pages/ch12-08.html
+  target_sha256: 2d909281aee3ec4b82b1f0b82d25fba40348289dc2c7ceb4f89111d046185731
+  converted_at: '2026-07-31T07:48:47+08:00'
+assets:
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-01.png
+  target: static/images/en/ch01/fig-1-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 72f3288bbb925792f1857e6805ef733a4f39971dc9550f55e174cfd27270be5e
+  bytes: 24273
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-01.png
+  etag: '"5ed1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-02.png
+  target: static/images/en/ch01/fig-1-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 3acdf18460f351d0b5a11541926ab5bf919a7d4f67da7bb31b18363e184f94c9
+  bytes: 37054
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-02.png
+  etag: '"90be-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-03.png
+  target: static/images/en/ch01/fig-1-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: c277fe5f26d15e572cc00c49557369985141a4010512e278bcaae74b7abdc41f
+  bytes: 28418
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-03.png
+  etag: '"6f02-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-04.png
+  target: static/images/en/ch01/fig-1-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: d4236358fffcbe3d8f844c16cb5c231ce35cba7bd153ed243aac8ba865906dab
+  bytes: 38836
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-04.png
+  etag: '"97b4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-05.png
+  target: static/images/en/ch01/fig-1-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 706ff8e836e69a99fb778a66c36a07bf00e2dd1162e5fe6892916809bc46ff5d
+  bytes: 68700
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-05.png
+  etag: '"10c5c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-06.png
+  target: static/images/en/ch01/fig-1-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 67725958e3a91998634f209d67546c88040e90e76528109cf0693347968df060
+  bytes: 22034
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-06.png
+  etag: '"5612-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql01/fig-1-07.png
+  target: static/images/en/ch01/fig-1-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 4c93d03de249887606e7d162022411a1802b4b303e52f11ee65aead54df5c59b
+  bytes: 50387
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql01/fig-1-07.png
+  etag: '"c4d3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql02/fig-2-01.png
+  target: static/images/en/ch02/fig-2-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: e67bae968c4bd578f15aeb08d49562c27d5c8a1eeb81138af036040bd11bc38e
+  bytes: 35561
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql02/fig-2-01.png
+  etag: '"8ae9-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql02/fig-2-02.png
+  target: static/images/en/ch02/fig-2-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 9e9f7018279ec466a7b7e88dae61b139ca19693f94f138b7e3fddfc74dacf695
+  bytes: 16917
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql02/fig-2-02.png
+  etag: '"4215-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-01.png
+  target: static/images/en/ch03/fig-3-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 5d4ad1d700a3abc4cdd6bbae5c01a332289072cfcfac40626c3ec38cd410115c
+  bytes: 22754
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql03/fig-3-01.png
+  etag: '"58e2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-02.png
+  target: static/images/en/ch03/fig-3-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: aa0ebf51b7650c7b3fde0be7667ff130983b97bc1b853dd83e582eb3b052f4cf
+  bytes: 69732
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql03/fig-3-02.png
+  etag: '"11064-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-03.png
+  target: static/images/en/ch03/fig-3-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 6d59ecfbbe0022df649ce5e1685b9ed61184623019d85234a3b41c8edc6c6954
+  bytes: 82773
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql03/fig-3-03.png
+  etag: '"14355-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-04.png
+  target: static/images/en/ch03/fig-3-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: b2d254c65f7e6856b0fc85bba385fb85ae4964ceaf0ae75e8ec52bb1f4cb8617
+  bytes: 106018
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-04.png
+  etag: '"19e22-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-05.png
+  target: static/images/en/ch03/fig-3-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 6b5de08dd4964bca9daf49e3c34017190060ca2b969440c03288c16cb307513a
+  bytes: 81653
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-05.png
+  etag: '"13ef5-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-06.png
+  target: static/images/en/ch03/fig-3-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 77a21a3ddf6b65b932b6a3bbfbfc9e894dce6b42f517a63a9e64522125c6c0c0
+  bytes: 29110
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-06.png
+  etag: '"71b6-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-07.png
+  target: static/images/en/ch03/fig-3-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: e496a9f525709e4860e229336f4c5bf46d89ab8ecb95456ea1f29c3b9876d62b
+  bytes: 23399
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-07.png
+  etag: '"5b67-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-08.png
+  target: static/images/en/ch03/fig-3-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: 9e97b50d964180db6f264d852eed6644df15166d9e0a8879d8fca74bd44baea5
+  bytes: 73239
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-08.png
+  etag: '"11e17-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-09.png
+  target: static/images/en/ch03/fig-3-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: bf948c96d9049858223c546df7926d6a4dc4b4b0a1d0394f97c2a3882cc74a98
+  bytes: 63321
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-09.png
+  etag: '"f759-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-10.png
+  target: static/images/en/ch03/fig-3-10.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:51+08:00'
+  sha256: bfc103c07e5f27ee453203e0bef52379cac9f106ab313aeb14db401dab47a836
+  bytes: 67456
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql03/fig-3-10.png
+  etag: '"10780-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-11.png
+  target: static/images/en/ch03/fig-3-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:52+08:00'
+  sha256: b085208a389a0c73723be9774982662591d078627a3d17db6b14bc94c34f7c06
+  bytes: 78139
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-11.png
+  etag: '"1313b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-12.png
+  target: static/images/en/ch03/fig-3-12.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:04+08:00'
+  sha256: ebec3ae983f98c7771e7049de8f1f56f0f41e191fa5cb9f1312b673e0634e90f
+  bytes: 49809
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-12.png
+  etag: '"c291-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-13.png
+  target: static/images/en/ch03/fig-3-13.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:00+08:00'
+  sha256: a7d64add1ad0b26f06467bb5a34eec647f6c1efdd9b6c746b85527304b715aa2
+  bytes: 78948
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-13.png
+  etag: '"13464-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-14.png
+  target: static/images/en/ch03/fig-3-14.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:55+08:00'
+  sha256: 867ed5f35aeff6c60bb659c6c42abbb4bfd5a70b8ff9b04f300eeb2577b0250e
+  bytes: 43336
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-14.png
+  etag: '"a948-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-15.png
+  target: static/images/en/ch03/fig-3-15.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:56+08:00'
+  sha256: eaaf5bf3ad1130fb45191eab51d3921a280823eeff6b6e58f32247e5ae0371ef
+  bytes: 70655
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-15.png
+  etag: '"113ff-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-16.png
+  target: static/images/en/ch03/fig-3-16.png
+  status: fetched
+  fetched_at: '2026-07-30T23:36:57+08:00'
+  sha256: 15052be92ed8d74e054a83a76d28dc05f744917251127c86d2a470ebccb85565
+  bytes: 21301
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-16.png
+  etag: '"5335-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-17.png
+  target: static/images/en/ch03/fig-3-17.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:38+08:00'
+  sha256: f945a4ca9838df3dd551d3d0db1bfadbea1cf37ac75207c09e17205325b43922
+  bytes: 50483
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-17.png
+  etag: '"c533-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-18.png
+  target: static/images/en/ch03/fig-3-18.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:07+08:00'
+  sha256: dc4936ba386c40287b72041225ce437da35536aebcd4ec54135425d0acc815c1
+  bytes: 16621
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-18.png
+  etag: '"40ed-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-19.png
+  target: static/images/en/ch03/fig-3-19.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:08+08:00'
+  sha256: 72b1832230b44a9603feba413d0767af09a6a82c874b72f0750285acb8f3371d
+  bytes: 19639
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-19.png
+  etag: '"4cb7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-20.png
+  target: static/images/en/ch03/fig-3-20.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:08+08:00'
+  sha256: f1282305958f4f04181ba9f4f8589a93f4213498b1fd5c047371c866f0bf323f
+  bytes: 24407
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-20.png
+  etag: '"5f57-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-21.png
+  target: static/images/en/ch03/fig-3-21.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:12+08:00'
+  sha256: 313a8cf9748106f963cb65bcb5e26b575914fb39454ec0cdb83abc85eceee932
+  bytes: 27536
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-21.png
+  etag: '"6b90-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-22.png
+  target: static/images/en/ch03/fig-3-22.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:15+08:00'
+  sha256: e317ab04622df474d08afa13130d9eff0b52db31eb340c970881b3909a537c32
+  bytes: 39534
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-22.png
+  etag: '"9a6e-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-23.png
+  target: static/images/en/ch03/fig-3-23.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:41+08:00'
+  sha256: fe9ac0605600561faff97fb01a5c6c5724c5864e2750b3092e9c7ba8ef3c6cda
+  bytes: 31668
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-23.png
+  etag: '"7bb4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-24.png
+  target: static/images/en/ch03/fig-3-24.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:41+08:00'
+  sha256: 15703e0f8d3f20ec2eaed3ea4b6f7bf0f0864f84c565662e21ed914a7224f7fd
+  bytes: 33586
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-24.png
+  etag: '"8332-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-25.png
+  target: static/images/en/ch03/fig-3-25.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:44+08:00'
+  sha256: 69927e928d6fd36f5633b9eabd9e2753375f6aa62d62c83f5ed6a7d38583ba3e
+  bytes: 45900
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-25.png
+  etag: '"b34c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-26.png
+  target: static/images/en/ch03/fig-3-26.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:47+08:00'
+  sha256: fda4231e2e35b6e83090b33fd83a0aec6a4f267afbe480008b5200373daa628a
+  bytes: 114795
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-26.png
+  etag: '"1c06b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-27.png
+  target: static/images/en/ch03/fig-3-27.png
+  status: fetched
+  fetched_at: '2026-07-30T23:37:53+08:00'
+  sha256: fa2656c9b4cc83eec07aa071512aca52809589419d4d11f4fa1d5f474a11159d
+  bytes: 108077
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-27.png
+  etag: '"1a62d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-28.png
+  target: static/images/en/ch03/fig-3-28.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:00+08:00'
+  sha256: 1d0d6955ba303a301cf94f43c0f9eeeef2f90b8b1dd253ee8544dc3aefa79f16
+  bytes: 47355
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-28.png
+  etag: '"b8fb-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-29.png
+  target: static/images/en/ch03/fig-3-29.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:04+08:00'
+  sha256: 64f391e69906c3d15a08de7d0b787d20620d3413ecc4189a668a78a2dcb61709
+  bytes: 111527
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-29.png
+  etag: '"1b3a7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-30.png
+  target: static/images/en/ch03/fig-3-30.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:03+08:00'
+  sha256: b9964432a5fac3a10148b9b42369379a64ec157542b82a7e99a3904822c29d17
+  bytes: 45396
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-30.png
+  etag: '"b154-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-31.png
+  target: static/images/en/ch03/fig-3-31.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:11+08:00'
+  sha256: 9cdd03deb124c46247920d850b4b1759fe83bab8c04628e95da51634fa82e11d
+  bytes: 101899
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-31.png
+  etag: '"18e0b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-32.png
+  target: static/images/en/ch03/fig-3-32.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:17+08:00'
+  sha256: eed5c408b38dc5d2969bbb91916fbe7ef0516e7a58c1e2800ce25b61d0909905
+  bytes: 65495
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-32.png
+  etag: '"ffd7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/05/fig-3-33.png
+  target: static/images/en/ch03/fig-3-33.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:21+08:00'
+  sha256: e2a1aa0fe0a14fbdd1986bedf136d0a0b942b2691c7e2c2b86a0cd21e83c84e9
+  bytes: 65524
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/05/fig-3-33.png
+  etag: '"fff4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-34.png
+  target: static/images/en/ch03/fig-3-34.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:42+08:00'
+  sha256: ed0bc32f5964378617db61b8ffbec199ed7797e9a02637f4f796195396aed8a3
+  bytes: 36431
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-34.png
+  etag: '"8e4f-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-35.png
+  target: static/images/en/ch03/fig-3-35.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:24+08:00'
+  sha256: 787c890990d0760d5a3c6f0db806a73911d977dd9a30389fba0ce1c9a8c296dd
+  bytes: 37581
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-35.png
+  etag: '"92cd-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-36.png
+  target: static/images/en/ch03/fig-3-36.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:27+08:00'
+  sha256: 32d43b972048e76815a9704cc5f197aead73d244a89126fc6e3ca6890d53108a
+  bytes: 49738
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-36.png
+  etag: '"c24a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-37.png
+  target: static/images/en/ch03/fig-3-37.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:58+08:00'
+  sha256: 57a7bd4916f35f7f15f625d4b519a6096022a9ccadeed150a2e99ad63e4f9b9c
+  bytes: 363804
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-37.png
+  etag: '"58d1c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-38.png
+  target: static/images/en/ch03/fig-3-38.png
+  status: fetched
+  fetched_at: '2026-07-30T23:38:45+08:00'
+  sha256: 0e6d1e589595e4375e380b81a182f7c204be5fef5b4c81955ee2b22e60ba837f
+  bytes: 14389
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-38.png
+  etag: '"3835-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-39.png
+  target: static/images/en/ch03/fig-3-39.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:49+08:00'
+  sha256: d02d165a0e84b613b655907c38ea2b7eefb5e7e67b96b62be96fa198bab928d6
+  bytes: 33627
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-39.png
+  etag: '"835b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-40.png
+  target: static/images/en/ch03/fig-3-40.png
+  status: fetched
+  fetched_at: '2026-07-30T23:40:30+08:00'
+  sha256: 07454d1dc8c134df00b8c3f9bbf8adc0cbbdf7a1c2d0993a36ec6293fc921b7f
+  bytes: 41060
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-40.png
+  etag: '"a064-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-41.png
+  target: static/images/en/ch03/fig-3-41.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:24+08:00'
+  sha256: b17aa172113632d5f17aab6ed1827e1c55d768cbcfa3d42b549f357c56371658
+  bytes: 27991
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-41.png
+  etag: '"6d57-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-42.png
+  target: static/images/en/ch03/fig-3-42.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:25+08:00'
+  sha256: 5060d0b22934c1bb06a198d388a824ced461321eff1ebccd56cdc664b7ffe76c
+  bytes: 40992
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-42.png
+  etag: '"a020-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql03/fig-3-43.png
+  target: static/images/en/ch03/fig-3-43.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:38+08:00'
+  sha256: 3ecef1a36566c2af8acb7a4eaba8e82e3a4742ac747190ad62be7f7428f16822
+  bytes: 26704
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql03/fig-3-43.png
+  etag: '"6850-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-01.png
+  target: static/images/en/ch04/fig-4-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:42+08:00'
+  sha256: cbee6e94e1fbd6f1e2e62416509b867daae7bc9d5d10bac0cde3fee5b549ade6
+  bytes: 151298
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-01.png
+  etag: '"24f02-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-02.png
+  target: static/images/en/ch04/fig-4-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:39:47+08:00'
+  sha256: d7923e8ce8a6dc60acbc08d0c99cc37b828b4e99a1413dd44b0d8c4622f9078b
+  bytes: 36386
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-02.png
+  etag: '"8e22-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-03.png
+  target: static/images/en/ch04/fig-4-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:40:52+08:00'
+  sha256: 50323568a8ba8fd7b2b050ee8148246cd50974664ee710c1fa5d735c7a64793f
+  bytes: 67624
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-03.png
+  etag: '"10828-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-04.png
+  target: static/images/en/ch04/fig-4-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:40:54+08:00'
+  sha256: 3a91f35f24628e5a109a76d9f0196b94b885c0d8a57477ce311dd0a8458601d9
+  bytes: 121713
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-04.png
+  etag: '"1db71-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-05.png
+  target: static/images/en/ch04/fig-4-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:40:44+08:00'
+  sha256: a21cdc4976f7884a4c2db2a955603fe3704fb438086cf2f56ee58db8e416a8d5
+  bytes: 147422
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-05.png
+  etag: '"23fde-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-06.png
+  target: static/images/en/ch04/fig-4-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:54+08:00'
+  sha256: 299a7691c500e2da5e2b9b83ad81303571677843260e876f956a34b5673a2692
+  bytes: 121623
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-06.png
+  etag: '"1db17-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql04/fig-4-07.png
+  target: static/images/en/ch04/fig-4-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:11+08:00'
+  sha256: 0fcd69541867b5aab90038c1a7c1e320062cbd95e0d412d51c28748f2e809404
+  bytes: 161169
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql04/fig-4-07.png
+  etag: '"27591-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-01.png
+  target: static/images/en/ch05/fig-5-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:40:59+08:00'
+  sha256: cfb97653eb67e055f196b495fc663d05d4ac9600088bee9bda1a7c3f83fa701e
+  bytes: 73919
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-01.png
+  etag: '"120bf-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-02.png
+  target: static/images/en/ch05/fig-5-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:42:02+08:00'
+  sha256: 9cf75bcebf99e28dde6195003d40feb097af7f190ac9c1359bb3fc69b8fa3184
+  bytes: 26570
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-02.png
+  etag: '"67ca-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-03.png
+  target: static/images/en/ch05/fig-5-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:12+08:00'
+  sha256: d25590b188e644e143529283d12930de4900844e65f1c290ca401c99b8d88114
+  bytes: 18648
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-03.png
+  etag: '"48d8-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-04.png
+  target: static/images/en/ch05/fig-5-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:14+08:00'
+  sha256: f737f5e418f494fdb57ad6373ac090c745bd6b2e7f1faacb2d33677e107f63ba
+  bytes: 30473
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-04.png
+  etag: '"7709-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-05.png
+  target: static/images/en/ch05/fig-5-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:18+08:00'
+  sha256: 24494db4cd230bb1a24c1bbcf7704e6b8eab17223730e1cdbd1c76e39949e1e3
+  bytes: 11462
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-05.png
+  etag: '"2cc6-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-06.png
+  target: static/images/en/ch05/fig-5-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:25+08:00'
+  sha256: e0b7c94a1a21942b458861a9d4c7b9511ae359444deba11469bd889b8706c41c
+  bytes: 79535
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-06.png
+  etag: '"136af-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-07.png
+  target: static/images/en/ch05/fig-5-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:31+08:00'
+  sha256: c16d5174fc036c57201d2eac87113210e4aa1b714a3133b0d0821cc64bac1635
+  bytes: 44782
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-07.png
+  etag: '"aeee-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-08.png
+  target: static/images/en/ch05/fig-5-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:41:59+08:00'
+  sha256: 071651b66448800e19506d062f0a6e2aabbc2c13066e51964823cfa8079619bf
+  bytes: 71603
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-08.png
+  etag: '"117b3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-09.png
+  target: static/images/en/ch05/fig-5-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:02+08:00'
+  sha256: bbc7ebc121ad6c4b44ac346162f6f8e85a1873648ced525a5cf4d7905e163808
+  bytes: 95306
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-09.png
+  etag: '"1744a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-10.png
+  target: static/images/en/ch05/fig-5-10.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:43+08:00'
+  sha256: 16d1f8b40f94f0a5c0383092d3156978286b1fd7e843e7feb5efe138b0912245
+  bytes: 114161
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql05/fig-5-10.png
+  etag: '"1bdf1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-11.png
+  target: static/images/en/ch05/fig-5-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:12+08:00'
+  sha256: cfba7017cbee70ddf0eee530b4524e57a9cb1a82cb9f8ca641c206b368daeea5
+  bytes: 82554
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-11.png
+  etag: '"1427a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-12.png
+  target: static/images/en/ch05/fig-5-12.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:08+08:00'
+  sha256: 071b681ca7fb34062a0429968fd792f03add386b8622fcf95282dfe1906b815e
+  bytes: 69283
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-12.png
+  etag: '"10ea3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-13.png
+  target: static/images/en/ch05/fig-5-13.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:09+08:00'
+  sha256: 111be3f275dcbdc81aa1998544fce59f80568bee35c5c0b169d568b502da2347
+  bytes: 13298
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-13.png
+  etag: '"33f2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-14.png
+  target: static/images/en/ch05/fig-5-14.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:18+08:00'
+  sha256: be34582e3d807c5e8c99d60f8880444723d756d915386b51c4aa7c37b7f705e1
+  bytes: 90479
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-14.png
+  etag: '"1616f-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-15.png
+  target: static/images/en/ch05/fig-5-15.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:13+08:00'
+  sha256: a9cc801faac1e6861a8e6eebb0c92ea4e72e73d529b750f26a8ede8d480de764
+  bytes: 20771
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-15.png
+  etag: '"5123-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-16.png
+  target: static/images/en/ch05/fig-5-16.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:16+08:00'
+  sha256: c82bd96f34e6711ce58677119a372bd5b81d9ac04ff7e8fd936c2b3129d08292
+  bytes: 57944
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-16.png
+  etag: '"e258-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-17.png
+  target: static/images/en/ch05/fig-5-17.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:45+08:00'
+  sha256: 4a23bd573a7890f971058d4fe82223ac269faa7f933483e9f08488af86ed3b81
+  bytes: 55706
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-17.png
+  etag: '"d99a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-18.png
+  target: static/images/en/ch05/fig-5-18.png
+  status: fetched
+  fetched_at: '2026-07-30T23:43:47+08:00'
+  sha256: da0633e8e4870bb343409ebc5a2eacb4efcd8f97bd76c18999073f17ec1fbc28
+  bytes: 59280
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-18.png
+  etag: '"e790-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-19.png
+  target: static/images/en/ch05/fig-5-19.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:56+08:00'
+  sha256: d92820498c0200b51ecbf798b1cacac34ba0ff1a8fd0d08eaab6368f6270d03a
+  bytes: 53983
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-19.png
+  etag: '"d2df-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-20.png
+  target: static/images/en/ch05/fig-5-20.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:21+08:00'
+  sha256: 39773b2452d71c0969ea74c958e87fc6de3078e71df44b095ff1a66a66ebca3e
+  bytes: 86379
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-20.png
+  etag: '"1516b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-21.png
+  target: static/images/en/ch05/fig-5-21.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:45+08:00'
+  sha256: b283384299b1cf31339b912428876fabacc8623cca057ab4b48cbc44c438f26a
+  bytes: 56631
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-21.png
+  etag: '"dd37-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql05/fig-5-22.png
+  target: static/images/en/ch05/fig-5-22.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:24+08:00'
+  sha256: 59ae2c3bb4f7408c87bfdc8246d4e95f2c9581968f32abca3176bf40aedf12c6
+  bytes: 66838
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql05/fig-5-22.png
+  etag: '"10516-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-01.png
+  target: static/images/en/ch06/fig-6-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:25+08:00'
+  sha256: d39c5c6b32efb0e9c52d5d3c9c51b5509f8f52ae44c9e364a8a10e06fdcf0a82
+  bytes: 38657
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-01.png
+  etag: '"9701-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-02.png
+  target: static/images/en/ch06/fig-6-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:25+08:00'
+  sha256: c019cf6d894972ba477b58c780470fe4ee47aee40189c97cfe5a12d11978af4f
+  bytes: 26458
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-02.png
+  etag: '"675a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-03.png
+  target: static/images/en/ch06/fig-6-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:27+08:00'
+  sha256: 111ff9bca0217ff89fd3fa5e20448ca3f1b45219c50fde868d4e830bd78739ec
+  bytes: 22803
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-03.png
+  etag: '"5913-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-04.png
+  target: static/images/en/ch06/fig-6-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:28+08:00'
+  sha256: c3193b806271d2e3cd3e09da0449b2472b8e89aee13d6c5c13e381b6f6145000
+  bytes: 25819
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-04.png
+  etag: '"64db-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-05.png
+  target: static/images/en/ch06/fig-6-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:44:50+08:00'
+  sha256: e018df79440ff26d3eeebe0fe80ee6d7df5c6d2af997e0ecf8c52178e568f2c5
+  bytes: 124696
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-05.png
+  etag: '"1e718-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-06.png
+  target: static/images/en/ch06/fig-6-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:45:55+08:00'
+  sha256: 4bf14ff6ef0e6b18b246a8bc844bfe85c586af712b575f1e177e9b61c692eb19
+  bytes: 158176
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-06.png
+  etag: '"269e0-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-07.png
+  target: static/images/en/ch06/fig-6-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:45:02+08:00'
+  sha256: 30ad556dcd3662e7c04d2dc7ac424770e91093da31b73ef95812b105e0e9a85c
+  bytes: 141745
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-07.png
+  etag: '"229b1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-08.png
+  target: static/images/en/ch06/fig-6-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:03+08:00'
+  sha256: 2079664e8e50a80492f5d33b20c77c6c658b62c206f42b3cd284639480adb467
+  bytes: 60860
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-08.png
+  etag: '"edbc-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-09.png
+  target: static/images/en/ch06/fig-6-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:20+08:00'
+  sha256: 7249b9e726a8faa54515178441d4a1ebb4dedea3c91a2128fb67dcf6e945f5f1
+  bytes: 67361
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-09.png
+  etag: '"10721-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-10.png
+  target: static/images/en/ch06/fig-6-10.png
+  status: fetched
+  fetched_at: '2026-07-30T23:45:59+08:00'
+  sha256: ee6d9012689e3445da81d775e17d9ce2b627c0f0d4f2e4046ba3724341f9300e
+  bytes: 47351
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-10.png
+  etag: '"b8f7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-11.png
+  target: static/images/en/ch06/fig-6-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:02+08:00'
+  sha256: 9deea6cc5c5ead696a875c8ba17abc35b39dddd99b032e12cce729e02f09bfb0
+  bytes: 57802
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-11.png
+  etag: '"e1ca-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-12.png
+  target: static/images/en/ch06/fig-6-12.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:17+08:00'
+  sha256: 6a45f3337b6c850b78912889af1ba947740e8962601dd4135de8013787b16869
+  bytes: 63156
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-12.png
+  etag: '"f6b4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql06/fig-6-13.png
+  target: static/images/en/ch06/fig-6-13.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:04+08:00'
+  sha256: 86a42face277316cdabab631a524d56a2884da4485b456595167ef855362dc6a
+  bytes: 66902
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql06/fig-6-13.png
+  etag: '"10556-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-01.png
+  target: static/images/en/ch07/fig-7-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:09+08:00'
+  sha256: 1469e4df75483d4101c4114f3a9cffc9b75ac1d58fee29812f78f506ab3da535
+  bytes: 52934
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-01.png
+  etag: '"cec6-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-02.png
+  target: static/images/en/ch07/fig-7-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:10+08:00'
+  sha256: 651e927398e27c0c28a97538d13155a42e225ee7ca0d1a2fa2dcd1271ea43d20
+  bytes: 47832
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-02.png
+  etag: '"bad8-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-03.png
+  target: static/images/en/ch07/fig-7-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:12+08:00'
+  sha256: 761a48b29a150dea2ed16be45dc38d5e0fa076c8af692d1fa5e0605431988c4f
+  bytes: 54644
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-03.png
+  etag: '"d574-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-04.png
+  target: static/images/en/ch07/fig-7-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:12+08:00'
+  sha256: 089d9d0c7696a183d60d57df601c4e60b1758a82a9d487016f786e7f3cb0a830
+  bytes: 51897
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-04.png
+  etag: '"cab9-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-05.png
+  target: static/images/en/ch07/fig-7-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:16+08:00'
+  sha256: 8c26bc1b0f61d2fc1d00202141c9e115fe2b6768f1d9cbdb248ab887c784c56a
+  bytes: 43041
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-05.png
+  etag: '"a821-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-06.png
+  target: static/images/en/ch07/fig-7-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:21+08:00'
+  sha256: 499f986ad92c54c50cfd0a872436cccdc2b1f4c0d09074321d5987d21f627db6
+  bytes: 63292
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-06.png
+  etag: '"f73c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql07/fig-7-07.png
+  target: static/images/en/ch07/fig-7-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:24+08:00'
+  sha256: 00ea0fb572d8f518a278b5c84156f50510ed41a087a09ca3d4a574d4537109bc
+  bytes: 61256
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql07/fig-7-07.png
+  etag: '"ef48-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-01.png
+  target: static/images/en/ch08/fig-8-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:22+08:00'
+  sha256: c9383d12ab24f0ae15314d5fc7daa8cd31bbc82037a8590cd196e3c578556e55
+  bytes: 11204
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-01.png
+  etag: '"2bc4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-02.png
+  target: static/images/en/ch08/fig-8-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:33+08:00'
+  sha256: 74085666ff151c8225e45a3d4139787a594accdc6876e971cfcfd37dbd1c0d25
+  bytes: 25666
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-02.png
+  etag: '"6442-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-03.png
+  target: static/images/en/ch08/fig-8-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:23+08:00'
+  sha256: 9e232b0c7c8f5cb063983677eda1b8493118621a14d7ff434fe73634fa3e45f6
+  bytes: 12712
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-03.png
+  etag: '"31a8-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-04.png
+  target: static/images/en/ch08/fig-8-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:25+08:00'
+  sha256: 208637703399616bb1b46ff825cfd0d6cb47a5c086a21a2ef759a13f6e353fa7
+  bytes: 19293
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-04.png
+  etag: '"4b5d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-05.png
+  target: static/images/en/ch08/fig-8-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:26+08:00'
+  sha256: 70cab15ef8c885a7359935f46097f7313cc849b42a9cdd56b3aafbefb7741c61
+  bytes: 11467
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-05.png
+  etag: '"2ccb-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-06.png
+  target: static/images/en/ch08/fig-8-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:26+08:00'
+  sha256: 6bc33816845eeb1443c76049847376b8d0198916825983f74ce3aacdd23775d8
+  bytes: 11741
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-06.png
+  etag: '"2ddd-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-07.png
+  target: static/images/en/ch08/fig-8-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:27+08:00'
+  sha256: f997979ddf282f854a1316e667090476d2548c416537a5ef3188e2c86cb207db
+  bytes: 22686
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-07.png
+  etag: '"589e-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-08.png
+  target: static/images/en/ch08/fig-8-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:29+08:00'
+  sha256: 88b4a4e421445e8ccdfd102f489c11914208c106629a185422f48e91e364d684
+  bytes: 26406
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-08.png
+  etag: '"6726-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-09.png
+  target: static/images/en/ch08/fig-8-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:39+08:00'
+  sha256: 40f1331d8f0d72c199847f8409514f9e0dc04650424368440e768964b73d270e
+  bytes: 32775
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql08/fig-8-09.png
+  etag: '"8007-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-10.png
+  target: static/images/en/ch08/fig-8-10.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:48+08:00'
+  sha256: 22d9c0374a81cb7a145eb601d659e3e29d247e3ee12d52b45662dcebacba2367
+  bytes: 41554
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-10.png
+  etag: '"a252-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-11.png
+  target: static/images/en/ch08/fig-8-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:47:07+08:00'
+  sha256: 7ae4b8c65a24c9c6986ad845c22cce9c185aec48cc17b404a2907a1b43047a2d
+  bytes: 53683
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-11.png
+  etag: '"d1b3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-12.png
+  target: static/images/en/ch08/fig-8-12.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:49+08:00'
+  sha256: 1b63c11ac1b3bf0eefe9156a176b52fc2a48271cd084c3a6f5e9da768b6b86b8
+  bytes: 48926
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-12.png
+  etag: '"bf1e-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-13.png
+  target: static/images/en/ch08/fig-8-13.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:51+08:00'
+  sha256: c7aff9028b79d462b181b8430dc0aa80b48f8368b69f6472a276f807168d1920
+  bytes: 50200
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-13.png
+  etag: '"c418-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-14.png
+  target: static/images/en/ch08/fig-8-14.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:53+08:00'
+  sha256: 06fb91e73047c9d46c4ee6b87099b5df4797ecdb28efbfecf02af6bbca8b6c0c
+  bytes: 20629
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-14.png
+  etag: '"5095-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-15.png
+  target: static/images/en/ch08/fig-8-15.png
+  status: fetched
+  fetched_at: '2026-07-30T23:46:53+08:00'
+  sha256: acb1cb1cbcb0dd940f25e93321214b71773281f0d1b5401e3b1fb715eb6b7d6b
+  bytes: 35081
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-15.png
+  etag: '"8909-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-16.png
+  target: static/images/en/ch08/fig-8-16.png
+  status: fetched
+  fetched_at: '2026-07-30T23:47:03+08:00'
+  sha256: a022ea59466eb75f44dea9eab18e97335f6acabead1f307f3d13e1eb00aef2a4
+  bytes: 51532
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-16.png
+  etag: '"c94c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-17.png
+  target: static/images/en/ch08/fig-8-17.png
+  status: fetched
+  fetched_at: '2026-07-30T23:47:20+08:00'
+  sha256: 3ed8b150c05263e527b13d2bcfb3905e34f25fda953debb2a0cbcdfc0fd0ecf5
+  bytes: 39665
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-17.png
+  etag: '"9af1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-18.png
+  target: static/images/en/ch08/fig-8-18.png
+  status: fetched
+  fetched_at: '2026-07-30T23:47:08+08:00'
+  sha256: 65ead320437658abaf5f412ae86c07954430b4608a938f6c9041f31ec0619cd4
+  bytes: 24341
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-18.png
+  etag: '"5f15-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-19.png
+  target: static/images/en/ch08/fig-8-19.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:10+08:00'
+  sha256: b344d1f461d18ef43607cc3ba7e6a09017549d475098a1a430e941c39ad58e68
+  bytes: 27073
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-19.png
+  etag: '"69c1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-20.png
+  target: static/images/en/ch08/fig-8-20.png
+  status: fetched
+  fetched_at: '2026-07-30T23:47:36+08:00'
+  sha256: cb3482819c21795e37d3de57f3524fd267d678aea8780ed00238845ae0e1d6f4
+  bytes: 12723
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-20.png
+  etag: '"31b3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-21.png
+  target: static/images/en/ch08/fig-8-21.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:40+08:00'
+  sha256: 261fecab0652a7bbd20d21e539a3b80e5c061a2af390762346db63cb4b5f4e89
+  bytes: 75159
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-21.png
+  etag: '"12597-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-22.png
+  target: static/images/en/ch08/fig-8-22.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:12+08:00'
+  sha256: 839a431d47fcd4ac6032389d39732be3358f097a387697b68718c423ef3bd1ec
+  bytes: 50038
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-22.png
+  etag: '"c376-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-23.png
+  target: static/images/en/ch08/fig-8-23.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:28+08:00'
+  sha256: d80eed509794a20f42f3823505151d8a539a1d495edbba215863ddf2851515a5
+  bytes: 29527
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-23.png
+  etag: '"7357-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-24.png
+  target: static/images/en/ch08/fig-8-24.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:43+08:00'
+  sha256: 5b73196bc48dee6de36c75fb29f97305bc0e7735e9cc74c890ea6762c60bee9c
+  bytes: 50842
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-24.png
+  etag: '"c69a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-25.png
+  target: static/images/en/ch08/fig-8-25.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:41+08:00'
+  sha256: 0b6bfb1ef1e2e9d35ffa0d0bf397fffe360c2edaa7e1c1c1876223d866545a6c
+  bytes: 21229
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-25.png
+  etag: '"52ed-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-26.png
+  target: static/images/en/ch08/fig-8-26.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:44+08:00'
+  sha256: 7d0d625005e80911831dad286b3c1bc57b4c5d6c94220966b738fdd0bb4ced29
+  bytes: 23384
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-26.png
+  etag: '"5b58-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-27.png
+  target: static/images/en/ch08/fig-8-27.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:47+08:00'
+  sha256: 152821aa8531b146b86b3dfbf8b7a0c259ecf59bc75210e8e0961a00f2f112ef
+  bytes: 41563
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-27.png
+  etag: '"a25b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-28.png
+  target: static/images/en/ch08/fig-8-28.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:43+08:00'
+  sha256: 4353f844752dc5460b9a2e216d5220d0bee6732e6b040ef6d26e64a94fb52708
+  bytes: 18934
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-28.png
+  etag: '"49f6-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-29.png
+  target: static/images/en/ch08/fig-8-29.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:45+08:00'
+  sha256: a6dd0ecab3f2ed397af3fab964b0f06113f2b22eb94e6e41e5525e2f89e7396b
+  bytes: 48158
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-29.png
+  etag: '"bc1e-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql08/fig-8-30.png
+  target: static/images/en/ch08/fig-8-30.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:50+08:00'
+  sha256: cc5bdc2f592fd1b268c6fb8f7898d39ff2a215c20edd174a2f8a495b213073a7
+  bytes: 42212
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql08/fig-8-30.png
+  etag: '"a4e4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-01.png
+  target: static/images/en/ch09/fig-9-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:59+08:00'
+  sha256: 868118ec9c53fa668ce5ac1acffc734d13e3dc0e69439ce64a8823e10adc9320
+  bytes: 150721
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-01.png
+  etag: '"24cc1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-02.png
+  target: static/images/en/ch09/fig-9-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:58+08:00'
+  sha256: f430793f72df63c6a205ed42d2d9602921b0737d78089ec591bc833004f78c2c
+  bytes: 177592
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-02.png
+  etag: '"2b5b8-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-03.png
+  target: static/images/en/ch09/fig-9-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:54+08:00'
+  sha256: 6641773ea7db33994b3860d3d2517032d92fc5843ff5f32bef0beb2973054f4b
+  bytes: 117019
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-03.png
+  etag: '"1c91b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-04.png
+  target: static/images/en/ch09/fig-9-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:57+08:00'
+  sha256: f1d8a57c186aadea45fa48153cf20cf1eb692a88ca10b13c6b8f724c29c561fe
+  bytes: 112234
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-04.png
+  etag: '"1b66a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-05.png
+  target: static/images/en/ch09/fig-9-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:48:58+08:00'
+  sha256: cc4614bbc20ea892a10c571ab3ce15ecb2b7d2a88a71e21db635f7ef3f670706
+  bytes: 41726
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-05.png
+  etag: '"a2fe-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-06.png
+  target: static/images/en/ch09/fig-9-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:01+08:00'
+  sha256: ec505c7a6fb28e4eff1f64c8430583d1a8d42d35a4485841ce480f5026643f71
+  bytes: 38215
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-06.png
+  etag: '"9547-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-07.png
+  target: static/images/en/ch09/fig-9-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:03+08:00'
+  sha256: 5f8ae1191a54344e550248dbfe3d999b60f499d5a87f0a4d9d06bb2947937a0a
+  bytes: 29362
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-07.png
+  etag: '"72b2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-08.png
+  target: static/images/en/ch09/fig-9-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:07+08:00'
+  sha256: a713936d8e9eab537e83385699c16540c48328cf6e0b9f38c99fe6d24ec6eda5
+  bytes: 51308
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-08.png
+  etag: '"c86c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-09.png
+  target: static/images/en/ch09/fig-9-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:10+08:00'
+  sha256: 8fc586855c24ab43081df0ab48b425e831d0996a9f925591106efcc7ad5de4b6
+  bytes: 63702
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-09.png
+  etag: '"f8d6-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-10.png
+  target: static/images/en/ch09/fig-9-10.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:12+08:00'
+  sha256: a4d81097c309ef38aa531ab15f32b66a64441157eda5766c5fab430e82254bd1
+  bytes: 42963
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-10.png
+  etag: '"a7d3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-11.png
+  target: static/images/en/ch09/fig-9-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:12+08:00'
+  sha256: 7cc791955bc2f5ab0953b5949a93afa2c43cedc39b3853beb3085efaf0634a2a
+  bytes: 26409
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-11.png
+  etag: '"6729-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-12.png
+  target: static/images/en/ch09/fig-9-12.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:19+08:00'
+  sha256: da3bc3eeb15be88c23179ba56845f0376aad6292daae8dacf2348f93f97a0856
+  bytes: 29277
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-12.png
+  etag: '"725d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-13.png
+  target: static/images/en/ch09/fig-9-13.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:20+08:00'
+  sha256: c186cebeb47e42f535900cf90761db3cb2c3e0fc042f78f52e060fd7d116c1d2
+  bytes: 27325
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-13.png
+  etag: '"6abd-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-14.png
+  target: static/images/en/ch09/fig-9-14.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:20+08:00'
+  sha256: 4955b3db4f894ba3777bcb2d88e36d0c00bf347ce765e7d69c39f207484cef1e
+  bytes: 9809
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-14.png
+  etag: '"2651-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-15.png
+  target: static/images/en/ch09/fig-9-15.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:20+08:00'
+  sha256: 6694a2452a0e086acae389ef6eefc1d9abd1a634ec0c932a0c9743727bc510ad
+  bytes: 7787
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-15.png
+  etag: '"1e6b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-16.png
+  target: static/images/en/ch09/fig-9-16.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:37+08:00'
+  sha256: 547ce55392b392a0aac08e4047c1c8ed22ab4efb2029d90d3b6b560d6ec8c798
+  bytes: 9059
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-16.png
+  etag: '"2363-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-17.png
+  target: static/images/en/ch09/fig-9-17.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:38+08:00'
+  sha256: 5c76bb2ba0813b6b3b8d26c52aa14ce725625d4f13467a4b54c87982d673bd6f
+  bytes: 6698
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-17.png
+  etag: '"1a2a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-18.png
+  target: static/images/en/ch09/fig-9-18.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:39+08:00'
+  sha256: b4221f97a1826d09d86786b3738becd634848c48a056f8dbbeb31ec6cd08446d
+  bytes: 8423
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-18.png
+  etag: '"20e7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-19.png
+  target: static/images/en/ch09/fig-9-19.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:41+08:00'
+  sha256: 8bf39e3688f47f0945b849e4ceb01b2a0b651268e505354477310d6016bc82c4
+  bytes: 23329
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-19.png
+  etag: '"5b21-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-20.png
+  target: static/images/en/ch09/fig-9-20.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:42+08:00'
+  sha256: 5dab1c4c3c3c70b42867350e1e5d9a2a5e4a5e79a3f2c085c2e58efd6fa3eddb
+  bytes: 27714
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-20.png
+  etag: '"6c42-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-21.png
+  target: static/images/en/ch09/fig-9-21.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:43+08:00'
+  sha256: 842d4271772a37624716d9156a626789960d0b133d62ef757fa77143da2218cf
+  bytes: 55489
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-21.png
+  etag: '"d8c1-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-22.png
+  target: static/images/en/ch09/fig-9-22.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:44+08:00'
+  sha256: e595b1c93b666b28769a9985462bee6e39e0470c2770393c05f77534067efb32
+  bytes: 31561
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-22.png
+  etag: '"7b49-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-23.png
+  target: static/images/en/ch09/fig-9-23.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:53+08:00'
+  sha256: 042a76286d7d46ad5ef2813476ebb24ad0ec5811ef6ee86cf37719206bd7907c
+  bytes: 15620
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-23.png
+  etag: '"3d04-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-24.png
+  target: static/images/en/ch09/fig-9-24.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:55+08:00'
+  sha256: a9939b92e24d424d42bc1676ddb4b5f7c9d819624ead9a2da997ead56fae30c0
+  bytes: 8154
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-24.png
+  etag: '"1fda-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-25.png
+  target: static/images/en/ch09/fig-9-25.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:55+08:00'
+  sha256: cf1532136899173fc7c03b254f1fee0a196375ee73f7642014fe0e3493665e11
+  bytes: 16161
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-25.png
+  etag: '"3f21-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql09/fig-9-26.png
+  target: static/images/en/ch09/fig-9-26.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:56+08:00'
+  sha256: c188133452021280bfbfc31f1d94efa23cef3f75c45174a1b8686d8bba436702
+  bytes: 20986
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql09/fig-9-26.png
+  etag: '"51fa-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-01.png
+  target: static/images/en/ch10/fig-10-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:49:58+08:00'
+  sha256: e7480595440bec3213450c63c0f2c3a58d2a16fbd4c092a0961f91ef00f8cdd2
+  bytes: 25685
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-01.png
+  etag: '"6455-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-02.png
+  target: static/images/en/ch10/fig-10-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:05+08:00'
+  sha256: 1ff3d836c57e099153926e19450ed1c5e011231297bc36259fc6853d5e3979be
+  bytes: 38961
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-02.png
+  etag: '"9831-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-03.png
+  target: static/images/en/ch10/fig-10-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:00+08:00'
+  sha256: 2cb439afa48b6f4abd37055525ae883653309bcbc327e3f53e9af53f85f369b2
+  bytes: 23610
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-03.png
+  etag: '"5c3a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-04.png
+  target: static/images/en/ch10/fig-10-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:00+08:00'
+  sha256: fb865cf5227563e6a16409868d64401369145a84b8f1b96a8fb9e344cf9bc282
+  bytes: 29040
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-04.png
+  etag: '"7170-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-05.png
+  target: static/images/en/ch10/fig-10-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:06+08:00'
+  sha256: a8f3caada00fda492cb96e70312b0e4910d7c164f89a5688851d5958c32186b7
+  bytes: 23816
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-05.png
+  etag: '"5d08-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-06.png
+  target: static/images/en/ch10/fig-10-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:08+08:00'
+  sha256: 2c3196b068376e8c7cf90e22ef8c677cb94c7d952f94528f2e2535698b5cdf93
+  bytes: 22332
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-06.png
+  etag: '"573c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-07.png
+  target: static/images/en/ch10/fig-10-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:07+08:00'
+  sha256: e4a48a25485e5caed1b80edaeb38461b4b9425ce142f760088c73ef2e224f4d5
+  bytes: 35900
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-07.png
+  etag: '"8c3c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-08.png
+  target: static/images/en/ch10/fig-10-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:27+08:00'
+  sha256: da00ff8541dea36ecef7f2f216baaac050a83414bf1d7085589a16b2f8aa3e04
+  bytes: 33151
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-08.png
+  etag: '"817f-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-09.png
+  target: static/images/en/ch10/fig-10-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:09+08:00'
+  sha256: dd80495024b58f2d63ffe317d7f31822fb79b94cb7b498d6f4c1352c4ab55d32
+  bytes: 50436
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-09.png
+  etag: '"c504-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-10.png
+  target: static/images/en/ch10/fig-10-10.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:26+08:00'
+  sha256: fe52f3930077e512f36f4d9a565fa1670e9add06a752860889a8aaee0fd464e1
+  bytes: 38957
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-10.png
+  etag: '"982d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql10/fig-10-11.png
+  target: static/images/en/ch10/fig-10-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:38+08:00'
+  sha256: 035f2b97a2a6770308caff6d8cd908417feb538746f1d822e5b064940338883b
+  bytes: 65624
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql10/fig-10-11.png
+  etag: '"10058-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-01.png
+  target: static/images/en/ch11/fig-11-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:34+08:00'
+  sha256: 90456f049135976d0771c7d9b2ac2023a24c856b87cc3cc5a3ac93dd6b0e134f
+  bytes: 27424
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-01.png
+  etag: '"6b20-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-02.png
+  target: static/images/en/ch11/fig-11-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:35+08:00'
+  sha256: 07f21c8ae622694ea820d0ad5570d8936b3116754e670d135eec31399fa8cfe3
+  bytes: 19713
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-02.png
+  etag: '"4d01-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-03.png
+  target: static/images/en/ch11/fig-11-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:37+08:00'
+  sha256: 883cebb517c25197c0284e9a7f3ae0174daf2d0b625e1f7099d386cc6d8a4d80
+  bytes: 30801
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-03.png
+  etag: '"7851-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-04.png
+  target: static/images/en/ch11/fig-11-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:37+08:00'
+  sha256: 4a5c66d8d180b52606660a03fe60663a280271b0e8aa16368bb92b0e9d10fa07
+  bytes: 17607
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-04.png
+  etag: '"44c7-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-05.png
+  target: static/images/en/ch11/fig-11-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:39+08:00'
+  sha256: 391fa7db7281192348c8b723ce74c722ba79042a8d836de8497d215cb7facb6d
+  bytes: 31843
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-05.png
+  etag: '"7c63-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-06.png
+  target: static/images/en/ch11/fig-11-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:40+08:00'
+  sha256: 74140b9b9b00ca5197cde5f71f030f5b981bd82dce5b3a8660320132556c0246
+  bytes: 33841
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-06.png
+  etag: '"8431-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-07.png
+  target: static/images/en/ch11/fig-11-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:44+08:00'
+  sha256: 4612bba0a7bda3c1e1e39d7b4e001286545de93f03c17c4c442983345163da08
+  bytes: 17716
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-07.png
+  etag: '"4534-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-08.png
+  target: static/images/en/ch11/fig-11-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:40+08:00'
+  sha256: a6f7a3b64c675417b81cfdd2b9b2440eda26339311cc7b03522109fd60c740e5
+  bytes: 12418
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-08.png
+  etag: '"3082-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql11/fig-11-09.png
+  target: static/images/en/ch11/fig-11-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:41+08:00'
+  sha256: f9a02a3a8de4742364de48f8008b5f46601a4db516aa6c27632b7c36712ab9cb
+  bytes: 23248
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql11/fig-11-09.png
+  etag: '"5ad0-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-01.png
+  target: static/images/en/ch12/fig-12-01.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:45+08:00'
+  sha256: 1b271cd8ca63c38e078dff414279c07ffbf9450215ea3d516b17362c3c27bedd
+  bytes: 24042
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-01.png
+  etag: '"5dea-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-02.png
+  target: static/images/en/ch12/fig-12-02.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:50+08:00'
+  sha256: 8dec8f7f9e3197ff10dde27d5c3ccebcd3b394dfe99331240e2046f773640d14
+  bytes: 70189
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-02.png
+  etag: '"1122d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-03.png
+  target: static/images/en/ch12/fig-12-03.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:49+08:00'
+  sha256: f886c463b6d429a99a1ae8d27d4b6f55cbe3e76001d34c68feefb0e99292024f
+  bytes: 28341
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-03.png
+  etag: '"6eb5-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-04.png
+  target: static/images/en/ch12/fig-12-04.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:55+08:00'
+  sha256: 499cbf6ad8fd4d5849f9398a3ad90156f7c7d8600bd21903e9615d658f12fca4
+  bytes: 63950
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-04.png
+  etag: '"f9ce-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-05.png
+  target: static/images/en/ch12/fig-12-05.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:52+08:00'
+  sha256: 8641d627c3fa50e56c1413e5d1ce220d9cb103326f16592aa431582b971a4019
+  bytes: 61858
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-05.png
+  etag: '"f1a2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-06.png
+  target: static/images/en/ch12/fig-12-06.png
+  status: fetched
+  fetched_at: '2026-07-30T23:50:56+08:00'
+  sha256: 32d7a50e7600405074d633c120ebd4b436b4e2c2b34850d70320160d5426922f
+  bytes: 68764
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-06.png
+  etag: '"10c9c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-07.png
+  target: static/images/en/ch12/fig-12-07.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:59+08:00'
+  sha256: ed199ca6f889e3e169319e0daa0cb1bf380370af2ed7ce6f5945ea9bd46ddd07
+  bytes: 21882
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-07.png
+  etag: '"557a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-08.png
+  target: static/images/en/ch12/fig-12-08.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:08+08:00'
+  sha256: 7c7ac9d672b1e7ea418f52fc5dd366c84d5e7b9e113b833d6c2920625ad714c6
+  bytes: 23478
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-08.png
+  etag: '"5bb6-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-09.png
+  target: static/images/en/ch12/fig-12-09.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:54+08:00'
+  sha256: c87e703395075a5b946c223c9023cfe07ed7bf4389ab564edf5a6ee7ae10eecc
+  bytes: 57283
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-09.png
+  etag: '"dfc3-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-11.png
+  target: static/images/en/ch12/fig-12-11.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:57+08:00'
+  sha256: 548483bba1adbb74e23abc918ad7388ac13e72ac0bc0efb6ebd6e987efcd55aa
+  bytes: 26401
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-11.png
+  etag: '"6721-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-12.png
+  target: static/images/en/ch12/fig-12-12.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:57+08:00'
+  sha256: 21513fc13449daecfa3586a28d197f7765d9258d9c987d85f77dffbc79223567
+  bytes: 18209
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-12.png
+  etag: '"4721-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-13.png
+  target: static/images/en/ch12/fig-12-13.png
+  status: fetched
+  fetched_at: '2026-07-30T23:51:59+08:00'
+  sha256: 87c6db97e4206cf5d5d5352efc8ec0e15d05fc34b6d3c0dab300231103192678
+  bytes: 36508
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-13.png
+  etag: '"8e9c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-14.png
+  target: static/images/en/ch12/fig-12-14.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:00+08:00'
+  sha256: 96ed587e6222e7a38414afb86a3c7ec01ec8adb58da88da87865b56fa1bdf2ed
+  bytes: 45135
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-14.png
+  etag: '"b04f-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-15.png
+  target: static/images/en/ch12/fig-12-15.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:21+08:00'
+  sha256: d38cd06fcca6afa0bc71ba0ff6cfc9d3868ad03078d197f0893a5f0b29fc49f9
+  bytes: 49650
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-15.png
+  etag: '"c1f2-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-16.png
+  target: static/images/en/ch12/fig-12-16.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:05+08:00'
+  sha256: d85d088c8ada8a01647ef69accd2b6d2b53d13fb65d417b1cfb091a7a2dd9fbb
+  bytes: 51724
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-16.png
+  etag: '"ca0c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-17.png
+  target: static/images/en/ch12/fig-12-17.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:10+08:00'
+  sha256: bbebc5f86f77ec4c79fcaed7ecdf7bceb86dedbfb8c1bb6fddbff65b0a17ceca
+  bytes: 52680
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-17.png
+  etag: '"cdc8-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-18.png
+  target: static/images/en/ch12/fig-12-18.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:09+08:00'
+  sha256: 6c06fed4e86d239b42e39f20d30ae3c73df36b68550444f81782e14f57f097a0
+  bytes: 15692
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-18.png
+  etag: '"3d4c-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-19.png
+  target: static/images/en/ch12/fig-12-19.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:09+08:00'
+  sha256: 7f0e41b457ceceb08b67543c0ae5efef5bd4de9f04a2ad491cb1053c05718693
+  bytes: 27108
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-19.png
+  etag: '"69e4-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-20.png
+  target: static/images/en/ch12/fig-12-20.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:11+08:00'
+  sha256: 17abdd9a18b71f3423991dba54c680429f82dbd05d1d6b74b71a25b61748946e
+  bytes: 29482
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-20.png
+  etag: '"732a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-21.png
+  target: static/images/en/ch12/fig-12-21.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:12+08:00'
+  sha256: 4a747bc0d642ae1e15e30f65a5095b9714efe3fd3c2b1eee08d038f3675ad54f
+  bytes: 12308
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-21.png
+  etag: '"3014-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-22.png
+  target: static/images/en/ch12/fig-12-22.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:13+08:00'
+  sha256: 1e980f1b929e38d22e4f97e512e677944c8098c1de05c48add22da02e09e9f8f
+  bytes: 23182
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-22.png
+  etag: '"5a8e-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-23.png
+  target: static/images/en/ch12/fig-12-23.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:54+08:00'
+  sha256: 8a8c2eb2ce2dd9e39478cd21a11b4e4a4343c228aa598dd1b790d84ef9540f88
+  bytes: 44907
+  content_type: image/png
+  fetched_url: https://www.interdb.jp/pg/pgsql12/fig-12-23.png
+  etag: '"af6b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-24.png
+  target: static/images/en/ch12/fig-12-24.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:27+08:00'
+  sha256: 651269ef75eb67e2e655dd9fdbf4a72258871703c6d7aa7e4842035a7b2342f4
+  bytes: 20093
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-24.png
+  etag: '"4e7d-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-25.png
+  target: static/images/en/ch12/fig-12-25.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:40+08:00'
+  sha256: 3a9e4776f7a582b3ac7714b9820b9a6404bf5d3c8cc92c183c48ce02c8604514
+  bytes: 20081
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-25.png
+  etag: '"4e71-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-26.png
+  target: static/images/en/ch12/fig-12-26.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:57+08:00'
+  sha256: aa53f7b5e61a9d79d5c345c7d3a8fe63835e59f123dabe15be744740c62183d0
+  bytes: 32201
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-26.png
+  etag: '"7dc9-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-27.png
+  target: static/images/en/ch12/fig-12-27.png
+  status: fetched
+  fetched_at: '2026-07-30T23:52:58+08:00'
+  sha256: 778f1a3af5d4e7c1b83cf7a8da550ecdc99199631e1e514450ed3175f6028489
+  bytes: 23470
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-27.png
+  etag: '"5bae-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-28.png
+  target: static/images/en/ch12/fig-12-28.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:02+08:00'
+  sha256: 3433048d860d7736fb46075a6d9576cef9dec01c51adabd085fe925f3e2913da
+  bytes: 40843
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-28.png
+  etag: '"9f8b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-29.png
+  target: static/images/en/ch12/fig-12-29.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:06+08:00'
+  sha256: 13cca1194e3dbe8a0b14ede5354cf625b8492059a8bb2e7b8338bf86f0b045b1
+  bytes: 50250
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-29.png
+  etag: '"c44a-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-30.png
+  target: static/images/en/ch12/fig-12-30.png
+  status: fetched
+  fetched_at: '2026-07-30T23:54:13+08:00'
+  sha256: 04b468b59bd6dd57959348098de2eb51bdfd43503a6db9c700bd2386c09896c8
+  bytes: 78837
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-30.png
+  etag: '"133f5-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-31.png
+  target: static/images/en/ch12/fig-12-31.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:11+08:00'
+  sha256: 7cb96b3b407f2b2a2711822818106324b6aaf419ba8d7c80ba179675a236bc55
+  bytes: 27340
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-31.png
+  etag: '"6acc-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/pgsql12/fig-12-32.png
+  target: static/images/en/ch12/fig-12-32.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:17+08:00'
+  sha256: 86b0b22bfdefcc6e3176bdc3feb4490354590ffa2ffd254ecd28d1afbc1e7972
+  bytes: 32859
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/pgsql12/fig-12-32.png
+  etag: '"805b-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true
+- source_url: https://www.interdb.jp/pg/title3.png
+  target: static/images/en/home/title3.png
+  status: fetched
+  fetched_at: '2026-07-30T23:53:27+08:00'
+  sha256: a3db22f426328989cd59815fd23aab1d3b959b9fe49467fd1095830e200316ef
+  bytes: 283072
+  content_type: image/png
+  fetched_url: http://www.interdb.jp/pg/title3.png
+  etag: '"451c0-6575a14afc280"'
+  last_modified: Fri, 24 Jul 2026 11:57:46 GMT
+  verified: true

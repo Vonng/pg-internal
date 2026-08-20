@@ -1,9 +1,12 @@
 ---
-title: 7. 堆内元组与仅索引扫描
+title: 堆内元组与仅索引扫描
 description: HOT 更新如何降低索引写放大，以及仅索引扫描的工作条件。
 search_keywords: [HOT, heap-only tuple, index-only scan, pruning, 仅索引扫描, 行指针修剪]
-type: docs
-weight: 107
+type: book
+book_kind: chapter
+book_number: "7"
+weight: 230
+breadcrumbs: false
 ---
 
 
@@ -29,11 +32,9 @@ testdb=# \d tbl
 Indexes:
     "tbl_pkey" PRIMARY KEY, btree (id)
 ```
-表`tbl`有1000条元组；最后一个元组的`id`是1000，存储在第五个数据页中。最后一条元组被相应的索引元组所引用，索引元组的`key`是1000，且`tid`是`(5,1)`，如图7.1(a)所示。
+表`tbl`有1000条元组；最后一个元组的`id`是1000，存储在第五个数据页中。最后一条元组被相应的索引元组所引用，索引元组的`key`是1000，且`tid`是`(5,1)`，如{{< xref fig="7.1" anchor="fig-7.1" >}}图7.1{{< /xref >}}(a)所示。
 
-**图 7.1 没有HOT的行更新**
-
-![update](/img/fig-7-01.png)
+{{< fig num="7.1" src="/img/fig-7-01.png" caption="没有HOT的行更新" alt="未使用 HOT 时更新堆元组并新增索引项的过程" />}}
 
 我们考虑一下，没有HOT特性时，最后一个元组是如何更新的。
 
@@ -41,25 +42,22 @@ Indexes:
 testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 ```
 
-在该场景中，PostgreSQL不仅要插入一条新的表元组，还需要在索引页中插入新的索引元组，如图7.1(b)所示。索引元组的插入消耗了索引页的空间，而且索引元组的插入和清理都是开销很大的操作。HOT的目的，就是降低这种影响。
+在该场景中，PostgreSQL不仅要插入一条新的表元组，还需要在索引页中插入新的索引元组，如{{< xref fig="7.1" anchor="fig-7.1" >}}图7.1{{< /xref >}}(b)所示。索引元组的插入消耗了索引页的空间，而且索引元组的插入和清理都是开销很大的操作。HOT的目的，就是降低这种影响。
 
 ### 7.1.2 HOT如何工作
-当使用HOT特性更新行时，如果被更新的元组存储在老元组所在的页面中，PostgreSQL就不会再插入相应的索引元组，而是分别设置新元组的`HEAP_ONLY_TUPLE`标记位与老元组的`HEAP_HOT_UPDATED`标记位，两个标记位都保存在元组的`t_informask2`字段中。如图7.2和7.3所示；
+当使用HOT特性更新行时，如果被更新的元组存储在老元组所在的页面中，PostgreSQL就不会再插入相应的索引元组，而是分别设置新元组的`HEAP_ONLY_TUPLE`标记位与老元组的`HEAP_HOT_UPDATED`标记位，两个标记位都保存在元组的`t_informask2`字段中。如{{< xref fig="7.2" anchor="fig-7.2" >}}图7.2{{< /xref >}}和{{< xref fig="7.3" anchor="fig-7.3" >}}图7.3{{< /xref >}}所示。
 
-**图7.2 HOT的行更新**
+{{< fig num="7.2" src="/img/fig-7-02.png" caption="HOT的行更新" alt="HOT 更新前后的索引项与堆元组关系" />}}
 
-![hot](/img/fig-7-02.png) 
-![informask](/img/fig-7-03.png)
+{{< fig num="7.3" src="/img/fig-7-03.png" caption="HOT更新中的元组标志位" alt="HOT 更新后 Tuple_1 与 Tuple_2 的 t_ctid 和 t_infomask2 标志位变化" />}}
 
 比如在这个例子中，`Tuple_1`和`Tuple_2`分别被设置成`HEAP_HOT_UPDATED`和`HEAP_ONLY_TUPLE`。
 
 另外，在 **修剪（pruning）** 和 **碎片整理（defragmentation）** 处理过程中，都会使用下面介绍的`HEAP_HOT_UPDATED`和`HEAP_ONLY_TUPLE`标记位。
 
-接下来会介绍，当基于HOT更新一个元组后，PostgreSQL是如何在索引扫描中访问这些被HOT更新的元组的，如图7.4(a)所示。
+接下来会介绍，当基于HOT更新一个元组后，PostgreSQL是如何在索引扫描中访问这些被HOT更新的元组的，如{{< xref fig="7.4" anchor="fig-7.4" >}}图7.4{{< /xref >}}(a)所示。
 
-**图7.4 行指针修剪**
-
-![pruning](/img/fig-7-04.png)
+{{< fig num="7.4" src="/img/fig-7-04.png" caption="行指针修剪" alt="HOT 链在行指针修剪前后的访问路径" />}}
 
 
 
@@ -68,9 +66,9 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 3. 读取`Tuple_1`
 4. 经由`Tuple_1`的`t_ctid`字段，读取`Tuple_2`。
 
-在这种情况下，PostgreSQL会读取两条元组，`Tuple_1`和`Tuple_2`，并通过[第5章](/ch5/)所述的并发控制机制来判断哪条元组是可见的；但如果数据页中的 **死元组（dead tuple）** 已经被清理了，那就有问题了。比如在图7.4(a)中，如果`Tuple_1`由于是死元组而被清理了，就无法通过索引访问`Tuple_2`了。
+在这种情况下，PostgreSQL会读取两条元组，`Tuple_1`和`Tuple_2`，并通过[第5章](/ch5/)所述的并发控制机制来判断哪条元组是可见的；但如果数据页中的 **死元组（dead tuple）** 已经被清理了，那就有问题了。比如在{{< xref fig="7.4" anchor="fig-7.4" >}}图7.4{{< /xref >}}(a)中，如果`Tuple_1`由于是死元组而被清理了，就无法通过索引访问`Tuple_2`了。
 
-为了解决这个问题，PostgreSQL会在合适的时候进行行指针重定向：将指向老元组的行指针重新指向新元组的行指针。在PostgreSQL中，这个过程称为**修剪（pruning）**。图7.4(b)说明了PostgreSQL在修剪之后如何访问更新的元组。
+为了解决这个问题，PostgreSQL会在合适的时候进行行指针重定向：将指向老元组的行指针重新指向新元组的行指针。在PostgreSQL中，这个过程称为**修剪（pruning）**。{{< xref fig="7.4" anchor="fig-7.4" >}}图7.4{{< /xref >}}(b)说明了PostgreSQL在修剪之后如何访问更新的元组。
 
 1. 找到索引元组
 2. 通过索引元组，找到行指针`[1]`
@@ -79,11 +77,9 @@ testdb=# UPDATE tbl SET data = 'B' WHERE id = 1000;
 
 可能的话，剪枝任何时候都有可能会发生，比如 `SELECT` ，`UPDATE`， `INSERT` ，`DELETE`这类SQL命令执行的时候，确切的执行时机不会在本章中描述，因为它太复杂了。细节可以在[`README.HOT`](https://github.com/postgres/postgres/blob/master/src/backend/access/heap/README.HOT)文件中找到。
 
-在PostgreSQL执行剪枝时，如果可能，会挑选合适的时机来清理死元组。在PostgreSQL中这种操作称为**碎片整理（defragmentation）**，图7.5中描述了HOT中的碎片整理过程。
+在PostgreSQL执行剪枝时，如果可能，会挑选合适的时机来清理死元组。在PostgreSQL中这种操作称为**碎片整理（defragmentation）**，{{< xref fig="7.5" anchor="fig-7.5" >}}图7.5{{< /xref >}}中描述了HOT中的碎片整理过程。
 
-**图 7.5 死元组的碎片整理**
-
-![图 7.5 死元组的碎片整理](/img/fig-7-05.png)
+{{< fig num="7.5" src="/img/fig-7-05.png" caption="死元组的碎片整理" alt="图 7.5 死元组的碎片整理" />}}
 
 
 
@@ -161,9 +157,7 @@ testdb=# SELECT id, name FROM tbl WHERE id BETWEEN 18 and 19;
 
 在这个例子中，因为的0号页面被标记为可见，因此0号页面中存储的包括`Tuple_18`在内的所有元组都是可见的，所以就无需再去访问`Tuple_18`了。相应的，因为1号页面并没有被标记为可见，此时为了检查并发控制的可见性，需要访问`Tuple_19`。
 
-**图 7.7 仅索引扫描的工作过程**
-
-![vm](/img/fig-7-07.png)
+{{< fig num="7.7" src="/img/fig-7-07.png" caption="仅索引扫描的工作过程" alt="仅索引扫描根据可见性映射决定是否访问堆页面" />}}
 
 
 ## 7.3 README.HOT

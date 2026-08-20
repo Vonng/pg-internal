@@ -1,9 +1,12 @@
 ---
-title: 1. 数据库集簇，数据库，数据表
+title: 数据库集簇、数据库与数据表
 description: PostgreSQL 数据库集簇的逻辑与物理结构、堆表页面布局和元组访问方式。
 search_keywords: [database cluster, 数据库集簇, OID, heap table, 堆表, tuple, 元组, tablespace, TOAST]
-type: docs
-weight: 101
+type: book
+book_kind: chapter
+book_number: "1"
+weight: 110
+breadcrumbs: false
 ---
 
 
@@ -22,11 +25,9 @@ weight: 101
 
 **数据库集簇（database cluster）**是一组**数据库（database）** 的集合，由一个PostgreSQL服务器管理。第一次听到这个定义也许会令人疑惑，PostgreSQL中的术语“数据库集簇”，**并非** 意味着“一组数据库服务器”。 一个PostgreSQL服务器只会在单机上运行并管理单个数据库集簇。
 
-图1.1展示了一个数据库集簇的逻辑结构。 **数据库（database）** 是 **数据库对象（database objects）** 的集合。 在关系型数据库理论中，数据库对象是用于存储或引用数据的数据结构。 （堆）表是一个典型的例子，还有更多种对象，例如索引，序列，视图，函数等。 在PostgreSQL中数据库本身也是数据库对象，并在逻辑上彼此分离。 所有其他的数据库对象（例如表，索引等）归属于各自相应的数据库。
+{{< xref fig="1.1" anchor="fig-1.1" >}}图1.1{{< /xref >}}展示了一个数据库集簇的逻辑结构。 **数据库（database）** 是 **数据库对象（database objects）** 的集合。 在关系型数据库理论中，数据库对象是用于存储或引用数据的数据结构。 （堆）表是一个典型的例子，还有更多种对象，例如索引，序列，视图，函数等。 在PostgreSQL中数据库本身也是数据库对象，并在逻辑上彼此分离。 所有其他的数据库对象（例如表，索引等）归属于各自相应的数据库。
 
-**图1.1 数据库集簇的逻辑结构**
-
-![图1.1 数据库集簇的逻辑结构](/img/fig-1-01.png)
+{{< fig num="1.1" src="/img/fig-1-01.png" caption="数据库集簇的逻辑结构" alt="图1.1 数据库集簇的逻辑结构" />}}
 
 在 PostgreSQL 内部，所有的数据库对象都通过相应的 **对象标识符（Object Identifiers, OID）** 进行管理，这些标识符是无符号的4字节整型。数据库对象与相应OID之间的关系存储在相应的[**系统目录**](https://www.postgresql.org/docs/current/catalogs.html)中，依具体的对象类型而异。 例如数据库和堆表对象的OID分别存储在`pg_database`和`pg_class`中，因此当你希望找出OID时，可以执行以下查询：
 
@@ -50,20 +51,17 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 
 数据库集簇在本质上就是一个文件目录，名曰 **基础目录（base directory）**，包含着一系列子目录与文件。 执行 [`initdb`](https://www.postgresql.org/docs/current/app-initdb.html) 命令会在指定目录下创建基础目录从而初始化一个新的数据库集簇。 通常会将基础目录的路径配置到环境变量`PGDATA`中，但这并不是必须的。
 
-图1.2 展示了一个PostgreSQL数据库集簇的例子。 `base`子目录中的每一个子目录都对应一个数据库，数据库中每个表和索引都会在相应子目录下存储为（至少）一个文件；还有几个包含特定数据的子目录，以及配置文件。 虽然PostgreSQL支持**表空间（Tablespace）**，但该术语的含义与其他RDBMS不同。 PostgreSQL中的表空间对应一个包含基础目录之外数据的目录。
+{{< xref fig="1.2" anchor="fig-1.2" >}}图1.2{{< /xref >}} 展示了一个PostgreSQL数据库集簇的例子。 `base`子目录中的每一个子目录都对应一个数据库，数据库中每个表和索引都会在相应子目录下存储为（至少）一个文件；还有几个包含特定数据的子目录，以及配置文件。 虽然PostgreSQL支持**表空间（Tablespace）**，但该术语的含义与其他RDBMS不同。 PostgreSQL中的表空间对应一个包含基础目录之外数据的目录。
 
-**图1.2 数据库集簇示例**
-
-![图1.2 数据库集簇示例](/img/fig-1-02.png)
+{{< fig num="1.2" src="/img/fig-1-02.png" caption="数据库集簇示例" alt="图1.2 数据库集簇示例" />}}
 
 后续小节将描述数据库集簇的布局，数据库的布局，表和索引对应的文件布局，以及PostgreSQL中表空间的布局。
 
 ### 1.2.1 数据库集簇的布局
 
-[官方文档](https://www.postgresql.org/docs/current/storage-file-layout.html) 中描述了数据库集簇的布局。 表1.1中列出了主要的文件与子目录：
+[官方文档](https://www.postgresql.org/docs/current/storage-file-layout.html) 中描述了数据库集簇的布局。 {{< xref tbl="1.1" anchor="tbl-1.1" >}}表1.1{{< /xref >}}中列出了主要的文件与子目录：
 
-**表 1.1 基本目录下的数据库文件和子目录的布局（参考官方文档）**
-
+{{< tbl num="1.1" caption="基本目录下的数据库文件和子目录的布局（参考官方文档）" >}}
 | 文件                     | 描述                                  |
 |------------------------|-------------------------------------|
 | `PG_VERSION`           | 包含PostgreSQL主版本号                    |
@@ -95,6 +93,7 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 | `pg_wal/` (10+)   | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。            |
 | `pg_xact/` (10+)  | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](/ch5/)中描述。         |
 | `pg_xlog/` (9.6-) | **WAL（Write Ahead Logging）** 段文件（9.6及更老版本），它在版本10中被重命名为 `pg_wal`。 |
+{{< /tbl >}}
 
 ### 1.2.2 数据库布局
 
@@ -189,11 +188,9 @@ $ ls -la base/16384/18751*
 
 PostgreSQL中的 **表空间（Tablespace）** 是基础目录之外的附加数据区域。 在8.0版本中引入了该功能。
 
-图1.3展示了表空间的内部布局，以及表空间与主数据区域的关系。
+{{< xref fig="1.3" anchor="fig-1.3" >}}图1.3{{< /xref >}}展示了表空间的内部布局，以及表空间与主数据区域的关系。
 
-**图 1.3 数据库集簇的表空间**
-
-![图 1.3 数据库集簇的表空间](/img/fig-1-03.png)
+{{< fig num="1.3" src="/img/fig-1-03.png" caption="数据库集簇的表空间" alt="图 1.3 数据库集簇的表空间" />}}
 
 执行[`CREATE TABLESPACE`](https://www.postgresql.org/docs/current/sql-createtablespace.html)语句会在指定的目录下创建表空间。而在该目录下还会创建版本特定的子目录（例如`PG_9.4_201409291`）。版本特定的命名方式为：
 
@@ -246,9 +243,7 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 
 
-**图 1.4. 堆表文件的页面布局**
-
-![图 1.4. 堆表文件的页面布局](/img/fig-1-04.png)
+{{< fig num="1.4" src="/img/fig-1-04.png" caption="堆表文件的页面布局" alt="图 1.4. 堆表文件的页面布局" />}}
 
 表的页面包含了三种类型的数据：
 
@@ -349,24 +344,20 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 ### 1.4.1 写入堆元组
 
-让我们假设有一个表，仅由一个页面组成，且该页面只包含一个堆元组。 此页面的`pd_lower`指向第一个行指针，而该行指针和`pd_upper`都指向第一个堆元组。 如图1.5(a)所示。
+让我们假设有一个表，仅由一个页面组成，且该页面只包含一个堆元组。 此页面的`pd_lower`指向第一个行指针，而该行指针和`pd_upper`都指向第一个堆元组。 如{{< xref fig="1.5" anchor="fig-1.5" >}}图1.5{{< /xref >}}(a)所示。
 
-当第二个元组被插入时，它会被放在第一个元组之后。第二个行指针被插入到第一个行指针的后面，并指向第二个元组。 `pd_lower`更改为指向第二个行指针，`pd_upper`更改为指向第二个堆元组，如图1.5(b)。 页面内的首部数据（例如`pd_lsn`、`pd_checksum`和`pd_flags`）也会被改写为适当的值，细节在[第5.3节](/ch5/)和[第9章](/ch9/)中描述。
+当第二个元组被插入时，它会被放在第一个元组之后。第二个行指针被插入到第一个行指针的后面，并指向第二个元组。 `pd_lower`更改为指向第二个行指针，`pd_upper`更改为指向第二个堆元组，如{{< xref fig="1.5" anchor="fig-1.5" >}}图1.5{{< /xref >}}(b)。 页面内的首部数据（例如`pd_lsn`、`pd_checksum`和`pd_flags`）也会被改写为适当的值，细节在[第5.3节](/ch5/)和[第9章](/ch9/)中描述。
 
-**图1.5 堆元组的写入**
-
-![图1.5 堆元组的写入](/img/fig-1-05.png)
+{{< fig num="1.5" src="/img/fig-1-05.png" caption="堆元组的写入" alt="图1.5 堆元组的写入" />}}
 
 ### 1.4.2 读取堆元组
 
 这里简述两种典型的访问方式：顺序扫描与B树索引扫描：
 
-* **顺序扫描** —— 通过扫描每一页中的行指针，依序读取所有页面中的所有元组，如图1.6(a)。
-* **B树索引扫描** —— 索引文件包含着索引元组，索引元组由一个键值对组成，键为被索引的列值，值为目标堆元组的TID。进行索引查询时，首先使用键进行查找，如果找到了对应的索引元组，PostgreSQL就会根据相应值中的TID来读取对应的堆元组 （使用B树索引找到索引元组的方法请参考相关资料，这一部分属于数据库系统的通用知识，限于篇幅这里不再详细展开）。例如在图1.6(b)中，所获索引元组中TID的值为（区块号 = 7，偏移号 = 2）， 这意味着目标堆元组是表中第7页的第2个元组，因而PostgreSQL可以直接读取所需的堆元组，而避免对页面做不必要的扫描。
+* **顺序扫描** —— 通过扫描每一页中的行指针，依序读取所有页面中的所有元组，如{{< xref fig="1.6" anchor="fig-1.6" >}}图1.6{{< /xref >}}(a)。
+* **B树索引扫描** —— 索引文件包含着索引元组，索引元组由一个键值对组成，键为被索引的列值，值为目标堆元组的TID。进行索引查询时，首先使用键进行查找，如果找到了对应的索引元组，PostgreSQL就会根据相应值中的TID来读取对应的堆元组 （使用B树索引找到索引元组的方法请参考相关资料，这一部分属于数据库系统的通用知识，限于篇幅这里不再详细展开）。例如在{{< xref fig="1.6" anchor="fig-1.6" >}}图1.6{{< /xref >}}(b)中，所获索引元组中TID的值为（区块号 = 7，偏移号 = 2）， 这意味着目标堆元组是表中第7页的第2个元组，因而PostgreSQL可以直接读取所需的堆元组，而避免对页面做不必要的扫描。
 
-**图 1.6 顺序扫描和索引扫描**
-
-![图 1.6 顺序扫描和索引扫描](/img/fig-1-06.png)
+{{< fig num="1.6" src="/img/fig-1-06.png" caption="顺序扫描和索引扫描" alt="图 1.6 顺序扫描和索引扫描" />}}
 
 > PostgreSQL还支持**TID扫描**，**位图扫描（[Bitmap-Scan](https://wiki.postgresql.org/wiki/Bitmap_Indexes)）**和**仅索引扫描（Index-Only-Scan）**。
 >

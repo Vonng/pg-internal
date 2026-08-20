@@ -1,9 +1,12 @@
 ---
-title: 4. 外部数据包装器与并行查询
+title: 外部数据包装器与并行查询
 description: 外部数据包装器的查询路径，以及 PostgreSQL 并行查询的基本机制。
 search_keywords: [FDW, foreign data wrapper, postgres_fdw, 外部数据包装器, parallel query, 并行查询]
-type: docs
-weight: 104
+type: book
+book_kind: chapter
+book_number: "4"
+weight: 140
+breadcrumbs: false
 ---
 
 本章将介绍两种相当实用，而且很有趣的特性：**外部数据包装器（Foreign Data Wrapper FDW）**与**并行查询（Parallel Query）**。
@@ -14,9 +17,7 @@ weight: 104
 
 在SQL/MED中，远程服务器上的表被称为**外部表（Foreign Table）**。 PostgreSQL的**外部数据包装器（FDW）** 使用与本地表类似的方式，通过SQL/MED来管理外部表。
 
-**图4.1 FDW的基本概念**
-
-![Fig. 4.1. Basic concept of FDW.](/img/fig-4-1.png)
+{{< fig num="4.1" src="/img/fig-4-1.png" caption="FDW的基本概念" alt="Fig. 4.1. Basic concept of FDW." />}}
 
 安装完必要的扩展并配置妥当后，就可以访问远程服务器上的外部表了。 例如假设有两个远程服务器分别名为`postgresql`和`mysql`，它们上面分别有两张表：`foreign_pg_tbl`和`foreign_my_tbl`。 在本例中，可以在本地服务器上执行`SELECT`查询以访问外部表，如下所示。
 
@@ -61,9 +62,7 @@ localdb=# SELECT count(*) FROM foreign_pg_tbl AS p, foreign_my_tbl AS m WHERE p.
 
 
 
-**图4.2 FDW是如何执行的**
-
-![Fig. 4.2. How FDWs perform.](/img/fig-4-2.png)
+{{< fig num="4.2" src="/img/fig-4-2.png" caption="FDW是如何执行的" alt="Fig. 4.2. How FDWs perform." />}}
 
 1. 分析器为输入的SQL创建一棵查询树。
 2. 计划器（或执行器）连接到远程服务器。
@@ -99,17 +98,15 @@ localdb=# ALTER SERVER remote_server_name OPTIONS (use_remote_estimate 'on');
 
 #### 4.1.1.4 逆解析
 
-在生成执行计划树的过程中，计划器会为执行计划树上外部表的扫描路径创建相应的纯文本SQL语句。 例如图4.3展示了下列`SELECT`语句对应的计划树。
+在生成执行计划树的过程中，计划器会为执行计划树上外部表的扫描路径创建相应的纯文本SQL语句。 例如{{< xref fig="4.3" anchor="fig-4.3" >}}图4.3{{< /xref >}}展示了下列`SELECT`语句对应的计划树。
 
 ```sql
 localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 ```
 
-图4.3展示了一个存储着纯文本形式`SELECT`语句的`ForeignScan`节点，`PlannedStmt`是执行计划树对应的数据结构，包含指向`ForeignScan`节点的链接。 这里，`postgres_fdw`从查询树中重新创建出`SELECT`纯文本语句，该过程在PostgreSQL中被称为**逆解析（deparsing）**。
+{{< xref fig="4.3" anchor="fig-4.3" >}}图4.3{{< /xref >}}展示了一个存储着纯文本形式`SELECT`语句的`ForeignScan`节点，`PlannedStmt`是执行计划树对应的数据结构，包含指向`ForeignScan`节点的链接。 这里，`postgres_fdw`从查询树中重新创建出`SELECT`纯文本语句，该过程在PostgreSQL中被称为**逆解析（deparsing）**。
 
-**图4.3 扫描外部表的计划树样例**
-
-![Fig. 4.3. Example of the plan tree that scans a foreign table.](/img/fig-4-3.png)
+{{< fig num="4.3" src="/img/fig-4-3.png" caption="扫描外部表的计划树样例" alt="Fig. 4.3. Example of the plan tree that scans a foreign table." />}}
 
 使用`mysql_fdw`时，则会从查询树中重新创建MySQL相应的`SELECT`语句。 使用[`redis_fdw`](https://github.com/pg-redis-fdw/redis_fdw)或[`rw_redis_fdw`](https://github.com/nahanni/rw_redis_fdw)会创建一条Redis中的[`SELECT`命令](https://redis.io/commands/select)。
 
@@ -117,15 +114,13 @@ localdb=# SELECT * FROM tbl_a AS a WHERE a.id < 10;
 
 在进行逆解析之后，执行器将逆解析得到的SQL语句发送到远程服务器并接收结果。
 
-扩展的开发者决定了将SQL语句发送至远程服务器的具体方法。 例如`mysql_fdw`在发送多条SQL语句时不使用事务。 在`mysql_fdw`中执行`SELECT`查询的典型SQL语句序列如下所示（图4.4）。
+扩展的开发者决定了将SQL语句发送至远程服务器的具体方法。 例如`mysql_fdw`在发送多条SQL语句时不使用事务。 在`mysql_fdw`中执行`SELECT`查询的典型SQL语句序列如下所示（{{< xref fig="4.4" anchor="fig-4.4" >}}图4.4{{< /xref >}}）。
 
 * （5-1）将`SQL_MODE`设置为`'ANSI_QUOTES'`。
 * （5-2）将`SELECT`语句发送到远程服务器。
 * （5-3）从远程服务器接收结果。这里`mysql_fdw`会将结果转换为PostgreSQL可读的格式。所有FDW扩展都实现了将结果转换为PostgreSQL可读数据的功能。
 
-**图4.4 `mysql_fdw`执行一个典型SELECT查询时的SQL语句序列**
-
-![Fig. 4.4. Typical sequence of SQL statements to execute a SELECT query in mysql_fdw](/img/fig-4-4.png)
+{{< fig num="4.4" src="/img/fig-4-4.png" caption="`mysql_fdw`执行一个典型SELECT查询时的SQL语句序列" alt="Fig. 4.4. Typical sequence of SQL statements to execute a SELECT query in mysql_fdw" />}}
 
 下面是远程服务器的日志，列出了实际接收到的语句。
 
@@ -142,7 +137,7 @@ mysql> SELECT command_type,argument FROM mysql.general_log;
 +--------------+-----------------------------------------------------------+
 ```
 
-`postgres_fdw`中的SQL命令顺序要更为复杂。在`postgres_fdw`中执行一个典型的`SELECT`查询，实际的语句序列如图4.5所示。
+`postgres_fdw`中的SQL命令顺序要更为复杂。在`postgres_fdw`中执行一个典型的`SELECT`查询，实际的语句序列如{{< xref fig="4.5" anchor="fig-4.5" >}}图4.5{{< /xref >}}所示。
 
 * （5-1）启动远程事务。远程事务的默认隔离级别是`REPEATABLE READ`；但如果本地事务的隔离级别设置为`SERIALIZABLE`，则远程事务的隔离级别也会设置为`SERIALIZABLE`。
 
@@ -156,9 +151,7 @@ mysql> SELECT command_type,argument FROM mysql.general_log;
 
 * （5-8）提交远程事务。
 
-**图4.5 `postgres_fdw`执行一个典型SELECT查询时的SQL语句序列**
-
-![Fig. 4.5. Typical sequence of SQL statements to execute a SELECT query in postgres_fdw.](/img/fig-4-5.png)
+{{< fig num="4.5" src="/img/fig-4-5.png" caption="`postgres_fdw`执行一个典型SELECT查询时的SQL语句序列" alt="Fig. 4.5. Typical sequence of SQL statements to execute a SELECT query in postgres_fdw." />}}
 
 这里是远程服务器的实际日志。
 
@@ -184,15 +177,15 @@ LOG:  statement: COMMIT TRANSACTION
 
 `postgres_fdw`扩展是一个由PostgreSQL全球开发组官方维护的特殊模块，其源码包含在PostgreSQL源码树中。
 
-`postgres_fdw`正处于不断改善的过程中。 表4.1列出了官方文档中与`postgres_fdw`有关的发行说明。
+`postgres_fdw`正处于不断改善的过程中。 {{< xref tbl="4.1" anchor="tbl-4.1" >}}表4.1{{< /xref >}}列出了官方文档中与`postgres_fdw`有关的发行说明。
 
-**表4.1 与postgres_fdw有关的发布说明（摘自官方文档）**
-
+{{< tbl num="4.1" caption="与postgres_fdw有关的发布说明（摘自官方文档）" >}}
 | 版本 | 描述                                                         |
 | ---- | ------------------------------------------------------------ |
 | 9.3  | `postgres_fdw`模块正式发布                                   |
 | 9.6  | 在远程服务器上执行排序<br />在远程服务器上执行连接<br />如果可行，在远程服务器上执行`UPDATE`与`DELETE`<br />允许在服务器与表的选项中设置批量拉取结果集的大小 |
 | 10   | 如果可行， 将聚合函数下推至远程服务器                        |
+{{< /tbl >}}
 前一节描述了`postgres_fdw`如何处理单表查询，接下来的小节将介绍`postgres_fdw`如何处理多表查询，排序操作与聚合函数。
 
 本小节重点介绍`SELECT`语句；但`postgres_fdw`还可以处理其他DML（`INSERT`，`UPDATE`和`DELETE`）语句。
@@ -268,7 +261,7 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 * 第4行：执行器在本地服务器上执行归并连接操作。
 
-下面描述执行器如何拉取行集（图4.6）。
+下面描述执行器如何拉取行集（{{< xref fig="4.6" anchor="fig-4.6" >}}图4.6{{< /xref >}}）。
 
 * （5-1）启动远程事务。
 
@@ -298,9 +291,7 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 * （5-8）提交事务。
 
-**图4.6 在9.5及更早版本中执行多表查询时的SQL语句序列**
-
-![Fig. 4.6. Sequence of SQL statements to execute the Multi-Table Query in version 9.5 or earlier.](/img/fig-4-6.png)
+{{< fig num="4.6" src="/img/fig-4-6.png" caption="在9.5及更早版本中执行多表查询时的SQL语句序列" alt="Fig. 4.6. Sequence of SQL statements to execute the Multi-Table Query in version 9.5 or earlier." />}}
 
 这里是远程服务器的实际日志。
 
@@ -367,13 +358,11 @@ localdb=# EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND a.i
 
 结果显示，计划器选择了在远程服务器上进行`INNER JOIN`处理的执行计划，也是最有效率的执行计划。
 
-下面讲述`postgres_fdw`是如何执行这一过程的，如图4.7所示。
+下面讲述`postgres_fdw`是如何执行这一过程的，如{{< xref fig="4.7" anchor="fig-4.7" >}}图4.7{{< /xref >}}所示。
 
 
 
-**图4.7 执行远程连接操作时的SQL语句序列，9.6及更高版本**
-
-![Fig. 4.7. Sequence of SQL statements to execute the remote-join operation in version 9.6 or later.](/img/fig-4-7.png)
+{{< fig num="4.7" src="/img/fig-4-7.png" caption="执行远程连接操作时的SQL语句序列，9.6及更高版本" alt="Fig. 4.7. Sequence of SQL statements to execute the remote-join operation in version 9.6 or later." />}}
 
 
 

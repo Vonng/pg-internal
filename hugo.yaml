@@ -14,7 +14,7 @@ server:
         Access-Control-Allow-Origin: "*"
 
 outputs:
-  home: [HTML, markdown, LLMS]
+  home: [HTML, print, markdown, LLMS]
   page: [HTML, markdown]
   section: [HTML, RSS, print, markdown]
 
@@ -31,7 +31,7 @@ languages:
     label: 简体中文
     locale: zh-CN
     weight: 1
-    title: PostgreSQL 技术内幕
+    title: PG 技术内幕
     params:
       description: 深入理解 PostgreSQL 的进程、查询、并发控制、存储、WAL、备份与复制机制。
       time_format_blog: 2006年1月2日
@@ -42,55 +42,28 @@ languages:
           errorMessage: 评论加载失败，请稍后重试。
     menus:
       main:
-        - name: 开始阅读
-          identifier: reading
-          pageRef: /
-          weight: 10
-          params:
-            icon: fa-solid fa-book-open
-            description: 首页、序言与第一章入口
-        - name: 章节目录
-          identifier: chapters
-          parent: reading
-          url: /#chapters
+        - name: 目录
+          identifier: contents
+          pageRef: /toc
           weight: 10
           params:
             icon: fa-solid fa-list
-            description: 浏览全部 11 个中文章节
-        - name: 作者序
+        - name: 序言
           identifier: preface
-          parent: reading
           pageRef: /preface
           weight: 20
           params:
             icon: fa-solid fa-quote-left
-            description: Hironobu Suzuki 为中文版撰写的序言
-        - name: 译者序
-          identifier: translators-preface
-          parent: reading
-          pageRef: /preface2
-          weight: 30
-          params:
-            icon: fa-solid fa-language
-            description: 中文译者说明与阅读建议
-        - name: 第一章
-          identifier: first-chapter
-          parent: reading
-          pageRef: /ch1
-          weight: 40
-          params:
-            icon: fa-solid fa-database
-            description: 从数据库集簇、文件与页面开始
         - name: 英文原著
           identifier: original
           url: https://www.interdb.jp/pg/
-          weight: 20
+          weight: 30
           params:
-            icon: fa-solid fa-book
+            icon: fa-solid fa-arrow-up-right-from-square
         - name: GitHub
           identifier: github
           url: https://github.com/Vonng/pg-internal
-          weight: 30
+          weight: 90
           params:
             icon: fa-brands fa-github
 
@@ -102,6 +75,7 @@ markup:
     noClasses: false
   goldmark:
     parser:
+      wrapStandAloneImageWithinParagraph: false
       attribute:
         block: true
     renderer:
@@ -134,46 +108,63 @@ params:
   time_format_blog: 2006年1月2日
   time_format_default: 2006年1月2日
 
-  offlineSearch: true
-  offlineSearchIndex: summary
-  offlineSearchSummaryLength: 160
-  offlineSearchMaxResults: 12
-  prism_syntax_highlighting: false
+  offline_search: true
+  offline_search_index: summary
+  offline_search_summary_length: 160
+  offline_search_max_results: 12
+  reading_width: normal
 
   ui:
-    quick_links: [reading, original]
+    shell_types: [book]
+    docs_section: ""
+    quick_links: [contents, preface]
     sidebar_icon_policy: none
-    typography:
-      preset: system
-    image_zoom:
-      enable: true
+    typography: system
+    image_zoom: true
     page_context_menu:
       enable: true
       assistant_links: false
       links: []
-    showLightDarkModeMenu: true
+    dark_mode:
+      enable: true
+      show_menu: true
     sidebar_menu_compact: false
     sidebar_menu_foldable: false
     sidebar_menu_truncate: 100
     sidebar_search_disable: false
+    sidebar_root_enabled: true
+    sidebar_root_menu: false
+    sidebar_headings: 2
     sidebar_width_min: 250
     sidebar_width_max: 440
     sidebar_item_overflow: wrap
-    breadcrumb_disable: true
-    scrollSpy:
-      disable: false
+    breadcrumb: false
+    scroll_spy: true
     feedback:
       enable: false
-    readingtime:
-      enable: true
+    reading_time: true
+    pager_types: [book]
+    keyboard_nav: true
     command_palette:
       commands:
+        - id: start_reading
+          title: 从作者序开始阅读
+          description: 进入中文版作者序
+          url: /preface/
+          icon: fa-solid fa-book-open
+          keywords: [开始, 阅读, 作者序]
         - id: chapters
-          title: 浏览全部章节
-          description: 回到首页的章节目录
-          url: /#chapters
+          title: 打开全书目录
+          description: 浏览序言与全部 11 个章节
+          url: /toc/
           icon: fa-solid fa-list
-          keywords: [目录, 章节, 全书]
+          keywords: [目录, 章节, 导航]
+        - id: print_book
+          title: 打印整本书
+          description: 打开整书打印视图，可另存为 PDF
+          url: /_print/
+          icon: fa-solid fa-print
+          keywords: [整书, 打印, PDF, print]
         - id: original
           title: 阅读英文原著
           description: 打开持续更新的 The Internals of PostgreSQL
@@ -201,9 +192,7 @@ params:
       emitMetadata: 0
       inputPosition: bottom
       theme: auto
-      lightTheme: /css/giscus-oink-light.css?v=0.3.0
-      darkTheme: /css/giscus-oink-dark.css?v=0.3.0
       loading: lazy
 
   print:
-    disable_toc: false
+    toc: true

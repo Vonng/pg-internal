@@ -1,9 +1,12 @@
 ---
-title: 2. 进程和内存架构
+title: 进程和内存架构
 description: PostgreSQL 服务端、后端与后台进程，以及本地内存和共享内存的职责。
 search_keywords: [process architecture, memory architecture, backend process, background process, shared memory, work_mem]
-type: docs
-weight: 102
+type: book
+book_kind: chapter
+book_number: "2"
+weight: 120
+breadcrumbs: false
 ---
 
 
@@ -25,9 +28,7 @@ PostgreSQL是一个客户端/服务器风格的关系型数据库管理系统，
 
 以下几小节将详细描述前三种进程。
 
-**图2.1 PostgreSQL的进程架构示例**
-
-![图2.1 PostgreSQL的进程架构示例](/img/fig-2-01.png)
+{{< fig num="2.1" src="/img/fig-2-01.png" caption="PostgreSQL的进程架构示例" alt="图2.1 PostgreSQL的进程架构示例" />}}
 
 > 本图展示了PostgreSQL服务器包含的进程：postgres服务器进程，两个后端进程，七个后台进程，以及两个客户端进程。 也画出了数据库集簇，共享内存，以及两个客户端。
 >
@@ -54,10 +55,9 @@ PostgreSQL允许多个客户端同时连接；配置参数[`max_connections`](ht
 
 ### 2.1.3 后台进程
 
-表2.1是后台进程的列表。比起postgres服务器和后端进程，后台进程的种类要多很多。想要简单地解释每种后台进程的具体功能是不现实的，因为这些功能有赖PostgreSQL的内部机制与特定的独立特性。依赖于各个特定的特性以及PostgreSQL的内部机制。 因此在本章中仅做简要介绍。 细节将在后续章节中描述。
+{{< xref tbl="2.1" anchor="tbl-2.1" >}}表2.1{{< /xref >}}是后台进程的列表。比起postgres服务器和后端进程，后台进程的种类要多很多。想要简单地解释每种后台进程的具体功能是不现实的，因为这些功能有赖PostgreSQL的内部机制与特定的独立特性。依赖于各个特定的特性以及PostgreSQL的内部机制。 因此在本章中仅做简要介绍。 细节将在后续章节中描述。
 
-**表2.1 后台进程**
-
+{{< tbl num="2.1" caption="后台进程" >}}
 | 进程                       | 概述                                                         | 参考                         |
 | -------------------------- | ------------------------------------------------------------ | ---------------------------- |
 | background writer          | 本进程负责将共享缓冲池中的脏页逐渐刷入持久化存储中（例如，HDD，SSD）（在9.1及更旧版本中，它还负责处理**检查点（checkpoint）**） | [8.6](/ch8/)                |
@@ -67,8 +67,9 @@ PostgreSQL允许多个客户端同时连接；配置参数[`max_connections`](ht
 | statistics collector       | 本进程负责收集统计信息，用于诸如`pg_stat_activity`，`pg_stat_database`等系统视图。 |                              |
 | logging collector (logger) | 本进程负责将错误消息写入日志文件。                           |                              |
 | archiver                   | 本进程负责将日志归档。                                       | [9.10](/ch9/)               |
+{{< /tbl >}}
 
->  这里展示了PostgreSQL服务器包含的实际进程。 在以下示例中有一个postgres服务器进程（pid为9687），两个后端进程（pid为9697和9717），以及表2.1中列出的几个后台进程正在运行，亦见图2.1。
+>  这里展示了PostgreSQL服务器包含的实际进程。 在以下示例中有一个postgres服务器进程（pid为9687），两个后端进程（pid为9697和9717），以及{{< xref tbl="2.1" anchor="tbl-2.1" >}}表2.1{{< /xref >}}中列出的几个后台进程正在运行，亦见{{< xref fig="2.1" anchor="fig-2.1" >}}图2.1{{< /xref >}}。
 >
 > ```
 > postgres> pstree -p 9687
@@ -96,33 +97,31 @@ PostgreSQL的内存架构可以分为两部分：
 
 下面一小节简要介绍了这两部分架构。
 
-**图2.2 PostgreSQL的内存架构**
-
-![图2.2 PostgreSQL的内存架构](/img/fig-2-02.png)
+{{< fig num="2.2" src="/img/fig-2-02.png" caption="PostgreSQL的内存架构" alt="图2.2 PostgreSQL的内存架构" />}}
 
 ### 2.2.1 本地内存区域
 
-每个后端进程都会分配一块本地内存区域用于查询处理。该区域会分为几个子区域 —— 子区域的大小有的固定，有的可变。 表2.2列出了主要的子区域。 详细信息将在后续章节中介绍。
+每个后端进程都会分配一块本地内存区域用于查询处理。该区域会分为几个子区域 —— 子区域的大小有的固定，有的可变。 {{< xref tbl="2.2" anchor="tbl-2.2" >}}表2.2{{< /xref >}}列出了主要的子区域。 详细信息将在后续章节中介绍。
 
-**表2.2 本地内存区域**
-
+{{< tbl num="2.2" caption="本地内存区域" >}}
 | 子区域                 | 描述                                                         | 参考            |
 | ---------------------- | ------------------------------------------------------------ | --------------- |
 | `work_mem`             | 执行器在执行`ORDER BY`和`DISTINCT`时使用该区域对元组做排序，以及存储归并连接和散列连接中的连接表。 | [第3章](/ch3/) |
 | `maintenance_work_mem` | 某些类型的维护操作使用该区域（例如`VACUUM`，`REINDEX`）。    | [6.1](/ch6/)   |
 | `temp_buffers`         | 执行器使用此区域存储临时表。                                 |                 |
+{{< /tbl >}}
 
 ### 2.2.2 共享内存区域
 
-PostgreSQL服务器启动时会分配共享内存区域。该区域分为几个固定大小的子区域。 表2.3列出了主要的子区域。 详细信息将在后续章节中介绍。
+PostgreSQL服务器启动时会分配共享内存区域。该区域分为几个固定大小的子区域。 {{< xref tbl="2.3" anchor="tbl-2.3" >}}表2.3{{< /xref >}}列出了主要的子区域。 详细信息将在后续章节中介绍。
 
-**表2.3 共享内存区域**
-
+{{< tbl num="2.3" caption="共享内存区域" >}}
 | 子区域               | 描述                                                         | 参考            |
 | -------------------- | ------------------------------------------------------------ | --------------- |
 | `shared buffer pool` | PostgreSQL将表和索引中的页面从持久存储加载至此，并直接操作它们。 | [第8章](/ch8/) |
 | `WAL buffer`         | 为确保服务故障不会导致任何数据丢失，PostgreSQL实现了WAL机制。 WAL数据（也称为XLOG记录）是PostgreSQL中的事务日志；WAL缓冲区是WAL数据在写入持久存储之前的缓冲区。 | [第9章](/ch9/) |
 | `commit log`         | **提交日志（Commit Log, CLOG）** 为并发控制（CC）机制保存了所需的所有事务状态（例如进行中，已提交，已中止等）。 | [5.4](/ch5/)   |
+{{< /tbl >}}
 
 除了上面这些，PostgreSQL还分配了这几个区域：
 

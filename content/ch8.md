@@ -1,9 +1,12 @@
 ---
-title: 8. 缓冲区管理器
+title: 缓冲区管理器
 description: 缓冲区结构、锁、置换策略、环形缓冲区与脏页刷盘。
 search_keywords: [shared buffers, buffer manager, buffer pool, buffer descriptor, clock sweep, bgwriter]
-type: docs
-weight: 108
+type: book
+book_kind: chapter
+book_number: "8"
+weight: 240
+breadcrumbs: false
 ---
 
 **缓冲区管理器（Buffer Manager）** 管理着共享内存和持久存储之间的数据传输，对于DBMS的性能有着重要的影响。PostgreSQL的缓冲区管理器十分高效。
@@ -22,9 +25,7 @@ weight: 108
 
 
 
-**图8.1 缓冲区管理器，存储和后端进程之间的关系**
-
-![C76949F9-6362-4AA8-A5FB-9537C9A9B970](/img/fig-8-01.png)
+{{< fig num="8.1" src="/img/fig-8-01.png" caption="缓冲区管理器，存储和后端进程之间的关系" alt="后端进程通过缓冲区管理器在共享内存与持久存储之间读写页面" />}}
 
 ## 8.1 概览
 
@@ -70,11 +71,9 @@ typedef struct RelFileNode
 
 ### 8.1.3 后端进程如何读取数据页
 
-本小节描述了后端进程如何从缓冲区管理器中读取页面，如图8.2所示。
+本小节描述了后端进程如何从缓冲区管理器中读取页面，如{{< xref fig="8.2" anchor="fig-8.2" >}}图8.2{{< /xref >}}所示。
 
-**图8.2 后端进程如何读取数据页** 
-
-![图8.2 后端进程如何读取数据页](/img/fig-8-02.png)
+{{< fig num="8.2" src="/img/fig-8-02.png" caption="后端进程如何读取数据页" alt="图8.2 后端进程如何读取数据页" />}}
 
 1. 当读取表或索引页时，后端进程向缓冲区管理器发送请求，请求中带有目标页面的`buffer_tag`。
 2. 缓冲区管理器会根据`buffer_tag`返回一个`buffer_id`，即目标页面存储在数组中的槽位的序号。如果请求的页面没有存储在缓冲池中，那么缓冲区管理器会将页面从持久存储中加载到其中一个缓冲池槽位中，然后再返回该槽位的`buffer_id`。
@@ -107,11 +106,9 @@ typedef struct RelFileNode
 
 ## 8.2 缓冲区管理器的结构
 
-PostgreSQL缓冲区管理器由三层组成，即**缓冲表层**，**缓冲区描述符层**和**缓冲池层**（图8.3）：
+PostgreSQL缓冲区管理器由三层组成，即**缓冲表层**，**缓冲区描述符层**和**缓冲池层**（{{< xref fig="8.3" anchor="fig-8.3" >}}图8.3{{< /xref >}}）：
 
-**图8.3 缓冲区管理器的三层结构**
-
-![图8.3 缓冲区管理器的三层结构](/img/fig-8-03.png)
+{{< fig num="8.3" src="/img/fig-8-03.png" caption="缓冲区管理器的三层结构" alt="图8.3 缓冲区管理器的三层结构" />}}
 
 + **缓冲池（buffer pool）** 层是一个数组。 每个槽都存储一个数据文件页，数组槽的索引称为`buffer_id`。
 + **缓冲区描述符（buffer descriptors）** 层是一个由缓冲区描述符组成的数组。 每个描述符与缓冲池槽一一对应，并保存着相应槽的元数据。请注意，术语“**缓冲区描述符层**”只是在本章中为方便起见使用的术语。
@@ -121,14 +118,12 @@ PostgreSQL缓冲区管理器由三层组成，即**缓冲表层**，**缓冲区�
 
 ### 8.2.1 缓冲表
 
-缓冲表可以在逻辑上分为三个部分：散列函数，散列桶槽，以及数据项（图8.4）。
+缓冲表可以在逻辑上分为三个部分：散列函数，散列桶槽，以及数据项（{{< xref fig="8.4" anchor="fig-8.4" >}}图8.4{{< /xref >}}）。
 
 内置散列函数将`buffer_tag`映射到哈希桶槽。 即使散列桶槽的数量比缓冲池槽的数量要多，冲突仍然可能会发生。因此缓冲表采用了 **使用链表的分离链接方法（separate chaining with linked lists）** 来解决冲突。
-当数据项被映射到至同一个桶槽时，该方法会将这些数据项保存在一个链表中，如图8.4所示。
+当数据项被映射到至同一个桶槽时，该方法会将这些数据项保存在一个链表中，如{{< xref fig="8.4" anchor="fig-8.4" >}}图8.4{{< /xref >}}所示。
 
-**图8.4 缓冲表**
-
-![图8.4 缓冲表](/img/fig-8-04.png)
+{{< fig num="8.4" src="/img/fig-8-04.png" caption="缓冲表" alt="图8.4 缓冲表" />}}
 
 数据项包括两个值：页面的`buffer_tag`，以及包含页面元数据的描述符的`buffer_id`。例如数据项`Tag_A,id=1` 表示，`buffer_id=1`对应的缓冲区描述符中，存储着页面`Tag_A`的元数据。
 
@@ -237,15 +232,13 @@ typedef struct sbufdesc
 
 缓冲区描述符的集合构成了一个数组。本书称该数组为**缓冲区描述符层（buffer descriptors layer）**。
 
-当PostgreSQL服务器启动时，所有缓冲区描述符的状态都为**空**。在PostgreSQL中，这些描述符构成了一个名为 **`freelist`** 的链表，如图8.5所示。
+当PostgreSQL服务器启动时，所有缓冲区描述符的状态都为**空**。在PostgreSQL中，这些描述符构成了一个名为 **`freelist`** 的链表，如{{< xref fig="8.5" anchor="fig-8.5" >}}图8.5{{< /xref >}}所示。
 
-**图8.5 缓冲区管理器初始状态**
-
-![图8.5 缓冲区管理器初始状态](/img/fig-8-05.png)
+{{< fig num="8.5" src="/img/fig-8-05.png" caption="缓冲区管理器初始状态" alt="图8.5 缓冲区管理器初始状态" />}}
 
 > 请注意PostgreSQL中的 **`freelist`** 完全不同于Oracle中`freelists`的概念。PostgreSQL的`freelist`只是空缓冲区描述符的链表。PostgreSQL中与Oracle中的`freelist`相对应的对象是空闲空间映射（FSM）（第5.3.4节）。
 
-图8.6展示了第一个页面是如何加载的。
+{{< xref fig="8.6" anchor="fig-8.6" >}}图8.6{{< /xref >}}展示了第一个页面是如何加载的。
 
 1. 从`freelist`的头部取一个空描述符，并将其钉住（即，将其`refcount`和`usage_count`增加1）。
 2. 在缓冲表中插入新项，该缓冲表项保存了页面`buffer_tag`与所获描述符`buffer_id`之间的关系。
@@ -254,9 +247,7 @@ typedef struct sbufdesc
 
 第二页，以及后续页面都以类似方式加载，其他细节将在第8.4.2节中介绍。
 
-**图8.6 加载第一页**
-
-![图8.6 加载第一页](/img/fig-8-06.png)
+{{< fig num="8.6" src="/img/fig-8-06.png" caption="加载第一页" alt="图8.6 加载第一页" />}}
 
 从`freelist`中摘出的描述符始终保存着页面的元数据。换而言之，仍然在使用的非空描述符不会返还到`freelist`中。但当下列任一情况出现时，描述符状态将变为“空”，并被重新插入至`freelist`中：
 
@@ -290,11 +281,9 @@ typedef struct sbufdesc
 
 `BufMappingLock` 会被分为多个分区，以减少缓冲表中的争用（默认为128个分区）。每个`BufMappingLock`分区都保护着一部分相应的散列桶槽。
 
-图8.7给出了一个`BufMappingLock`分区的典型示例。两个后端进程可以同时持有各自分区的`BufMappingLock`独占锁以插入新的数据项。如果`BufMappingLock`是系统级的锁，那么其中一个进程就需要等待另一个进程完成处理。
+{{< xref fig="8.7" anchor="fig-8.7" >}}图8.7{{< /xref >}}给出了一个`BufMappingLock`分区的典型示例。两个后端进程可以同时持有各自分区的`BufMappingLock`独占锁以插入新的数据项。如果`BufMappingLock`是系统级的锁，那么其中一个进程就需要等待另一个进程完成处理。
 
-**图8.7 两个进程同时获取相应分区的`BufMappingLock`独占锁，以插入新数据项**
-
-![图8.7 两个进程同时获取相应分区的BufMappingLock独占锁，以插入新数据项](/img/fig-8-07.png)
+{{< fig num="8.7" src="/img/fig-8-07.png" caption="两个进程同时获取相应分区的`BufMappingLock`独占锁，以插入新数据项" alt="图8.7 两个进程同时获取相应分区的BufMappingLock独占锁，以插入新数据项" />}}
 
 缓冲表也需要许多其他锁。例如，在缓冲表内部会使用 **自旋锁（spin lock）** 来删除数据项。不过本章不需要其他这些锁的相关知识，因此这里省略了对其他锁的介绍。
 
@@ -447,9 +436,7 @@ typedef struct sbufdesc
 5. 释放`BufMappingLock`。
 6. 访问`buffer_id=2`的缓冲池槽。
 
-**图8.8 访问存储在缓冲池中的页面。**
-
-![图8.8 访问存储在缓冲池中的页面](/img/fig-8-08.png)
+{{< fig num="8.8" src="/img/fig-8-08.png" caption="访问存储在缓冲池中的页面。" alt="图8.8 访问存储在缓冲池中的页面" />}}
 
 然后，当从缓冲池槽中的页面里读取行时，PostgreSQL进程获取相应缓冲区描述符的共享`content_lock`。因而缓冲池槽可以同时被多个进程读取。
 
@@ -493,9 +480,7 @@ typedef struct sbufdesc
 
     
 
-**图8.9 将页面从存储装载到空插槽**
-
-![图8.9 将页面从存储装载到空插槽](/img/fig-8-09.png)
+{{< fig num="8.9" src="/img/fig-8-09.png" caption="将页面从存储装载到空插槽" alt="图8.9 将页面从存储装载到空插槽" />}}
 
 ### 8.4.3 将页面从存储加载至受害者缓冲池槽中
 
@@ -526,9 +511,7 @@ typedef struct sbufdesc
       2. 以独占模式获取新表项所在分区上的`BufMappingLock`。
       3. 将新表项插入缓冲区表中。
 
-**图8.10 将页面从存储加载至受害者缓冲池槽**
-
-![图8.10 将页面从存储加载至受害者缓冲池槽](/img/fig-8-10.png)
+{{< fig num="8.10" src="/img/fig-8-10.png" caption="将页面从存储加载至受害者缓冲池槽" alt="图8.10 将页面从存储加载至受害者缓冲池槽" />}}
 
 6. 从缓冲表中删除旧表项，并释放旧表项所在分区的`BufMappingLock`。
 
@@ -540,15 +523,13 @@ typedef struct sbufdesc
 
 
 
-**图8.11 将页面从存储加载至受害者缓冲池槽（接图8.10）**
-
-![图8.11 将页面从存储加载至受害者缓冲池槽（接图8.10）](/img/fig-8-11.png)
+{{< fig num="8.11" src="/img/fig-8-11.png" caption="将页面从存储加载至受害者缓冲池槽（接图8.10）" alt="图8.11 将页面从存储加载至受害者缓冲池槽（接图8.10）" />}}
 
 ### 8.4.4 页面替换算法：时钟扫描
 
 本节的其余部分介绍了 **时钟扫描（clock-sweep）** 算法。该算法是 **NFU（Not Frequently Used）** 算法的变体，开销较小，能高效地选出较少使用的页面。
 
-我们将缓冲区描述符想象为一个循环列表（如图8.12所示）。而`nextVictimBuffer`是一个32位的无符号整型变量，它总是指向某个缓冲区描述符并按顺时针顺序旋转。该算法的伪代码与算法描述如下：
+我们将缓冲区描述符想象为一个循环列表（如{{< xref fig="8.12" anchor="fig-8.12" >}}图8.12{{< /xref >}}所示）。而`nextVictimBuffer`是一个32位的无符号整型变量，它总是指向某个缓冲区描述符并按顺时针顺序旋转。该算法的伪代码与算法描述如下：
 
 > #### 伪代码：时钟扫描
 >
@@ -573,11 +554,9 @@ typedef struct sbufdesc
 > 4. 将`nextVictimBuffer`迭代至下一个描述符（如果到末尾则回绕至头部）并返回步骤(1)。重复至找到受害者。
 > 5. 返回受害者的`buffer_id`。
 
-具体的例子如图8.12所示。缓冲区描述符为蓝色或青色的方框，框中的数字显示每个描述符的`usage_count`。
+具体的例子如{{< xref fig="8.12" anchor="fig-8.12" >}}图8.12{{< /xref >}}所示。缓冲区描述符为蓝色或青色的方框，框中的数字显示每个描述符的`usage_count`。
 
-**图8.12 时钟扫描**
-
-![图8.12 时钟扫描](/img/fig-8-12.png)
+{{< fig num="8.12" src="/img/fig-8-12.png" caption="时钟扫描" alt="图8.12 时钟扫描" />}}
 
 1. `nextVictimBuffer`指向第一个描述符（`buffer_id = 1`）；但因为该描述符被钉住了，所以跳过。
 2. `extVictimBuffer`指向第二个描述符（`buffer_id = 2`）。该描述符未被钉住，但其`usage_count`为2；因此该描述符的`usage_count`将减1，而`nextVictimBuffer`迭代至第三个候选描述符。
