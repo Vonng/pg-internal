@@ -110,27 +110,26 @@ chapters:
         11. [流复制](ch11/)
 
 legal:
-  eyebrow: 版本与权利说明
-  title: 尊重原作，也尊重实现演进的时间边界
-  desc: 在线阅读提供的是一份带有明确年份的中文译稿；署名、版本与当前行为需要分别理解。
+  eyebrow: 许可与授权
+  title: 正规出版引进的中文译本
+  desc: 原著与译本的权利归属各自明确，完整条款见[许可与授权](license/)页。
   class: pgint-legal
   columns: 3
   items:
-    - icon: fa-solid fa-language
-      meta: 中文译稿
-      title: 学习、研究与技术传播
-      desc: 本站收录冯若航、刘阳明与张文升完成的 2018 年中文译稿，并保留原作者与译者署名。引用或传播时，请同时标明原作来源与译本信息。
-    - icon: fa-solid fa-scale-balanced
-      meta: 权利归属
-      title: 原作权利优先
-      desc: 原作内容及相关权利以作者 Hironobu Suzuki 的声明为准；本站不扩大对原作的授权。请访问英文原著支持作者并获取最新内容。
+    - icon: fa-solid fa-copyright
+      meta: 英文原著
+      title: 版权归 Hironobu Suzuki
+      desc: 原著保留所有权利，并在原站持续更新。
       url: https://www.interdb.jp/pg/
       link_label: 访问英文原著
       external: true
-    - icon: fa-solid fa-code-branch
-      meta: 版本边界
-      title: 历史实现与当前行为
-      desc: 中文正文主要反映 PostgreSQL 9.x 至 11 前后的实现。涉及当前版本时，请对照最新英文原著、官方文档与 PostgreSQL 源码。
-      url: https://www.postgresql.org/docs/current/
-      link_label: 查看官方文档
-      external: true
+    - icon: fa-solid fa-book
+      meta: 中文译本
+      title: 保留所有权利
+      desc: 中文版经正规出版引进，译者保留对中文译本的所有权利。
+      url: license/
+      link_label: 查看许可与授权
+    - icon: fa-solid fa-book-open-reader
+      meta: 在线阅读
+      title: 供学习与研究
+      desc: 欢迎阅读与链接分享；转载或商用请先取得授权。

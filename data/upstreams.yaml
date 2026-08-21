@@ -1,0 +1,11 @@
+# OINK upstream registry: the one source this book is derived from.
+# The cascade in content/_index.md names it via upstream_source, each chapter
+# overrides upstream_link with its original chapter URL, and the companion
+# fields resolve from here so they are declared exactly once. The notice
+# points at the site's own 许可与授权 page, which carries the full statement.
+interdb:
+  name: The Internals of PostgreSQL
+  copyright: "© Copyright ALL Right Reserved, Hironobu SUZUKI."
+  license: LicenseRef-InterDB
+  notice: /license/
+  modified: true

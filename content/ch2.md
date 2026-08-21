@@ -5,6 +5,7 @@ search_keywords: [process architecture, memory architecture, backend process, ba
 type: book
 book_kind: chapter
 book_number: "2"
+upstream_link: https://www.interdb.jp/pg/pgsql02/
 weight: 120
 breadcrumbs: false
 ---

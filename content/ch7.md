@@ -5,6 +5,7 @@ search_keywords: [HOT, heap-only tuple, index-only scan, pruning, 仅索引扫�
 type: book
 book_kind: chapter
 book_number: "7"
+upstream_link: https://www.interdb.jp/pg/pgsql07/
 weight: 230
 breadcrumbs: false
 ---

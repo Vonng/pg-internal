@@ -5,6 +5,7 @@ search_keywords: [WAL, write-ahead logging, XLOG, checkpoint, crash recovery, ar
 type: book
 book_kind: chapter
 book_number: "9"
+upstream_link: https://www.interdb.jp/pg/pgsql09/
 weight: 250
 breadcrumbs: false
 ---

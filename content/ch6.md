@@ -5,6 +5,7 @@ search_keywords: [VACUUM, autovacuum, visibility map, VM, freeze, freezing, dead
 type: book
 book_kind: chapter
 book_number: "6"
+upstream_link: https://www.interdb.jp/pg/pgsql06/
 weight: 220
 breadcrumbs: false
 ---

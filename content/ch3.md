@@ -5,6 +5,7 @@ search_keywords: [query planner, query optimizer, executor, parse tree, query tr
 type: book
 book_kind: chapter
 book_number: "3"
+upstream_link: https://www.interdb.jp/pg/pgsql03/
 weight: 130
 breadcrumbs: false
 ---

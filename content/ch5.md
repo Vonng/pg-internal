@@ -5,6 +5,7 @@ search_keywords: [MVCC, transaction, XID, snapshot, visibility, SSI, serializabl
 type: book
 book_kind: chapter
 book_number: "5"
+upstream_link: https://www.interdb.jp/pg/pgsql05/
 weight: 210
 breadcrumbs: false
 ---

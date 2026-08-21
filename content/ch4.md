@@ -5,6 +5,7 @@ search_keywords: [FDW, foreign data wrapper, postgres_fdw, 外部数据包装器
 type: book
 book_kind: chapter
 book_number: "4"
+upstream_link: https://www.interdb.jp/pg/pgsql04/
 weight: 140
 breadcrumbs: false
 ---

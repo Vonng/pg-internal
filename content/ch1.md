@@ -5,6 +5,7 @@ search_keywords: [database cluster, 数据库集簇, OID, heap table, 堆表, tu
 type: book
 book_kind: chapter
 book_number: "1"
+upstream_link: https://www.interdb.jp/pg/pgsql01/
 weight: 110
 breadcrumbs: false
 ---

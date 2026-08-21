@@ -5,6 +5,7 @@ search_keywords: [shared buffers, buffer manager, buffer pool, buffer descriptor
 type: book
 book_kind: chapter
 book_number: "8"
+upstream_link: https://www.interdb.jp/pg/pgsql08/
 weight: 240
 breadcrumbs: false
 ---
