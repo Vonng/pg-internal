@@ -1,8 +1,6 @@
 // PostgreSQL Internals publication layer ------------------------------------
 
 :root {
-  --pgint-serif: 'Iowan Old Style', 'Noto Serif CJK SC', 'Source Han Serif SC',
-    'Songti SC', STSong, Georgia, serif;
   --pgint-blue: #336791;
   --pgint-deep: #173e5b;
   --pgint-sky: #6ca7ce;
@@ -18,33 +16,13 @@
 
 // Book shell ----------------------------------------------------------------
 
-body.td-book {
-  --td-body-font-family: var(--pgint-serif);
-}
-
 .td-book .td-content {
-  font-family: var(--td-body-font-family);
-  font-size: clamp(1rem, calc(0.97rem + 0.13vw), 1.075rem);
-  line-height: 1.86;
   text-wrap: pretty;
-}
-
-.td-book .td-content > h1 {
-  font-family: var(--td-heading-font-family);
-  font-size: clamp(2rem, calc(1.7rem + 1.4vw), 3.05rem);
-  letter-spacing: -0.026em;
-  line-height: 1.15;
 }
 
 .td-book .td-book-number {
   color: var(--pgint-blue);
   font-variant-numeric: tabular-nums;
-}
-
-.td-book .td-content > :where(h2, h3, h4, h5, h6) {
-  font-family: var(--td-heading-font-family);
-  line-height: 1.38;
-  text-wrap: balance;
 }
 
 .td-book .td-content > h2 {
@@ -259,7 +237,6 @@ body.td-book {
   border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--pgint-blue) 34%, var(--td-line));
   color: var(--td-ink);
-  font-family: var(--pgint-serif);
   text-align: center;
 }
 
@@ -291,7 +268,6 @@ body.td-book {
   position: relative;
   z-index: 1;
   color: color-mix(in srgb, var(--td-ink) 88%, var(--td-soft));
-  font-family: var(--pgint-serif);
   font-size: clamp(1rem, 1.4vw, 1.08rem);
   line-height: 1.96;
   text-align: justify;
