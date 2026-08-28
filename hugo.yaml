@@ -7,6 +7,10 @@ hasCJKLanguage: true
 defaultContentLanguage: zh
 defaultContentLanguageInSubdir: false
 
+services:
+  googleAnalytics:
+    ID: G-MJ0PC9876B
+
 server:
   headers:
     - for: /**
