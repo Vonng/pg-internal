@@ -38,6 +38,36 @@ def convert_fixture(source: str) -> str:
 
 
 class CleanupFilterTests(unittest.TestCase):
+    def test_appendix_page_identity(self) -> None:
+        index = IMPORTER.page_identity(
+            "https://www.interdb.jp/pg/pgsqlappendix/index.html"
+        )
+        section = IMPORTER.page_identity(
+            "https://www.interdb.jp/pg/pgsqlappendix/02.html"
+        )
+
+        self.assertEqual(index["id"], "appendix-index")
+        self.assertEqual(index["target"], "en/docs/appendix/_index.md")
+        self.assertEqual(section["id"], "appendix-02")
+        self.assertEqual(section["target"], "en/docs/appendix/02.md")
+
+    def test_appendix_asset_target_and_selection(self) -> None:
+        page = IMPORTER.page_identity(
+            "https://www.interdb.jp/pg/pgsqlappendix/02.html"
+        )
+        target = IMPORTER.asset_target(
+            page,
+            "https://www.interdb.jp/pg/pgsqlappendix/fig-a-3-01.png",
+        )
+
+        self.assertEqual(
+            target,
+            "static/images/en/appendix/fig-a-3-01.png",
+        )
+        self.assertEqual(IMPORTER.parse_chapter_selection("13"), {13})
+        with self.assertRaises(ValueError):
+            IMPORTER.parse_chapter_selection("14")
+
     def test_math_text_identifiers_are_katex_safe(self) -> None:
         source = (
             r"<p>$\text{cpu_tuple_cost}$</p>"

@@ -40,6 +40,9 @@ BASE_URL = "https://www.interdb.jp/pg/"
 SITEMAP_URL = urljoin(BASE_URL, "sitemap.xml")
 SEARCH_INDEX_URL = urljoin(BASE_URL, "index.search.js")
 USER_AGENT = "Mozilla/5.0 (compatible; pg-internal-local-mirror/1.0)"
+EXPECTED_SOURCE_PAGES = 86
+EXPECTED_ASSETS = 208
+APPENDIX_CHAPTER = 13
 
 CACHE_DIR = ROOT / ".cache" / "interdb-pg"
 PAGE_CACHE_DIR = CACHE_DIR / "pages"
@@ -151,6 +154,30 @@ def page_identity(url: str) -> dict[str, Any]:
                 f"/docs/ch{chapter:02d}/{section:02d}-{subsection:02d}/"
             ),
             "weight": section * 10 + subsection,
+        }
+
+    if path == "/pg/pgsqlappendix/index.html":
+        return {
+            "id": "appendix-index",
+            "chapter": APPENDIX_CHAPTER,
+            "section": 0,
+            "subsection": 0,
+            "target": "en/docs/appendix/_index.md",
+            "permalink": "/docs/appendix/",
+            "weight": APPENDIX_CHAPTER * 10,
+        }
+
+    match = re.fullmatch(r"/pg/pgsqlappendix/(\d{2})\.html", path)
+    if match:
+        section = int(match.group(1))
+        return {
+            "id": f"appendix-{section:02d}",
+            "chapter": APPENDIX_CHAPTER,
+            "section": section,
+            "subsection": 0,
+            "target": f"en/docs/appendix/{section:02d}.md",
+            "permalink": f"/docs/appendix/{section:02d}/",
+            "weight": section * 10,
         }
 
     raise ValueError(f"Unsupported source page URL: {url}")
@@ -393,14 +420,14 @@ def discover_pages(*, refresh_sitemap: bool) -> dict[str, Any]:
                 }
             ],
         },
-        "expected_source_pages": 83,
-        "expected_assets": 209,
+        "expected_source_pages": EXPECTED_SOURCE_PAGES,
+        "expected_assets": EXPECTED_ASSETS,
         "pages": pages,
         "assets": previous.get("assets", []),
     }
     if len(pages) != manifest["expected_source_pages"]:
         manifest["source"]["inventory_warning"] = (
-            f"Expected 83 source pages from the planning baseline, discovered {len(pages)}"
+            f"Expected {EXPECTED_SOURCE_PAGES} source pages, discovered {len(pages)}"
         )
     save_manifest(manifest)
     return manifest
@@ -504,7 +531,10 @@ class AssetParser(HTMLParser):
 
 
 def asset_target(page: dict[str, Any], source_url: str) -> str:
-    chapter = f"ch{page['chapter']:02d}" if page["chapter"] else "home"
+    if page.get("chapter") == APPENDIX_CHAPTER:
+        chapter = "appendix"
+    else:
+        chapter = f"ch{page['chapter']:02d}" if page["chapter"] else "home"
     filename = Path(urlparse(source_url).path).name
     filename = re.sub(r"[^A-Za-z0-9._-]+", "-", filename)
     if not filename:
@@ -513,9 +543,10 @@ def asset_target(page: dict[str, Any], source_url: str) -> str:
 
 
 def discover_assets(manifest: dict[str, Any]) -> None:
-    global_assets: dict[str, dict[str, Any]] = {
+    previous_assets: dict[str, dict[str, Any]] = {
         item["source_url"]: item for item in manifest.get("assets", [])
     }
+    global_assets: dict[str, dict[str, Any]] = {}
     for page in manifest["pages"]:
         cache = ROOT / page.get("cache", "")
         if not cache.exists():
@@ -531,7 +562,7 @@ def discover_assets(manifest: dict[str, Any]) -> None:
         page_assets = []
         for source_url in dict.fromkeys(parser.urls):
             target = asset_target(page, source_url)
-            existing = global_assets.get(source_url)
+            existing = previous_assets.get(source_url)
             if existing and existing.get("target") != target:
                 target = existing["target"]
             item = existing or {
@@ -629,7 +660,12 @@ def fetch_assets(
     selected = []
     for asset in manifest.get("assets", []):
         match = re.search(r"/ch(\d{2})/", asset["target"])
-        chapter = int(match.group(1)) if match else None
+        if match:
+            chapter = int(match.group(1))
+        elif "/appendix/" in asset["target"]:
+            chapter = APPENDIX_CHAPTER
+        else:
+            chapter = None
         if chapters is None or chapter in chapters:
             selected.append(asset)
     total = len(selected)
@@ -1040,8 +1076,9 @@ def write_docs_landing(manifest: dict[str, Any]) -> None:
         "",
     ]
     for page in chapters:
+        target_dir = Path(page["target"]).parent.relative_to("en")
         lines.append(
-            f"- [{page['title']}]({{{{< relref \"/docs/ch{page['chapter']:02d}/\" >}}}})"
+            f"- [{page['title']}]({{{{< relref \"/{target_dir.as_posix()}/\" >}}}})"
         )
     lines.extend(
         [
@@ -1125,11 +1162,12 @@ def validate(manifest: dict[str, Any]) -> None:
         10: 6,
         11: 5,
         12: 9,
+        APPENDIX_CHAPTER: 3,
     }
-    if len(pages) != 83:
-        errors.append(f"expected 83 pages, found {len(pages)}")
-    if len(assets) != 209:
-        errors.append(f"expected 209 active image assets, found {len(assets)}")
+    if len(pages) != EXPECTED_SOURCE_PAGES:
+        errors.append(f"expected {EXPECTED_SOURCE_PAGES} pages, found {len(pages)}")
+    if len(assets) != EXPECTED_ASSETS:
+        errors.append(f"expected {EXPECTED_ASSETS} active image assets, found {len(assets)}")
     asset_targets = [asset["target"] for asset in assets]
     if len(set(asset_targets)) != len(asset_targets):
         errors.append("duplicate asset target paths found in manifest")
@@ -1209,7 +1247,7 @@ def validate(manifest: dict[str, Any]) -> None:
         ):
             destination = match.group(1)
             if not destination.startswith(
-                ("http://", "https://", "mailto:", "#", "/", "{{<")
+                ("http://", "https://", "mailto:", "data:", "#", "/", "{{<")
             ):
                 errors.append(
                     f"unresolved relative link in {page['target']}: {destination}"
@@ -1423,9 +1461,16 @@ def parse_chapter_selection(value: str | None) -> set[int] | None:
     if not value:
         return None
     chapters = {int(item.strip()) for item in value.split(",") if item.strip()}
-    invalid = sorted(chapter for chapter in chapters if chapter < 1 or chapter > 12)
+    invalid = sorted(
+        chapter
+        for chapter in chapters
+        if chapter < 1 or chapter > APPENDIX_CHAPTER
+    )
     if invalid:
-        raise ValueError(f"chapter numbers must be between 1 and 12: {invalid}")
+        raise ValueError(
+            f"chapter numbers must be between 1 and {APPENDIX_CHAPTER} "
+            f"({APPENDIX_CHAPTER} selects the appendix): {invalid}"
+        )
     return chapters
 
 

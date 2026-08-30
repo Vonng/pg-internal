@@ -2,6 +2,8 @@
 
 The importer mirrors the public book pages listed in
 `https://www.interdb.jp/pg/sitemap.xml`, plus the book home page.
+The source appendix is represented internally as chapter selection `13` so it
+can use the same bounded fetch and conversion pipeline as numbered chapters.
 
 It intentionally:
 
