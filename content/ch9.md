@@ -1,7 +1,7 @@
 ---
 title: 预写式日志
-description: WAL 布局、记录写入、检查点、崩溃恢复与持续归档。
-search_keywords: [WAL, write-ahead logging, XLOG, checkpoint, crash recovery, archive_command, full-page write]
+description: WAL 布局、记录写入、WAL 汇总、检查点、崩溃恢复与持续归档。
+search_keywords: [WAL, write-ahead logging, XLOG, WAL summarizer, WAL summary, checkpoint, crash recovery, archive_command, full-page write]
 type: book
 book_kind: chapter
 book_number: "9"
@@ -562,11 +562,247 @@ DML操作写XLOG记录是理所当然的，但非DML操作也会产生XLOG。如
 
 
 
-## 9.6 WAL写入进程
+## 9.6 WAL相关进程
+
+### 9.6.1 WAL写入进程
 
 WAL写入者是一个后台进程，用于定期检查WAL缓冲区，并将所有未写入的XLOG记录写入WAL段文件。 这个进程的目的是避免XLOG记录的突发写入。 如果没有启用该进程，则在一次提交大量数据时，XLOG记录的写入可能会成为瓶颈。
 
 WAL写入者默认是启用的，无法禁用。但检查间隔可以通过参数`wal_writer_delay`进行配置，默认值为200毫秒。
+
+### 9.6.2 WAL汇总器进程
+
+PostgreSQL 17（2024年）为了支持[第10.5节中的增量备份](/ch10/#105-增量备份)，引入了WAL汇总器进程（WAL summarizer process）。该进程跟踪所有数据库块的变化，包括关系文件和可见性映射，并把结果写入`$PGDATA/pg_wal/summaries/`目录下的WAL汇总文件。
+
+配置参数[`summarize_wal`](https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-SUMMARIZE-WAL)用于启用该进程，默认关闭。需要注意的是，WAL汇总器**不会跟踪空闲空间映射（FSM）分支**，因为FSM的变更没有被完整地写入WAL。
+
+#### 9.6.2.1 WAL汇总器的工作流程
+
+WAL汇总器按以下步骤工作：
+
+1. 在每次检查点期间，读取从上一个重做点到当前重做点之间的WAL段文件。
+2. 利用这些WAL记录跟踪所有关系的全部变更块，包括可见性映射。
+3. 把结果写入`pg_wal/summaries/`目录下的WAL汇总文件。
+
+这里把“上一个重做点”和“当前重做点”分别称为`start_lsn`与`end_lsn`。汇总文件采用以下命名格式：
+
+```text
+{Timeline}{start_lsn}{end_lsn}.summary
+```
+
+实际文件示例如下：
+
+```bash
+$ ls -1 $PGDATA/pg_wal/summaries/
+00000001000000000100002800000000010B1D30.summary
+0000000100000000010B1D300000000001473DE0.summary
+000000010000000001473DE00000000001473EE0.summary
+000000010000000001473EE0000000000147A8A8.summary
+00000001000000000147A8A8000000000147A9A8.summary
+
+... snip ...
+```
+
+函数[`pg_available_wal_summaries()`](https://www.postgresql.org/docs/current/functions-info.html#FUNCTIONS-INFO-WAL-SUMMARY)可以列出可用的WAL汇总：
+
+```sql
+testdb=# SELECT tli, start_lsn, end_lsn
+           FROM pg_available_wal_summaries() ORDER BY start_lsn;
+ tli | start_lsn |  end_lsn
+-----+-----------+-----------
+   1 | 0/1000028 | 0/10B1D30
+   1 | 0/10B1D30 | 0/1473DE0
+   1 | 0/1473DE0 | 0/1473EE0
+   1 | 0/1473EE0 | 0/147A8A8
+   1 | 0/147A8A8 | 0/147A9A8
+
+... snip ...
+```
+
+汇总文件创建后，超过[`wal_summary_keep_time`](https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-WAL-SUMMARY-KEEP-TIME)所指定的保留期（默认10天）便会被PostgreSQL自动删除。
+
+#### 9.6.2.2 汇总文件的内容
+
+下面创建`t1`、`t2`、`t3`和`t4`四张表，每张表最初都由四个块组成，用它们说明汇总文件记录的内容：
+
+```sql
+testdb=# CREATE TABLE t1 (id int);
+CREATE TABLE
+testdb=# INSERT INTO t1 SELECT generate_series(1, 800);
+INSERT 0 800
+testdb=# SELECT * FROM pg_freespace('t1');
+ blkno | avail
+-------+-------
+     0 |     0
+     1 |     0
+     2 |     0
+     3 |     0
+(4 rows)
+
+testdb=# CREATE TABLE t2 (id int);
+CREATE TABLE
+testdb=# INSERT INTO t2 SELECT generate_series(1, 800);
+INSERT 0 800
+testdb=# CREATE TABLE t3 (id int);
+CREATE TABLE
+testdb=# INSERT INTO t3 SELECT generate_series(1, 800);
+INSERT 0 800
+testdb=# CREATE TABLE t4 (id int);
+CREATE TABLE
+testdb=# INSERT INTO t4 SELECT generate_series(1, 800);
+INSERT 0 800
+testdb=# CHECKPOINT;
+CHECKPOINT
+```
+
+执行检查点后，再进行以下操作：更新`t1`的两行；向`t2`插入150行；从`t3`删除500行；截断`t4`；创建新表`t5`并插入800行。
+
+```sql
+testdb=# -- [1] 更新两行，修改t1中的块
+testdb=# UPDATE t1 SET id = id + 1000 WHERE id = 1 OR id = 200;
+UPDATE 2
+testdb=# -- [2] 插入150行，修改最后一块并增加新块
+testdb=# INSERT INTO t2 SELECT generate_series(1, 150);
+INSERT 0 150
+testdb=# -- [3] 删除500行并移除块
+testdb=# DELETE FROM t3 WHERE id > 300;
+DELETE 500
+testdb=# -- [4] 截断所有块
+testdb=# TRUNCATE t4;
+TRUNCATE TABLE
+testdb=# -- [5] 创建新表
+testdb=# CREATE TABLE t5 (id int);
+CREATE TABLE
+testdb=# INSERT INTO t5 SELECT generate_series(1, 800);
+INSERT 0 800
+testdb=# CHECKPOINT;
+CHECKPOINT
+```
+
+函数[`pg_wal_summary_contents(timeline, start_lsn, end_lsn)`](https://www.postgresql.org/docs/current/functions-info.html#FUNCTIONS-INFO-WAL-SUMMARY)显示给定`start_lsn`与`end_lsn`之间的所有变更块，包括文件节点OID、块号、分支号和`is_limit_block`标记。
+
+##### 1. 修改已有块
+
+更新`t1`中的两行后，汇总数据如下：
+
+```sql
+testdb=# SELECT p.relname, s.relforknumber, s.relblocknumber, s.is_limit_block
+    FROM pg_wal_summary_contents(1, '0/1F4225F8', '0/1F476450') AS s, pg_class AS p
+    WHERE s.relfilenode = p.oid AND p.relname = 't1';
+ relname | relforknumber | relblocknumber | is_limit_block
+---------+---------------+----------------+----------------
+ t1      |             0 |              0 | f
+ t1      |             0 |              3 | f
+(2 rows)
+```
+
+输出表明`t1`的第0号和第3号块发生了变化。
+
+{{< fig num="9.6-1" src="/img/fig-9-walsum-1.png" caption="表t1的块修改（原著新版图9.14）" alt="图9.6-1 t1的第0号和第3号块被修改" />}}
+
+##### 2. 增加新块
+
+向`t2`增加150行后，第3号块被修改，并新增第4号块：
+
+```sql
+testdb=# SELECT p.relname, s.relforknumber, s.relblocknumber, s.is_limit_block
+    FROM pg_wal_summary_contents(1, '0/1F4225F8', '0/1F476450') AS s, pg_class AS p
+    WHERE s.relfilenode = p.oid AND p.relname = 't2';
+ relname | relforknumber | relblocknumber | is_limit_block
+---------+---------------+----------------+----------------
+ t2      |             0 |              3 | f
+ t2      |             0 |              4 | f
+(2 rows)
+
+testdb=# SELECT * FROM pg_freespace('t2');
+ blkno | avail
+-------+-------
+     0 |     0
+     1 |     0
+     2 |     0
+     3 |     0
+     4 |     0
+(5 rows)
+```
+
+{{< fig num="9.6-2" src="/img/fig-9-walsum-2.png" caption="表t2的块增加（原著新版图9.15）" alt="图9.6-2 t2的第3号块被修改并新增第4号块" />}}
+
+##### 3. 移除块
+
+当从某个块号开始删除后续块时，汇总器会记录边界块并把`is_limit_block`设为`true`；该**边界块（limit block）**相当于一个虚拟终止块。
+
+从`t3`删除500行后的结果为：
+
+```sql
+testdb=# SELECT p.relname, s.relforknumber, s.relblocknumber, s.is_limit_block
+    FROM pg_wal_summary_contents(1, '0/1F4225F8', '0/1F476450') AS s, pg_class AS p
+    WHERE s.relfilenode = p.oid AND p.relname = 't3';
+ relname | relforknumber | relblocknumber | is_limit_block
+---------+---------------+----------------+----------------
+ t3      |             0 |              2 | t
+ t3      |             0 |              1 | f
+ t3      |             0 |              0 | f
+ t3      |             2 |              2 | t
+ t3      |             2 |              0 | f
+(5 rows)
+
+testdb=# SELECT * FROM pg_freespace('t3');
+ blkno | avail
+-------+-------
+     0 |     0
+     1 |  5472
+(2 rows)
+```
+
+第2号块被标记为边界块，相应的可见性映射（分支2）也以相同方式更新。由此可知，第2号与第3号数据块以及可见性映射的第2号块被移除，剩余的第0号与第1号块发生了修改。
+
+{{< fig num="9.6-3" src="/img/fig-9-walsum-3.png" caption="表t3的块移除（原著新版图9.16）" alt="图9.6-3 t3使用limit block记录关系截短边界" />}}
+
+##### 4. 截断全部块
+
+截断`t4`时，所有相关分支的边界块号都设为0，`is_limit_block`设为`true`：
+
+```sql
+testdb=# SELECT p.relname, s.relforknumber, s.relblocknumber, s.is_limit_block
+    FROM pg_wal_summary_contents(1, '0/1F4225F8', '0/1F476450') AS s, pg_class AS p
+    WHERE s.relfilenode = p.oid AND p.relname = 't4';
+ relname | relforknumber | relblocknumber | is_limit_block
+---------+---------------+----------------+----------------
+ t4      |             0 |              0 | t
+ t4      |             2 |              0 | t
+ t4      |             3 |              0 | t
+(3 rows)
+
+testdb=# SELECT * FROM pg_freespace('t4');
+ blkno | avail
+-------+-------
+(0 rows)
+```
+
+执行`DROP TABLE`时也会得到同类结果。
+
+{{< fig num="9.6-4" src="/img/fig-9-walsum-4.png" caption="表t4被截断（原著新版图9.17）" alt="图9.6-4 t4的limit block被置为0" />}}
+
+##### 5. 创建新表
+
+创建新表时，汇总器先记录块号0并将`is_limit_block`设为`true`；后续插入再创建第0至第3号块，并把这些普通变更项的`is_limit_block`设为`false`：
+
+```sql
+testdb=# SELECT p.relname, s.relforknumber, s.relblocknumber, s.is_limit_block
+    FROM pg_wal_summary_contents(1, '0/1F4225F8', '0/1F476450') AS s, pg_class AS p
+    WHERE s.relfilenode = p.oid AND p.relname = 't5';
+ relname | relforknumber | relblocknumber | is_limit_block
+---------+---------------+----------------+----------------
+ t5      |             0 |              0 | t
+ t5      |             0 |              0 | f
+ t5      |             0 |              1 | f
+ t5      |             0 |              2 | f
+ t5      |             0 |              3 | f
+ t5      |             2 |              0 | f
+(6 rows)
+```
+
+{{< fig num="9.6-5" src="/img/fig-9-walsum-5.png" caption="新建并填充表t5（原著新版图9.18）" alt="图9.6-5 新关系先记录limit block，再记录实际写入的块" />}}
 
 <a id="97-postgresql中的检查点过程"></a>
 

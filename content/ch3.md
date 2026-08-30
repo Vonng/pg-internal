@@ -1,7 +1,7 @@
 ---
 title: 查询处理
-description: PostgreSQL 的解析、重写、代价估算、计划树、执行器与连接算法。
-search_keywords: [query planner, query optimizer, executor, parse tree, query tree, EXPLAIN, nested loop, merge join, hash join]
+description: PostgreSQL 的解析、重写、基数与代价估算、计划树、执行器、聚合、约束与连接算法。
+search_keywords: [query planner, query optimizer, cardinality estimation, extended statistics, executor, aggregate, constraint, parse tree, query tree, EXPLAIN, nested loop, merge join, hash join]
 type: book
 book_kind: chapter
 book_number: "3"
@@ -21,7 +21,7 @@ breadcrumbs: false
 
 + 第二部分：3.2~3.4节
 
-   这一部分会描述获取单表查询上最优执行计划的步骤。3.2节讨论代价估计的过程，3.3节描述创建计划树的过程，3.4节将简要介绍执行器的工作过程。
+   这一部分会描述获取单表查询上最优执行计划的步骤。3.2节讨论代价与基数估计，3.3节描述创建计划树的过程，3.4节介绍执行器、聚合函数与约束检查。
 
 + 第三部分：3.5~3.6节
 
@@ -769,6 +769,176 @@ testdb=# EXPLAIN SELECT id, data FROM tbl WHERE data < 240 ORDER BY id;
 在第4行可以看到启动代价和运行代价分别为22.97和23.57。
 
 
+### 3.2.4 基数估计
+
+前面的讨论都假设选择率可以被精确计算。然而在现实中，选择率估计从数据库系统诞生之初便一直是最棘手、最持久的问题之一。
+
+#### 3.2.4.1 选择率与基数
+
+PostgreSQL内部主要使用**选择率（Selectivity）**，而数据库领域通常更多讨论**基数（Cardinality）**。基数是一个整数，两者之间的关系为：
+
+$$
+\text{Selectivity} = \frac{\text{Cardinality}}{N_{\text{tuple}}}
+$$
+
+其中$N_{\text{tuple}}$是表中的元组（行）总数。下文将主要使用“基数”这个术语。
+
+#### 3.2.4.2 基数估计为何困难
+
+下面用一个具体例子说明基数估计的难点。假设数据库中记录着**100名村民**，`residents`表包含年龄类别`age`（未满18岁、青年、中年、老年）和驾照状态`license`（无驾照、普通驾照、金色驾照）。这里的“金色驾照”是日本的一种称谓，授予连续五年无事故、无违章的驾驶者。
+
+##### 数据库设置
+
+表结构如下：
+
+```sql
+testdb=# CREATE TYPE license AS ENUM ('none', 'standard', 'gold');
+CREATE TYPE
+testdb=# CREATE TYPE age AS ENUM ('under18', 'young', 'middle', 'elder');
+CREATE TYPE
+
+testdb=# CREATE TABLE residents (id int, name text, license license, age age);
+CREATE TABLE
+
+testdb=# \d residents
+ Column  |  Type   | Collation | Nullable | Default
+---------+---------+-----------+----------+---------
+ id      | integer |           |          |
+ name    | text    |           |          |
+ license | license |           |          |
+ age     | age     |           |          |
+```
+
+载入100行测试数据后执行`ANALYZE`：
+
+```sql
+testdb=# COPY residents FROM '/usr/local/pgsql/residents.csv' (FORMAT csv);
+COPY 100
+testdb=# ANALYZE;
+ANALYZE
+```
+
+测试数据的年龄分布如下：
+
+| 年龄类别 | 频率 | 人数 |
+|:---------|-----:|----:|
+| `under18` | 0.20 | 20 |
+| `young` | 0.25 | 25 |
+| `middle` | 0.35 | 35 |
+| `elder` | 0.20 | 20 |
+
+驾照状态分布如下：
+
+| 驾照状态 | 频率 | 人数 |
+|:---------|-----:|----:|
+| `none` | 0.40 | 40 |
+| `standard` | 0.55 | 55 |
+| `gold` | 0.05 | 5 |
+
+可以从`pg_stats`中取得这些最常见值（MCV）及其频率：
+
+```sql
+testdb=# SELECT most_common_vals, most_common_freqs
+           FROM pg_stats WHERE tablename = 'residents' AND attname = 'age';
+      most_common_vals       |  most_common_freqs
+-----------------------------+---------------------
+ {middle,young,under18,elder} | {0.35,0.25,0.2,0.2}
+(1 row)
+
+testdb=# SELECT most_common_vals, most_common_freqs
+           FROM pg_stats WHERE tablename = 'residents' AND attname = 'license';
+ most_common_vals   | most_common_freqs
+--------------------+-------------------
+ {standard,none,gold} | {0.55,0.4,0.05}
+(1 row)
+```
+
+##### 未考虑相关性时的估计错误
+
+下面查询未满18岁且没有驾照的居民，并用`EXPLAIN ANALYZE`比较计划器的估计值与实际结果：
+
+```sql
+testdb=# EXPLAIN (ANALYZE TRUE, TIMING FALSE, BUFFERS FALSE)
+testdb-#     SELECT * FROM residents WHERE age = 'under18' AND license = 'none';
+                                      QUERY PLAN
+--------------------------------------------------------------------------------------
+ Seq Scan on residents  (cost=0.00..2.50 rows=8 width=18) (actual rows=20.00 loops=1)
+   Filter: ((age = 'under18'::age) AND (license = 'none'::license))
+   Rows Removed by Filter: 80
+ Planning Time: 0.183 ms
+ Execution Time: 0.048 ms
+(8 rows)
+```
+
+估计基数为$8$，实际行数却是$20$。现实约束决定了未满18岁的人不能取得驾照，因此所有20名未成年人都必然属于`none`类别。
+
+##### 根本原因：错误地假设列相互独立
+
+PostgreSQL计划器在默认假设两列相互独立的情况下，把`under18`的比例$0.2$与`none`的比例$0.4$相乘，得到：
+
+$$
+(0.2 \times 0.4) \times 100 = 8
+$$
+
+大多数关系数据库的计划器在没有额外信息时都会假设各列相互独立，从而忽略数据之间可能存在的相关性。列之间的相关性越强，这种估计通常就越不准确。因此，基数估计至今仍是数据库研究中的活跃领域。
+
+#### 3.2.4.3 部分解决方案：扩展统计信息
+
+PostgreSQL 10引入了多列扩展统计信息；PostgreSQL 12又加入了这里所使用的多列MCV统计。通过[`CREATE STATISTICS`](https://www.postgresql.org/docs/current/sql-createstatistics.html)可以把`age`与`license`之间的相关性记录在一个统计对象中：
+
+```sql
+testdb=# CREATE STATISTICS stat_residents (mcv) ON license, age FROM residents;
+CREATE STATISTICS
+testdb=# ANALYZE;
+ANALYZE
+```
+
+生成扩展统计信息后，未满18岁人群的估计结果与现实更加接近：
+
+1. `age = 'under18' AND license = 'none'`
+
+   ```sql
+   testdb=# EXPLAIN (ANALYZE TRUE, TIMING FALSE, BUFFERS FALSE)
+   testdb-#     SELECT * FROM residents WHERE age = 'under18' AND license = 'none';
+                                         QUERY PLAN
+   ---------------------------------------------------------------------------------------
+    Seq Scan on residents  (cost=0.00..2.50 rows=20 width=18) (actual rows=20.00 loops=1)
+      Filter: ((age = 'under18'::age) AND (license = 'none'::license))
+      Rows Removed by Filter: 80
+   (8 rows)
+   ```
+
+2. `age = 'under18' AND license = 'standard'`
+
+   ```sql
+   testdb=# EXPLAIN (ANALYZE TRUE, TIMING FALSE, BUFFERS FALSE)
+   testdb-#     SELECT * FROM residents WHERE age = 'under18' AND license = 'standard';
+                                        QUERY PLAN
+   -------------------------------------------------------------------------------------
+    Seq Scan on residents  (cost=0.00..2.50 rows=1 width=18) (actual rows=0.00 loops=1)
+      Filter: ((age = 'under18'::age) AND (license = 'standard'::license))
+      Rows Removed by Filter: 100
+   (6 rows)
+   ```
+
+3. `age = 'under18' AND license = 'gold'`
+
+   ```sql
+   testdb=# EXPLAIN (ANALYZE TRUE, TIMING FALSE, BUFFERS FALSE)
+   testdb-#     SELECT * FROM residents WHERE age = 'under18' AND license = 'gold';
+                                        QUERY PLAN
+   -------------------------------------------------------------------------------------
+    Seq Scan on residents  (cost=0.00..2.50 rows=1 width=18) (actual rows=0.00 loops=1)
+      Filter: ((age = 'under18'::age) AND (license = 'gold'::license))
+      Rows Removed by Filter: 100
+   (6 rows)
+   ```
+
+其中`none`的估计值为$20$，与实际值完全一致；`standard`和`gold`仍被估为$1$，可能来自取整或平滑处理，但已经比独立性假设下的估计明显更好。
+
+> **扩展统计信息的限制：** PostgreSQL扩展统计信息只能针对**同一张表中的列**建立，不能直接应用于多表连接。因此，连接操作的基数估计仍然很困难；尽管相关研究很多，目前仍没有普遍适用的实用方案。
+
+
 
 
 ## 3.3 创建单表查询的计划树
@@ -1405,6 +1575,8 @@ typedef struct IndexScan
 
 ## 3.4 执行器如何工作
 
+### 3.4.1 执行器的基本工作方式
+
 在单表查询的例子中，执行器从计划树中取出计划节点，按照自底向上的顺序进行处理，并调用节点相应的处理函数。
 
 每个计划节点都有相应的函数，用于执行节点对应的操作。这些函数位于[`src/backend/executor`](https://github.com/postgres/postgres/blob/master/src/backend/executor/)目录中。例如，执行顺序扫描的函数（`SeqScan`）定义于[`nodeSeqscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSeqscan.c)；执行索引扫描的函数（`IndexScan`）定义于[`nodeIndexscan.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeIndexscan.c)；`Sort`节点对应的排序函数定义于[`nodeSort.c`](https://github.com/postgres/postgres/blob/master/src/backend/executor/nodeSort.c)。
@@ -1460,6 +1632,154 @@ testdb=# EXPLAIN SELECT * FROM tbl_1 WHERE id < 300 ORDER BY data;
 
 
 
+
+
+### 3.4.2 聚合函数
+
+以下面的表和查询为例：
+
+```sql
+testdb=# CREATE TABLE d (x DOUBLE PRECISION);
+CREATE TABLE
+testdb=# INSERT INTO d SELECT generate_series(1, 10);
+INSERT 0 10
+testdb=# SELECT sum(x) FROM d;
+ sum
+-----
+  55
+(1 row)
+```
+
+{{< xref fig="3.4-1" anchor="fig-3.4-1" >}}图3.4-1{{< /xref >}}对应新版英文原著的图3.17。为避免与中文旧译本已有图号冲突，这里采用补充编号。
+
+{{< fig num="3.4-1" src="/img/fig-3-aggregate-plan.png" caption="sum聚合函数的计划树" alt="图3.4-1 SeqScan向Aggregate节点提供目标列数据" />}}
+
+```sql
+testdb=# EXPLAIN SELECT sum(x) FROM d;
+                       QUERY PLAN
+--------------------------------------------------------
+ Aggregate  (cost=38.25..38.26 rows=1 width=8)
+   ->  Seq Scan on d  (cost=0.00..32.60 rows=2260 width=8)
+(2 rows)
+```
+
+`SeqScan`顺序扫描目标表并把列`x`交给`Aggregate`节点；`Aggregate`再按`sum`、`avg`、`variance`或`count`等指定聚合执行处理。
+
+{{< fig num="3.4-2" src="/img/fig-3-aggregate-flow.png" caption="执行器中的聚合函数处理" alt="图3.4-2 Aggregate节点逐行更新过渡状态并在结束时计算结果" />}}
+
+#### 3.4.2.1 求和与平均值
+
+和$S_n$与平均值$A_n$定义为：
+
+$$
+S_n=\sum_{i=1}^{n}x_i,\qquad
+A_n=\frac{1}{n}\sum_{i=1}^{n}x_i=\frac{S_n}{n}.
+$$
+
+`Aggregate`节点逐个累积扫描值；求和在最后直接返回累积值，平均值则再除以处理过的行数$n$：
+
+```python
+d = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+N = 0
+S = 0
+for x in d:
+    N += 1
+    S += x
+
+print("Sum=", S)
+print("Avg=", S / N)
+```
+
+#### 3.4.2.2 方差
+
+把平方离差和定义为：
+
+$$
+V_n=\sum_{i=1}^{n}(x_i-A_n)^2.
+$$
+
+PostgreSQL提供样本方差`var_samp`（$V_n/(n-1)$）和总体方差`var_pop`（$V_n/n$）。
+
+##### 3.4.2.2.1 PostgreSQL 11及以前的单遍算法
+
+直接按定义计算需要先求平均值，再扫描一次求平方离差。旧版本使用以下恒等式把计算缩减为一遍：
+
+$$
+V_n=\sum_{i=1}^{n}x_i^2-\frac{1}{n}S_n^2.
+$$
+
+执行器同时维护$\sum x^2$与$S_n$，但浮点数相减时可能发生灾难性消去，影响精度。
+
+##### 3.4.2.2.2 PostgreSQL 12及以后的Youngs与Cramer算法
+
+PostgreSQL 12采用数值稳定性更好的递推算法：
+
+$$
+V_1=0,\qquad
+V_n=V_{n-1}+\frac{(nx_n-S_n)^2}{n(n-1)}.
+$$
+
+```python
+d = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+N = 0
+S = 0
+V = 0
+for x in d:
+    N += 1
+    S += x
+    if N > 1:
+        V += (x * N - S) ** 2 / (N * (N - 1))
+
+print("Var_samp=", V / (N - 1))
+print("Var_pop=", V / N)
+```
+
+完整公式推导见[附录A.1](/appendix/#a1-方差计算公式推导)。
+
+### 3.4.3 约束
+
+执行`INSERT`、`UPDATE`或`DELETE`时，执行器会检查目标表约束。以插入单个元组为例，`ExecInsert()`的主要流程为：
+
+```text
+1. ExecConstraints()
+   检查NOT NULL与CHECK约束
+2. table_tuple_insert()
+   把目标元组插入堆表
+3. ExecInsertIndexTuples()
+   插入各索引元组，并由_bt_check_unique()检查唯一性
+4. ExecARInsertTriggers()
+   执行AFTER INSERT触发器，并检查FOREIGN KEY
+```
+
+#### 3.4.3.1 `NOT NULL`与`CHECK`
+
+`ExecConstraints()`检查`NOT NULL`，并通过`ExecRelCheck()`求值`CHECK`表达式。约束定义保存在`pg_constraint`；PostgreSQL把定义加载到内存，为每个插入或更新元组求值。
+
+#### 3.4.3.2 `PRIMARY KEY`与`UNIQUE`
+
+向唯一索引插入索引元组时，PostgreSQL直接检查索引中是否已有冲突键。B-tree由`_bt_check_unique()`执行，复杂度约为$O(\log n)$。`UPDATE`使用相同机制。
+
+#### 3.4.3.3 `FOREIGN KEY`
+
+外键需要检查另一张表，实现更加复杂：
+
+```sql
+CREATE TABLE tbl_parent (id int PRIMARY KEY, data text);
+CREATE TABLE tbl_child (cid int REFERENCES tbl_parent(id), data text);
+```
+
+PostgreSQL 18及以前，插入子表时外键触发器会通过SPI生成并执行类似查询：
+
+```sql
+SELECT 1
+FROM ONLY "public"."tbl_parent" x
+WHERE "id" OPERATOR(pg_catalog.=) $1
+FOR KEY SHARE OF x;
+```
+
+`FOR KEY SHARE`锁住被引用行，防止并发事务在检查期间删除该行或修改引用键。内部SQL仍需经过查询处理，因此每次外键检查都有额外开销。
+
+PostgreSQL 19开发版增加了直接外键验证路径：若被引用的主键或唯一约束有合适索引，就直接探测索引，无需经SPI执行内部`SELECT`；仍会获取必要的行锁。没有合适索引时退回传统SPI路径。语义不变，但能降低许多`INSERT`和`UPDATE`工作负载中的检查成本。
 
 
 ## 3.5 连接
@@ -1992,6 +2312,28 @@ WHERE c.name = h.customer_name;
 
 13. 为批次文件`batch_3_in`与`batch_3_out`执行构建操作与探测操作。
 
+#### 3.5.3.3 哈希连接中的索引扫描
+
+只要条件允许，PostgreSQL也会在哈希连接的探测端使用索引扫描：
+
+```sql
+testdb=# EXPLAIN
+    SELECT * FROM pgbench_accounts AS a, pgbench_branches AS b
+     WHERE a.bid = b.bid AND a.aid BETWEEN 100 AND 1000;
+                                                QUERY PLAN
+----------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=1.88..51.93 rows=865 width=461)
+   Hash Cond: (a.bid = b.bid)
+   ->  Index Scan using pgbench_accounts_pkey on pgbench_accounts a
+         (cost=0.43..47.73 rows=865 width=97)
+         Index Cond: ((aid >= 100) AND (aid <= 1000))
+   ->  Hash  (cost=1.20..1.20 rows=20 width=364)
+         ->  Seq Scan on pgbench_branches b  (cost=0.00..1.20 rows=20 width=364)
+(6 rows)
+```
+
+探测阶段根据`aid`索引只取出满足范围条件的`pgbench_accounts`元组，减少需要与哈希表比较的外表元组数，从而提高整体性能。
+
 ### 3.5.4 连接访问路径与连接节点
 
 #### 3.5.4.1 连接访问路径
@@ -2334,6 +2676,25 @@ $$
 计划器以同样的方式处理`{tbl_a,{tbl_b,tbl_c}}`与`{tbl_b,{tbl_a,tbl_c}}`对应的`RelOptInfo`，并最终从所有估好的路径中选择代价最小的访问路径。
 
 该查询的 `EXPLAIN` 命令结果如{{< xref fig="3.34" anchor="fig-3.34" >}}图3.34{{< /xref >}}所示：
+
+```sql
+testdb=# EXPLAIN
+    SELECT * FROM tbl_a AS a, tbl_b AS b, tbl_c AS c
+     WHERE a.id = b.id AND b.id = c.id AND a.data < 40;
+                                   QUERY PLAN
+--------------------------------------------------------------------------------
+ Nested Loop  (cost=170.77..269.94 rows=20 width=24)
+   Join Filter: (a.id = c.id)
+   ->  Hash Join  (cost=170.49..262.44 rows=20 width=16)
+         Hash Cond: (b.id = a.id)
+         ->  Seq Scan on tbl_b b  (cost=0.00..73.00 rows=5000 width=8)
+         ->  Hash  (cost=170.00..170.00 rows=39 width=8)
+               ->  Seq Scan on tbl_a a  (cost=0.00..170.00 rows=39 width=8)
+                     Filter: (data < 40)
+   ->  Index Scan using tbl_c_pkey on tbl_c c  (cost=0.29..0.36 rows=1 width=8)
+         Index Cond: (id = b.id)
+(10 rows)
+```
 
 {{< fig num="3.34" src="/img/fig-3-34.png" caption="三表连接查询的执行计划" alt="图3.34 三表连接查询的执行计划" />}}
 

@@ -1,7 +1,7 @@
 ---
 title: 清理过程
-description: VACUUM、可见性映射、冻结、提交日志回收与自动清理机制。
-search_keywords: [VACUUM, autovacuum, visibility map, VM, freeze, freezing, dead tuple, 冻结]
+description: VACUUM、可见性映射、冻结、自动清理、表膨胀与并发 REPACK 机制。
+search_keywords: [VACUUM, autovacuum, visibility map, VM, freeze, freezing, dead tuple, table bloat, REPACK CONCURRENTLY, 冻结]
 type: book
 book_kind: chapter
 book_number: "6"
@@ -25,7 +25,7 @@ breadcrumbs: false
 * **冻结（Freeze）** 过程
 * 移除不必要的clog文件
 * **自动清理（AutoVacuum）** 守护进程
-* 完整清理
+* 回收表膨胀空间，包括完整清理与并发`REPACK`
 
 ## 6.1 并发清理概述
 
@@ -118,7 +118,7 @@ breadcrumbs: false
 
 当处理完成后，PostgreSQL会更新与清理过程相关的几个统计数据，以及相关的系统视图；如果可能的话，它还会移除部分非必需的clog（第6.4节）。
 
-> 清理过程使用8.5节中将描述的**环形缓冲区（ring buffer）**。因此处理过的页面不会缓存在共享缓冲区中。
+> 清理过程使用第8.4.5节中描述的**环形缓冲区（ring buffer）**。因此处理过的页面不会缓存在共享缓冲区中。
 >
 
 ## 6.2 可见性映射
@@ -314,15 +314,80 @@ $$
 
 **自动清理（AutoVacuum）**守护进程已经将清理过程自动化，因此PostgreSQL运维起来非常简单。
 
-自动清理守护程序周期性地唤起几个`autovacuum_worker`进程，默认情况下会每分钟唤醒一次（由参数[`autovacuum_naptime`](https://www.postgresql.org/docs/current/runtime-config-autovacuum.html#GUC-AUTOVACUUM-NAPTIME)定义），每次唤起三个工作进程（由[`autovacuum_max_works`](https://www.postgresql.org/docs/current/runtime-config-autovacuum.html#GUC-AUTOVACUUM-MAX-WORKERS)定义）。
+自动清理守护程序周期性地唤起几个`autovacuum_worker`进程，默认情况下会每分钟唤醒一次（由参数[`autovacuum_naptime`](https://www.postgresql.org/docs/current/runtime-config-autovacuum.html#GUC-AUTOVACUUM-NAPTIME)定义），最多并发运行三个工作进程（由[`autovacuum_max_workers`](https://www.postgresql.org/docs/current/runtime-config-autovacuum.html#GUC-AUTOVACUUM-MAX-WORKERS)定义）。
 
 自动清理守护进程唤起的`autovacuum`工作进程会依次对各个表执行并发清理，从而将对数据库活动的影响降至最低。
 
-> ###### 关于如何维护`AUTOVACUUM`
->
-> 参考文章：[PostgreSQL中的Autovacuum调参，Autovacuum内幕][https://www.percona.com/blog/2018/08/10/tuning-autovacuum-in-postgresql-and-autovacuum-internals/]
+### 6.5.1 自动清理的触发条件
 
-## 6.6 完整清理（`FULL VACUUM`）
+目标表满足以下任一条件时会触发自动清理或自动分析。
+
+#### 6.5.1.1 防止事务ID回卷
+
+当前`txid`超过以下阈值时，对目标表执行冻结：
+
+$$
+\text{relfrozenxid}+\text{autovacuum\_freeze\_max\_age}
+$$
+
+`relfrozenxid`来自`pg_class`，`autovacuum_freeze_max_age`默认2亿。
+
+#### 6.5.1.2 死元组数量
+
+死元组数超过以下阈值时执行`VACUUM`：
+
+$$
+\text{autovacuum\_vacuum\_threshold}
++\text{autovacuum\_vacuum\_scale\_factor}\times\text{reltuples}
+$$
+
+默认阈值为50、比例因子为0.2。例如一张包含10000个元组的表有2100个死元组时，$2100>50+0.2\times10000$，因此触发清理。
+
+#### 6.5.1.3 插入元组数量（PostgreSQL 13及以后）
+
+插入数量超过以下阈值时也会触发`VACUUM`：
+
+$$
+\text{autovacuum\_vacuum\_insert\_threshold}
++\text{autovacuum\_vacuum\_insert\_scale\_factor}\times\text{reltuples}
+$$
+
+默认插入阈值为1000，比例因子为0.2。
+
+#### 6.5.1.4 自动分析
+
+自上次`ANALYZE`以来修改的元组数满足下式时执行自动分析：
+
+$$
+\text{mod\_since\_analyze}
+>\text{autovacuum\_analyze\_threshold}
++\text{autovacuum\_analyze\_scale\_factor}\times\text{reltuples}
+$$
+
+默认阈值为50，比例因子为0.1。内部函数`relation_needs_vacanalyze()`负责判断目标表是否需要清理或分析。
+
+### 6.5.2 维护建议
+
+默认`autovacuum_vacuum_scale_factor=0.2`对大表往往过高：1000行、10万行和1亿行的表分别要积累约250、20050和20000050个死元组才会触发。表越大，清理越不频繁，越容易膨胀。
+
+可以按表降低比例因子：
+
+```sql
+ALTER TABLE pgbench_accounts
+    SET (autovacuum_vacuum_scale_factor = 0.05);
+```
+
+若希望触发条件与表总行数无关，例如固定在50000个死元组，可设：
+
+```sql
+ALTER TABLE pgbench_accounts
+    SET (autovacuum_vacuum_threshold = 50000,
+         autovacuum_vacuum_scale_factor = 0.0);
+```
+
+## 6.6 回收表膨胀空间
+
+### 6.6.1 `REPACK`（`VACUUM FULL`）
 
 虽然并发清理对于运维至关重要，但光有它还不够。比如，即使删除了许多死元组，也无法压缩表大小的情况。
 
@@ -450,3 +515,50 @@ testdb=# VACUUM tbl;
 >              164 | 0 bytes            |                0.00
 > (1 row)
 > ```
+
+### 6.6.2 `REPACK CONCURRENTLY`
+
+PostgreSQL 19开发版引入内置`REPACK`命令（不是`pg_repack`扩展），并让`VACUUM FULL`与`CLUSTER`使用同一底层实现。`CONCURRENTLY`选项只在最终文件切换时短暂获取`AccessExclusiveLock`，因此能以更高在线性重建表。
+
+| 版本 | 全程持有`AccessExclusiveLock` | 大部分时间在线 |
+|:-----|:-------------------------------|:---------------|
+| PostgreSQL 18及以前 | `VACUUM FULL`、`CLUSTER` | 无 |
+| PostgreSQL 19及以后 | `REPACK`、`REPACK ... USING INDEX` | `REPACK (CONCURRENTLY) ...`、`REPACK (CONCURRENTLY) ... USING INDEX` |
+
+并发模式仍会创建新表并复制旧表中的活元组，但还会取得MVCC快照、使用WAL解码捕获复制期间的修改，并由`repack_decoding_worker`把目标表变更写入临时`BufFile`，再由REPACK后端应用到新表。
+
+该机制要求`wal_level`至少为`replica`，目标表必须配置`DEFAULT`或`USING INDEX`副本标识。分区表、UNLOGGED表、TOAST表、没有适用副本标识的表和系统目录不能使用`CONCURRENTLY`；该选项也不能在事务块中执行，并且`max_repack_replication_slots`必须允许创建额外复制槽。
+
+> **注意：** PostgreSQL 19文档明确指出`REPACK (CONCURRENTLY)`并非MVCC安全。实际使用前应阅读[`REPACK`官方文档](https://www.postgresql.org/docs/19/sql-repack.html)中的限制与资源需求。
+
+#### 6.6.2.1 捕获并应用并发变更
+
+假设目标表`tbl`以主键`tbl_pkey`作为副本标识。{{< xref fig="6.12" anchor="fig-6.12" >}}图6.12{{< /xref >}}展示了简化为两个阶段的过程。
+
+{{< fig num="6.12" src="/img/fig-6-12.png" caption="REPACK CONCURRENTLY概要" alt="图6.12 复制快照可见元组，同时解码并补应用复制期间的并发变更" />}}
+
+**阶段一：复制元组**
+
+1. 执行`REPACK`的`backend_1`启动`repack_decoding_worker`。
+2. worker开启事务并与`backend_1`共享精确快照。
+3. `backend_1`创建新表文件。
+4. 并发`backend_2`向旧表插入`Tuple_B`并生成相应WAL。
+5. `backend_1`按快照复制`Tuple_A`等活元组；`Tuple_B`对该快照不可见，因而不会直接复制。
+
+**阶段二：应用变更**
+
+6. 为新表建立全部索引，并调用`XLogFlush()`确保阶段一WAL持久化。
+7. `repack_decoding_worker`解码WAL，把`INSERT Tuple_B`写入`BufFile`。
+8. `backend_1`读取`BufFile`并通过正常插入路径把`Tuple_B`应用到新表，相关索引自动更新。
+
+#### 6.6.2.2 实际的三个阶段
+
+真实实现分两次应用并发变更，以缩短最终`AccessExclusiveLock`阻塞时间。
+
+{{< fig num="6.13" src="/img/fig-6-13.png" caption="REPACK CONCURRENTLY的三个阶段" alt="图6.13 先复制、再在线应用第一阶段变更，最后短暂独占锁应用剩余变更并切换文件" />}}
+
+1. **复制元组：** 按快照复制活元组。REPACK后端在旧表上持有`ShareUpdateExclusiveLock`，在新表上持有`AccessExclusiveLock`。
+2. **应用阶段一变更：** 把复制期间的修改应用到新表；其他后端仍可继续更新旧表。
+3. **应用阶段二变更并切换：** 在旧表上取得`AccessExclusiveLock`，阻止新修改；应用最后一批变更，终止解码worker，交换新旧表与索引文件，删除旧文件并更新FSM、VM和统计信息。
+
+并发变更在第二、第三阶段应用时可能在新表中生成新的死元组，因此`REPACK CONCURRENTLY`不像非并发`REPACK`那样保证结果完全没有死元组。

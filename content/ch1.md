@@ -1,6 +1,6 @@
 ---
 title: 数据库集簇、数据库与数据表
-description: PostgreSQL 数据库集簇的逻辑与物理结构、堆表页面布局和元组访问方式。
+description: PostgreSQL 数据库集簇的逻辑与物理结构、堆表页面与 TOAST 布局，以及元组访问方式。
 search_keywords: [database cluster, 数据库集簇, OID, heap table, 堆表, tuple, 元组, tablespace, TOAST]
 type: book
 book_kind: chapter
@@ -238,6 +238,8 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 ## 1.3 堆表文件的内部布局
 
+### 1.3.1 堆表页面的内部布局
+
 在数据文件（堆表，索引，也包括空闲空间映射和可见性映射）内部，它被划分为固定长度的**页（pages）**，或曰 **区块（blocks）**，大小默认为8192字节（8KB）。 每个文件中的页从0开始按顺序编号，这些数字称为**区块号（block numbers）**。 如果文件已填满，PostgreSQL通过在文件末尾追加一个新的空页来增长文件。
 
 页面内部的布局取决于数据文件的类型。本节会描述表的页面布局，因为理解接下来的几章需要这些知识。
@@ -335,7 +337,132 @@ sampledb=# SELECT pg_relation_filepath('newtbl');
 
 > 结构体`PageHeaderData`定义于[`src/include/storage/bufpage.h`](https://github.com/postgres/postgres/blob/master/src/include/storage/bufpage.h)中。
 
-此外，大小超过约2KB（8KB的四分之一）的堆元组会使用一种称为 **TOAST（The Oversized-Attribute Storage Technique，超大属性存储技术）** 的方法来存储与管理。详情请参阅[PostgreSQL文档](https://www.postgresql.org/docs/current/storage-toast.html)。
+### 1.3.2 TOAST（超大属性存储技术）
+
+大小超过约2 KB的堆元组——更准确地说，超过默认`TOAST_TUPLE_THRESHOLD`所规定的2032字节——会使用一种称为[TOAST（The Oversized-Attribute Storage Technique，超大属性存储技术）](https://www.postgresql.org/docs/current/storage-toast.html)的机制来管理。
+
+如果一个数据项经过压缩后仍超过2 KB，PostgreSQL会为该表创建专用的**TOAST表**及相应的**TOAST索引**。实际数据存放在TOAST表中，原表中只保留一个指向TOAST条目的指针。
+
+#### 1.3.2.1 实际示例
+
+下面创建一张名为`tbl_toast`的表来演示这一机制：
+
+```sql
+testdb=# CREATE TABLE tbl_toast (id SERIAL PRIMARY KEY, data text);
+testdb=# ALTER TABLE tbl_toast ALTER COLUMN data SET STORAGE EXTERNAL;
+```
+
+第一行插入一个能直接放入普通页面的小字符串`abc`，第二行和第三行则分别插入约10 KB的数据：
+
+```sql
+testdb=# INSERT INTO tbl_toast (data) VALUES ('abc');
+testdb=# INSERT INTO tbl_toast (data) SELECT repeat('abcdefghij', 1000) FROM generate_series(1, 2);
+```
+
+本例中，`tbl_toast`的OID为`16406`：
+
+```sql
+testdb=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname = 'tbl_toast';
+  relname  |  oid  | relfilenode
+-----------+-------+-------------
+ tbl_toast | 16406 |       16406
+(1 row)
+```
+
+相应的TOAST表及其索引分别命名为`pg_toast_16406`与`pg_toast_16406_index`：
+
+```sql
+testdb=# SELECT relname, relpages FROM pg_class
+    WHERE relname LIKE '%toast%16406%'
+          AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'pg_toast');
+       relname        | relpages
+----------------------+----------
+ pg_toast_16406       |        0
+ pg_toast_16406_index |        1
+(2 rows)
+```
+
+可以用下面的查询取得这些关系的OID与物理文件路径。本例中的路径分别为`base/16384/16411`和`base/16384/16412`：
+
+```sql
+testdb=# \x
+Expanded display is on.
+testdb=# SELECT c.relname AS main_table, t.relname AS toast_table, t.oid AS toast_table_oid,
+        pg_relation_filepath(t.oid) AS physical_path,
+        i.relname AS toast_index, i.oid AS toast_index_oid,
+        pg_relation_filepath(i.oid) AS index_path
+    FROM pg_class c JOIN pg_class t ON c.reltoastrelid = t.oid
+        JOIN pg_index idx ON idx.indrelid = t.oid
+        JOIN pg_class i ON i.oid = idx.indexrelid WHERE c.relname = 'tbl_toast';
+-[ RECORD 1 ]---+---------------------
+main_table      | tbl_toast
+toast_table     | pg_toast_16406
+toast_table_oid | 16411
+physical_path   | base/16384/16411
+toast_index     | pg_toast_16406_index
+toast_index_oid | 16412
+index_path      | base/16384/16412
+```
+
+> **关于元组压缩：** 为了直接观察TOAST机制，本例通过`ALTER TABLE`调整存储参数，禁用了数据压缩。通常情况下，PostgreSQL会尝试压缩超过2 KB的数据，默认压缩算法为**pglz**（PostgreSQL Lempel-Ziv）。
+
+#### 1.3.2.2 结构分析
+
+{{< xref fig="1.3-1" anchor="fig-1.3-1" >}}图1.3-1{{< /xref >}}展示了主表`tbl_toast`与TOAST表`pg_toast_16406`之间的关系。该图对应新版英文原著的图1.5；为避免与中文旧译本已有的图1.5冲突，这里采用补充编号。
+
+{{< fig num="1.3-1" src="/img/fig-1-toast.png" caption="主表及其TOAST表之间的结构映射" alt="图1.3-1 一个TOAST指针引用按chunk_seq拆分的多个TOAST数据块" />}}
+
+由于`tbl_toast`第二行和第三行中的`data`项均为10 KB，它们不会以内联原始数据的形式保存，而是使用`varatt_external`结构存储为TOAST指针：
+
+```c
+typedef struct varatt_external
+{
+    int32   va_rawsize;     /* 包含首部的原始数据大小 */
+    uint32  va_extinfo;     /* 外部存储大小（不含首部）及压缩方法 */
+    Oid     va_valueid;     /* TOAST表中该值的唯一标识 */
+    Oid     va_toastrelid;  /* 存放该值的TOAST表RelID */
+} varatt_external;
+```
+
+这四个字段的含义如下：
+
+* **`va_rawsize`：** 包含首部在内的原始数据大小。
+* **`va_extinfo`：** 外部存储的实际大小（不含首部）及所用压缩方法。
+* **`va_valueid`：** 该值在TOAST表中的唯一标识，内部称为`chunk_id`。
+* **`va_toastrelid`：** 存放该数据的TOAST表OID。
+
+`va_valueid`（即`chunk_id`）与`va_toastrelid`的组合构成了指向外部数据的实际指针。本例中，第二个和第三个元组的`va_valueid`分别为`16415`与`16416`，`va_toastrelid`则为`16411`，也就是TOAST表的OID。
+
+#### 1.3.2.3 TOAST表的内容
+
+TOAST表包含三列：`chunk_id`、`chunk_seq`与`chunk_data`。
+
+* **`chunk_id`：** 原表中被TOAST化数据项的标识。
+* **`chunk_seq`：** 数据项被拆成多个片段后，各片段的顺序号。
+* **`chunk_data`：** 实际的二进制数据片段。
+
+`pg_toast_16406`中的内容如下：
+
+```sql
+testdb=# SELECT chunk_id, chunk_seq, chunk_data FROM pg_toast.pg_toast_16406;
+ chunk_id | chunk_seq |        chunk_data
+----------+-----------+-------------------------
+    16415 |         0 | \x616263646566.....6566
+    16415 |         1 | \x6768696a6162.....6162
+    16415 |         2 | \x636465666768.....6768
+    16415 |         3 | \x696a61626364.....6364
+    16415 |         4 | \x65666768696a.....696a
+    16415 |         5 | \x6162...696a
+    16416 |         0 | \x616263646566.....6566
+    16416 |         1 | \x6768696a6162.....6162
+    16416 |         2 | \x636465666768.....6768
+    16416 |         3 | \x696a61626364.....6364
+    16416 |         4 | \x65666768696a.....696a
+    16416 |         5 | \x6162...696a
+(12 rows)
+```
+
+TOAST索引以`chunk_id`与`chunk_seq`作为复合键。读取TOAST化数据时，系统会扫描TOAST索引，按正确顺序取得对应的`chunk_data`片段，再重组成原始数据项。
 
 
 

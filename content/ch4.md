@@ -1,7 +1,7 @@
 ---
 title: 外部数据包装器与并行查询
-description: 外部数据包装器的查询路径，以及 PostgreSQL 并行查询的基本机制。
-search_keywords: [FDW, foreign data wrapper, postgres_fdw, 外部数据包装器, parallel query, 并行查询]
+description: 外部数据包装器的查询路径，以及 PostgreSQL 并行扫描、并行连接与并行聚合机制。
+search_keywords: [FDW, foreign data wrapper, postgres_fdw, 外部数据包装器, parallel query, parallel join, parallel aggregate, DSM, Gather, 并行查询]
 type: book
 book_kind: chapter
 book_number: "4"
@@ -561,4 +561,213 @@ LOG:  statement: COMMIT TRANSACTION
 
 ## 4.2 并行查询
 
-施工中
+> **编号说明：** 英文原著当前把并行查询编为[第3.7节](https://www.interdb.jp/pg/pgsql03/07.html)；中文译稿保留原有第4.2节位置，以免破坏既有章节链接与图号。
+
+[并行查询](https://www.postgresql.org/docs/current/parallel-query.html)由PostgreSQL 9.6（2016年）引入，使用多个后台worker共同处理一条查询。满足并行条件时，执行查询的postgres进程充当**leader**，最多启动`max_parallel_workers_per_gather`指定数量的worker。每个worker完成一部分扫描，把结果返回leader汇总。
+
+{{< fig num="4.8" src="/img/fig-4-08.png" caption="并行查询的基本概念" alt="图4.8 两个worker并行扫描数据块并把结果返回leader" />}}
+
+PostgreSQL 11起，默认开启的`parallel_leader_participation`允许leader在等待worker结果时也参与执行。为简化下文图示，假设该参数关闭，leader只负责协调与汇总。
+
+并行查询能力持续演进：9.6支持并行顺序扫描、嵌套循环与哈希连接；10加入归并连接、B-tree索引扫描和位图堆扫描；11加入共享哈希表的并行哈希连接、并行建索引和更多并行DDL；后续版本继续扩展外表、`DISTINCT`及外连接等场景。
+
+> 并行查询主要面向读取型工作负载，目前不支持游标操作。
+
+### 4.2.1 并行查询概要
+
+{{< fig num="4.9" src="/img/fig-4-09.png" caption="并行查询的执行流程" alt="图4.9 leader创建计划和DSM，启动worker扫描并通过TupleQueue收集结果" />}}
+
+处理流程如下：
+
+1. **leader创建计划：** 优化器生成包含可并行执行节点的计划树。
+2. **保存共享信息：** leader把计划树、会话状态等必要信息写入动态共享内存（DSM）。
+3. **创建worker：** leader启动后台worker。
+4. **worker初始化：** 各worker读取DSM，建立与leader一致的执行环境。
+5. **扫描并返回结果：** worker主动领取数据块，调用`SeqNext()`、`IndexNext()`等函数扫描，并返回结果。
+6. **leader汇总：** leader收集所有worker结果。
+7. **清理：** 查询结束后终止worker并释放DSM。
+
+下面的示例使用一张包含100万行的表：
+
+```sql
+CREATE TABLE d (id double precision, data int);
+INSERT INTO d
+SELECT i::double precision, (random() * 1000)::int
+  FROM generate_series(1, 1000000) AS i;
+ANALYZE d;
+```
+
+#### 4.2.1.1 创建并行计划
+
+优化器并不总会考虑并行执行。表大小通常需要达到`min_parallel_table_scan_size`（默认8 MB），索引则需达到`min_parallel_index_scan_size`（默认512 kB）。最简单的计划如下：
+
+```sql
+testdb=# EXPLAIN SELECT * FROM d WHERE id BETWEEN 1 AND 100;
+                                     QUERY PLAN
+-------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..16609.10 rows=1 width=12)
+   Workers Planned: 2
+   ->  Parallel Seq Scan on d  (cost=0.00..15609.00 rows=1 width=12)
+         Filter: ((id >= '1'::double precision) AND (id <= '100'::double precision))
+(4 rows)
+```
+
+{{< fig num="4.10" src="/img/fig-4-10.png" caption="leader的并行计划树" alt="图4.10 Gather节点位于Parallel SeqScan之上" />}}
+
+`Gather`收集worker结果；其他并行专用节点还包括保持排序的`Gather Merge`、并行扫描分区或`UNION ALL`的`Parallel Append`，以及并行聚合使用的`Partial Aggregate`和`Finalize Aggregate`。
+
+只有`parallel_safe=true`的节点才能进入`Gather`以下、由worker执行的子计划。
+
+#### 4.2.1.2 保存共享信息
+
+leader把两类信息写入DSM：
+
+* **执行状态：** GUC参数、事务快照、当前子事务ID、动态加载的库等，由`InitializeParallelDSM()`保存。
+* **查询信息：** `PlannedStmt`、`ParamListInfo`，并行扫描描述符、统计与资源使用结构等，由`ExecInitParallelPlan()`初始化。
+
+leader还会在DSM中建立`TupleQueue`，作为读取worker结果的通信通道。
+
+#### 4.2.1.3 创建worker
+
+计划中的worker数不一定等于实际启动数。全局`max_parallel_workers`会限制系统并行worker总数，其他并行查询也可能已经占用槽位。`EXPLAIN ANALYZE`同时显示`Workers Planned`与`Workers Launched`，可用于核对实际资源分配。
+
+#### 4.2.1.4 初始化worker
+
+worker启动后从DSM读取执行状态和查询信息，使GUC、快照和动态库与leader一致。随后根据共享的`PlannedStmt`重建只包含`parallel_safe`节点的子计划，通常就是leader计划中`Gather`以下的部分。
+
+{{< fig num="4.11" src="/img/fig-4-11.png" caption="worker从leader计划重建子计划" alt="图4.11 worker只重建Gather以下可并行执行的计划节点" />}}
+
+#### 4.2.1.5 扫描与返回结果
+
+执行器对元组访问进行了高度抽象，这一点同样适用于并行查询。leader与worker共享DSM中的执行环境，因此多个进程可以通过`SeqNext()`按需领取不同数据块并执行同一次顺序扫描；结果通过DSM中的`TupleQueue`返回`Gather`。
+
+#### 4.2.1.6 汇总结果
+
+`Gather`负责读取各worker的TupleQueue并向上层节点输出；需要保持全局排序时使用`Gather Merge`。
+
+### 4.2.2 并行连接
+
+PostgreSQL支持并行嵌套循环、归并与哈希连接。下面使用表`d`和`f`：
+
+```sql
+CREATE INDEX d_id_idx ON d (id);
+CREATE TABLE f (id double precision, data int);
+INSERT INTO f
+SELECT i::double precision, (random() * 1000)::int
+  FROM generate_series(1, 10000000) AS i;
+ANALYZE;
+```
+
+#### 4.2.2.1 并行嵌套循环连接
+
+普通并行嵌套循环中，内表并不由worker共享处理；每个worker都要独立处理整个内表。物化嵌套循环会让每个worker各自物化一份内表，worker越多，重复工作越明显。
+
+```sql
+testdb=# EXPLAIN SELECT * FROM d, f
+                  WHERE d.data = f.data AND f.id < 10000;
+                                  QUERY PLAN
+-------------------------------------------------------------------------------
+ Gather
+   Workers Planned: 2
+   ->  Nested Loop
+         Join Filter: (d.data = f.data)
+         ->  Parallel Seq Scan on f
+               Filter: (id < '10000'::double precision)
+         ->  Materialize
+               ->  Seq Scan on d
+```
+
+{{< fig num="4.12" src="/img/fig-4-12.png" caption="并行查询中的物化嵌套循环" alt="图4.12 每个worker分别物化并扫描完整内表" />}}
+
+索引嵌套循环更高效：内表扫描仍不共享，但每个worker可用索引只取得匹配行。
+
+```sql
+testdb=# EXPLAIN SELECT * FROM d, f
+                  WHERE d.id = f.id AND f.id < 10000;
+                                  QUERY PLAN
+-------------------------------------------------------------------------------
+ Gather
+   Workers Planned: 2
+   ->  Nested Loop
+         ->  Parallel Seq Scan on f
+               Filter: (id < '10000'::double precision)
+         ->  Index Scan using d_id_idx on d
+               Index Cond: (id = f.id)
+```
+
+{{< fig num="4.13" src="/img/fig-4-13.png" caption="并行查询中的索引嵌套循环" alt="图4.13 worker并行扫描外表并用内表索引定位匹配行" />}}
+
+#### 4.2.2.2 并行归并连接
+
+与嵌套循环类似，普通归并连接要求每个worker独立处理并排序完整内表。若内表能通过有序索引扫描访问，则可避免重复排序，提高效率。
+
+```text
+Gather
+  -> Merge Join
+       Merge Cond: (f.id = d.id)
+       -> Sort
+            -> Parallel Seq Scan on f
+       -> Index Scan using d_id_idx on d
+```
+
+#### 4.2.2.3 并行哈希连接
+
+PostgreSQL 9.6和10中，每个worker都为内表构建自己的私有哈希表，造成重复工作与内存开销。PostgreSQL 11引入由`enable_parallel_hash`控制的**Parallel Hash Join**：所有worker协作在DSM中构建一张共享哈希表。
+
+```text
+Gather
+  -> Parallel Hash Join
+       Hash Cond: (f.id = d.id)
+       -> Parallel Seq Scan on f
+       -> Parallel Hash
+            -> Parallel Seq Scan on d
+```
+
+### 4.2.3 并行聚合
+
+大多数聚合函数可以并行执行，具体函数是否支持取决于官方聚合函数表中的`Partial Mode`是否为`YES`。计划器根据预计目标行数选择两种主要策略。
+
+#### 4.2.3.1 少量行：leader直接聚合
+
+预计行数很少时，worker负责扫描，`Gather`把原始行返回leader，再由普通`Aggregate`计算结果：
+
+```text
+Aggregate
+  -> Gather
+       Workers Planned: 2
+       -> Parallel Seq Scan on d
+```
+
+这样避免在每个worker上创建不必要的局部聚合状态。
+
+#### 4.2.3.2 大量行：Partial/Finalize聚合
+
+预计行数很大时，先在worker端减少数据量更高效：
+
+1. 每个worker对本地扫描结果执行`Partial Aggregate`。
+2. `Gather`只收集中间聚合状态，而不是全部原始行。
+3. `Finalize Aggregate`合并中间结果。
+
+```text
+Finalize Aggregate
+  -> Gather
+       Workers Planned: 2
+       -> Partial Aggregate
+            -> Parallel Seq Scan on d
+```
+
+#### 4.2.3.3 并行聚合的数学基础
+
+合并两个worker的局部结果时，设行数为$n_1$、$n_2$，和为$S_{n_1}$、$S_{n_2}$，平方离差和为$V_{n_1}$、$V_{n_2}$：
+
+$$
+\begin{aligned}
+S_n &= S_{n_1}+S_{n_2},\\
+A_n &= \frac{S_{n_1}+S_{n_2}}{n_1+n_2},\\
+V_n &= V_{n_1}+V_{n_2}
+ +\frac{n_1n_2}{n_1+n_2}
+ \left(\frac{S_{n_1}}{n_1}-\frac{S_{n_2}}{n_2}\right)^2.
+\end{aligned}
+$$
+
+`Finalize Aggregate`用这些公式合并局部状态。三个或更多worker时重复两两合并，直至得到最终结果；推导见[附录A.1.2](/appendix/#a12-单遍并行方差公式的推导)。

@@ -643,22 +643,22 @@ testdb=# SELECT * FROM tbl;
 (1 row)
 ```
 
-> #### 提示位（Hint Bits）
->
-> PostgreSQL在内部提供了三个函数`TransactionIdIsInProgress`，`TransactionIdDidCommit`和`TransactionIdDidAbort`，用于获取事务的状态。这些函数被设计为尽可能减少对clog的频繁访问。 尽管如此，如果在检查每条元组时都执行这些函数，那这里很可能会成为一个性能瓶颈。
->
-> 为了解决这个问题，PostgreSQL使用了**提示位（hint bits）**，如下所示。
->
-> ```sql
-> #define HEAP_XMIN_COMMITTED       0x0100   /* 元组xmin对应事务已提交 */
-> #define HEAP_XMIN_INVALID         0x0200   /* 元组xmin对应事务无效/中止 */
-> #define HEAP_XMAX_COMMITTED       0x0400   /* 元组xmax对应事务已提交 */
-> #define HEAP_XMAX_INVALID         0x0800   /* 元组xmax对应事务无效/中止 */
-> ```
->
-> 在读取或写入元组时，PostgreSQL会择机将提示位设置到元组的`t_informask`字段中。 举个例子，假设PostgreSQL检查了元组的`t_xmin`对应事务的状态，结果为`COMMITTED`。 在这种情况下，PostgreSQL会在元组的`t_infomask`中置位一个`HEAP_XMIN_COMMITTED`标记，表示创建这条元组的事务已经提交了。 如果已经设置了提示位，则不再需要调用`TransactionIdDidCommit`和`TransactionIdDidAbort`来获取事务状态了。 因此PostgreSQL能高效地检查每个元组`t_xmin`和`t_xmax`对应事务的状态。
+### 5.7.2 提示位（Hint Bits）
 
-### 5.7.2 PostgreSQL可重复读等级中的幻读
+PostgreSQL在内部提供了三个函数`TransactionIdIsInProgress`、`TransactionIdDidCommit`和`TransactionIdDidAbort`来取得事务状态。这些函数已尽量减少对clog的频繁访问，但如果检查每条元组时都执行，仍可能成为性能瓶颈。
+
+PostgreSQL因此使用**提示位（hint bits）**：
+
+```c
+#define HEAP_XMIN_COMMITTED 0x0100  /* 元组xmin对应事务已提交 */
+#define HEAP_XMIN_INVALID   0x0200  /* 元组xmin对应事务无效/中止 */
+#define HEAP_XMAX_COMMITTED 0x0400  /* 元组xmax对应事务已提交 */
+#define HEAP_XMAX_INVALID   0x0800  /* 元组xmax对应事务无效/中止 */
+```
+
+读取或写入元组时，PostgreSQL会择机把提示位写入元组的`t_infomask`。例如，检查`t_xmin`对应事务后若发现它已提交，就设置`HEAP_XMIN_COMMITTED`。以后再检查该元组时，无需调用`TransactionIdDidCommit`或`TransactionIdDidAbort`，从而提高可见性判断效率。
+
+### 5.7.3 PostgreSQL可重复读等级中的幻读
 
 ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读（Phantom Reads）**， 但PostgreSQL实现的`REPEATABLE READ`隔离等级不允许发生幻读。 在原则上，快照隔离中不允许出现幻读。
 
@@ -677,7 +677,7 @@ ANSI SQL-92标准中定义的`REPEATABLE READ`隔离等级允许出现**幻读�
   |                                                     | `(0 rows)`                                           |
   |                                                     |                                                      |
 
-  ## 5.8 防止丢失更新
+## 5.8 防止丢失更新
 
 **丢失更新（Lost Update）**，又被称作**写-写冲突（ww-conflict）**，是事务并发更新同一行时所发生的异常，`REPEATABLE READ`和`SERIALIZABLE`隔离等级必须阻止该异常的出现。 本节将会介绍PostgreSQL是如何防止丢失更新的，并举一些例子来说明。
 
@@ -955,13 +955,15 @@ PostgreSQL的并发控制机制需要以下维护过程。
 
 在PostgreSQL中，清理过程（**`VACUUM`**）负责这些过程。 **清理过程（VACUUM）** 在[第6章](/ch6/)中描述。
 
-### 5.10.1  冻结处理
+### 5.10.1 事务标识回卷问题
 
 接下来将介绍 **事务标识回卷（txid wrap around）** 问题。
 
 假设元组`Tuple_1`是由`txid = 100`事务创建的，即`Tuple_1`的`t_xmin = 100`。服务器运行了很长时间，但`Tuple_1`一直未曾被修改。假设`txid`已经前进到了$2^{31}+100$，这时候正好执行了一条`SELECT`命令。此时，因为对当前事务而言`txid = 100`的事务属于过去的事务，因而`Tuple_1`对当前事务可见。然后再执行相同的`SELECT`命令，此时`txid`步进至$2^{31}+101$。但因对当前事务而言，`txid = 100`的事务是属于未来的，因此`Tuple_1`不再可见（{{< xref fig="5.20" anchor="fig-5.20" >}}图5.20{{< /xref >}}）。这就是PostgreSQL中所谓的事务回卷问题。
 
 {{< fig num="5.20" src="/img/fig-5-20.png" caption="回卷问题" alt="图5.20 回卷问题" />}}
+
+### 5.10.2 冻结处理
 
 为了解决这个问题，PostgreSQL引入了一个 **冻结事务标识（Frozen txid）** 的概念，并实现了一个名为`FREEZE`的过程。
 

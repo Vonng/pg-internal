@@ -1,7 +1,7 @@
 ---
 title: 缓冲区管理器
-description: 缓冲区结构、锁、置换策略、环形缓冲区与脏页刷盘。
-search_keywords: [shared buffers, buffer manager, buffer pool, buffer descriptor, clock sweep, bgwriter]
+description: 缓冲区结构、锁、置换策略、环形缓冲区、异步 I/O 与脏页刷盘。
+search_keywords: [shared buffers, buffer manager, buffer pool, buffer descriptor, clock sweep, ring buffer, asynchronous I/O, io_uring, ReadStream, bgwriter]
 type: book
 book_kind: chapter
 book_number: "8"
@@ -21,6 +21,8 @@ breadcrumbs: false
 + 缓冲区管理器是如何工作的
 
 + 环形缓冲区
+
++ PostgreSQL异步I/O
 
 + 脏页刷写
 
@@ -567,7 +569,7 @@ typedef struct sbufdesc
 
 
 
-## 8.5 环形缓冲区
+### 8.4.5 环形缓冲区
 
 在读写大表时，PostgreSQL会使用 **环形缓冲区（ring buffer）** 而不是缓冲池。**环形缓冲器**是一个很小的临时缓冲区域。当满足下列任一条件时，PostgreSQL将在共享内存中分配一个环形缓冲区：
 
@@ -599,6 +601,276 @@ typedef struct sbufdesc
 >
 > > 顺序扫描使用256KB的环缓冲。它足够小，因而能放入L2缓存中，从而使得操作系统缓存到共享缓冲区的页面传输变得高效。通常更小一点也可以，但环形缓冲区必需足够大到能同时容纳扫描中被钉住的所有页面。
 
+
+### 8.4.6 临时表与本地缓冲区
+
+后端创建临时表时，缓冲区管理器会分配一块该后端私有的内存区域并创建**本地缓冲区（local buffer）**。共享缓冲池槽使用正数标识，而本地缓冲池槽使用负数，例如`-1`、`-2`；因此同一后端可以用统一接口访问普通表和临时表。
+
+只有所有者后端能够访问本地缓冲区，所以管理它们不需要进程间锁；临时表数据也不需要写WAL或参与检查点。
+
+
+
+## 8.5 PostgreSQL中的异步I/O
+
+PostgreSQL 18（2025年）引入了**异步I/O（Asynchronous I/O，AIO）**来提高读取性能。缓冲区管理器也因此进行了重构，尤其是执行器进行顺序扫描、位图堆扫描，以及`VACUUM`顺序读取目标页面的场景。当前PostgreSQL的AIO尚不支持异步写入。
+
+本节介绍AIO的基本概念、PostgreSQL中的实现方式，以及以顺序扫描为重点的具体运行过程。对于不熟悉`io_uring`的读者，[附录A.2](/appendix/#a2-io_uring示例)给出了两个精简程序。
+
+> **如何看待AIO基准测试：** PostgreSQL的AIO主要优化顺序扫描等操作中的连续块读取，不用于索引扫描；它在缓冲池较冷时收益最大。随着缓冲池升温、缓存命中率提高，收益会逐渐下降。因此，只在冷缓存条件下得到的测试结果可能会明显高估AIO在真实工作负载中的影响。
+
+### 8.5.1 异步I/O
+
+{{< xref fig="8.15" anchor="fig-8.15" >}}图8.15{{< /xref >}}比较了传统同步读取与异步读取的执行流程。为了简化说明，图中省略了操作系统页面缓存。
+
+{{< fig num="8.15" src="/img/fig-8-15.png" caption="同步读取与异步读取" alt="图8.15 同步读取逐个等待，而异步读取批量提交后再收集完成结果" />}}
+
+* **同步读取：** 应用发出一次`read()`系统调用，等待它完成后再发出下一次请求，因此多次读取按顺序串行执行。
+* **异步读取：** 应用无需等待单个请求完成即可提交多个读取请求；操作系统在后台处理这些请求，应用稍后再收集结果。
+
+#### 8.5.1.1 AIO的优势
+
+异步I/O能同时为应用与存储设备带来性能收益：
+
+* **应用层：** 应用可以在等待读取完成期间执行其他任务。
+* **存储层：** SSD，特别是NVMe SSD，具有多队列与较深的队列深度，可以并行处理多个I/O请求；一次发出多个读取请求能更充分地利用这种并行性。
+
+PostgreSQL因此可以同时发出许多页面读取请求，让操作系统与现代SSD发挥内部并行能力，从而提高缓冲池装载和大表扫描的吞吐量。
+
+### 8.5.2 PostgreSQL中的AIO实现
+
+PostgreSQL提供两种异步I/O实现：Linux上的`io_uring`，以及由后台工作进程执行I/O的`io_worker`。可以使用[`io_method`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-IO-METHOD)参数进行选择；macOS、BSD等不支持`io_uring`的系统需要使用`io_worker`。
+
+#### 8.5.2.1 `io_uring`
+
+[`io_uring`](https://kernel.dk/io_uring.pdf)是Linux 5.1（2019年）引入的异步I/O接口。PostgreSQL使用一对由用户空间与内核共享的环形缓冲区：**提交队列（Submission Queue，SQ）**和**完成队列（Completion Queue，CQ）**。
+
+{{< fig num="8.16" src="/img/fig-8-16.png" caption="io_uring与io_worker的基本原理" alt="图8.16 PostgreSQL通过提交队列和完成队列执行io_uring或io_worker异步读取" />}}
+
+使用`io_uring`读取时，处理过程如下：
+
+1. **准备并提交请求：** PostgreSQL准备一个或多个读取请求，将它们放入SQ并提交给内核。
+2. **执行请求：** 内核从SQ取出请求，利用存储设备的并行能力执行读取。数据通过DMA直接复制到指定的缓冲池槽；操作完成后，内核把完成事件（CQE）放入CQ。
+3. **等待完成：** PostgreSQL等待CQ中出现完成事件，然后即可读取已经装入目标缓冲池槽的页面。
+
+从PostgreSQL的视角看，一个读取请求由数据库页面标识`BufferTag`与缓冲池槽标识`buffer_id`组成。使用`io_uring`时，PostgreSQL会把它们转换为操作系统参数：目标文件描述符、物理字节偏移、8 KB读取长度，以及目标缓冲池槽的内存地址。
+
+##### 向量I/O（分散—聚集I/O）
+
+Linux与Unix通过`readv()`、`writev()`支持向量I/O，可以在一次系统调用中读写多个连续块。`io_uring`同样支持向量I/O，因此PostgreSQL可以用单个请求读取多个连续的关系块。
+
+{{< fig num="8.17" src="/img/fig-8-17.png" caption="io_uring向量I/O" alt="图8.17 单个向量读取请求把连续关系块送入分散的缓冲池槽" />}}
+
+如图8.17所示，PostgreSQL读取连续块时会准备一次`io_uring_prep_readv()`调用，而不是为每个块分别执行一次系统调用：
+
+1. 后端为关系块0至3准备一个向量读取请求，并指定目标缓冲池槽3、1、4、7。
+2. 内核把各块读入指定的缓冲池槽。
+3. PostgreSQL只需等待一个完成事件，即可处理所有已装载页面。
+
+顺序扫描通常读取连续关系块，向量I/O把它们合并成一个请求，既减少系统调用开销，也只产生一个完成事件。
+
+#### 8.5.2.2 `io_worker`
+
+对于不支持`io_uring`的操作系统，PostgreSQL提供`io_worker`实现。一个或多个`io_worker`后台工作进程负责执行I/O请求。PostgreSQL在共享内存中维护自己的SQ与CQ；后端把读取请求放入SQ，`io_worker`取出并执行读取，再把完成事件写入CQ。
+
+与`io_uring`相比：
+
+* `io_worker`使用传统同步读取系统调用执行单个请求。多个worker可以并发处理请求，但并行度和扩展能力通常弱于`io_uring`。
+* 后端与`io_worker`需要通过共享内存队列和进程唤醒机制协调，因此会产生额外的通信与调度开销。
+
+PostgreSQL 18中I/O worker数量由`io_workers`固定指定；PostgreSQL 19开发版改为通过`io_min_workers`、`io_max_workers`、`io_worker_idle_timeout`与`io_worker_launch_interval`动态调整。
+
+### 8.5.3 异步顺序扫描的基本原理
+
+AIO顺序扫描本身只依赖少量基础函数，但为了优化性能而组合的组件较多。下面先使用一个高度简化的冷启动模型说明基本行为：假设缓冲池中没有任何目标页面，所有数据都需要从存储读取。下一小节再补入真实实现中的缓存命中、自适应预读与快速路径。
+
+在以下伪代码中：
+
+* `BufferAlloc()`抽象了除物理读取外的缓冲区描述符管理。
+* 省略PIN等低层细节。
+* `do_exec(tuple)`代表过滤条件求值、聚合增量计算等元组处理。
+
+#### 8.5.3.1 `ReadStream`与`stream_buffers`抽象
+
+AIO顺序扫描的基本策略很直接：从头开始顺序处理目标表页面，同时提前异步预读一定数量的块。缓冲区管理器使用`ReadStream`结构跟踪和管理这些预读块。
+
+`ReadStream`包含`buffers[]`数组及若干元数据。该数组是一个循环FIFO队列，有效窗口大小由`combine_distance`决定；`oldest_buffer_index`指向最早尚未消费的缓冲区：
+
+```c
+struct ReadStream
+{
+    int16       max_ios;
+    int16       io_combine_limit;
+    int16       queue_size;
+    int16       pinned_buffers;
+    int16       combine_distance;
+    int16       readahead_distance;
+    int16       oldest_buffer_index;
+    int16       next_buffer_index;
+    bool        fast_path;
+    Buffer      buffers[FLEXIBLE_ARRAY_MEMBER];
+};
+```
+
+{{< fig num="8.18" src="/img/fig-8-18.png" caption="ReadStream缓冲数组及stream_buffers抽象" alt="图8.18 ReadStream循环队列的真实数组表示与简化stream_buffers表示" />}}
+
+为了隐藏循环队列的底层指针运算，下文把整个FIFO队列简化表示为`stream_buffers`。
+
+##### 入队
+
+{{< fig num="8.19" src="/img/fig-8-19.png" caption="ReadStream入队操作" alt="图8.19 把缓冲区描述符标识加入ReadStream循环队列" />}}
+
+假设要把关系的第2号块装入缓冲池第5号槽。缓冲区管理器会把整数`5`写入`buffers[]`中`next_buffer_index`所指位置；在简化的`stream_buffers`表示中，则直接显示对应的缓冲区描述符（图中以块号`2`表示）。
+
+##### 出队
+
+{{< fig num="8.20" src="/img/fig-8-20.png" caption="ReadStream出队操作" alt="图8.20 移除队首缓冲区并推进oldest_buffer_index" />}}
+
+队首缓冲区标识出队后，`oldest_buffer_index`向右推进一个槽，`pinned_buffers`也相应减一；在`stream_buffers`抽象中，这等价于删除列表最左侧元素。
+
+##### 队列大小
+
+`read_stream_begin_impl()`会根据`effective_io_concurrency`、`io_combine_limit`等配置计算`queue_size`。计算从以下上限开始：
+
+$$
+\text{queue\_size} = (\text{effective\_io\_concurrency} + 2)
+\times \frac{\text{io\_combine\_limit}}{\text{BLCKSZ}} + 1
+$$
+
+其中`BLCKSZ`默认为8 KB；实际`queue_size`还可能因其他参数和运行条件而减小。
+
+#### 8.5.3.2 AIO核心操作
+
+下面定义几个封装基本AIO操作的伪代码函数。
+
+##### 分配缓冲区并入队
+
+`read_ahead()`为目标关系块分配缓冲区描述符，并将其加入`stream_buffers`：
+
+```text
+read_ahead(stream_buffers, combine_distance, blockNum)
+    offset = 0
+    while stream_buffers.pinned_buffers < combine_distance
+        bufDesc = BufferAlloc(blockNum + offset)
+        offset += 1
+        bufDesc.state.IO_IN_PROGRESS = 1
+        stream_buffers.enqueue(bufDesc)
+```
+
+##### 准备并提交异步读取
+
+`prepare_and_submit()`为`read_ahead()`刚入队的描述符准备并提交异步读取。由于顺序扫描读取连续块，它会使用向量I/O合并多个块：
+
+```text
+prepare_and_submit(stream_buffers)
+    submit_vector_read(stream_buffers)
+```
+
+##### 等待异步读取完成
+
+`WaitReadBuffers()`等待特定I/O完成，并把相关缓冲区标记为有效：
+
+```text
+WaitReadBuffers(stream_buffers)
+    wait_cqe(stream_buffers)
+    for each bufDesc in stream_buffers
+        bufDesc.state.IO_IN_PROGRESS = 0
+        bufDesc.state.VALID = 1
+```
+
+#### 8.5.3.3 使用AIO的顺序扫描
+
+利用上述函数，AIO顺序扫描的基本行为可写成：
+
+```text
+ExecSeqScan()
+    stream_buffers = []
+    combine_distance = 4
+    blockNum = 0
+
+(1) read_ahead(stream_buffers, combine_distance, blockNum)
+    prepare_and_submit(stream_buffers)
+
+(2) while blockNum <= last_block
+(3)     current_buf = stream_buffers.dequeue()
+
+(4)     if current_buf.state.IO_IN_PROGRESS == 1
+            WaitReadBuffers(stream_buffers)
+
+        if stream_buffers.pinned_buffers == 0
+(5)         read_ahead(stream_buffers, combine_distance, blockNum)
+            prepare_and_submit(stream_buffers)
+
+(6)     for each tuple in current_buf
+            do_exec(tuple)
+
+        blockNum += 1
+```
+
+1. 首轮预读`combine_distance`（这里为4）个页面，将它们入队并提交异步请求。
+2. 按顺序处理目标表页面。
+3. 从`stream_buffers`取出下一个缓冲区描述符。
+4. 如果该块仍在从存储读取，则调用`WaitReadBuffers()`等待完成。
+5. 队列为空时预读下一批块并提交请求。此时操作系统可以在后端处理当前页元组的同时异步读取下一批页面，这正是AIO收益的来源。
+6. 处理当前页面中的全部元组。
+
+{{< fig num="8.21" src="/img/fig-8-21.png" caption="异步顺序扫描的简化模型" alt="图8.21 后端处理当前批次时并行预读下一批连续页面" />}}
+
+在图8.21中，上一轮结束时队列清空，`read_ahead()`把块$n$至$n+3$入队并提交请求；后端随即处理上一轮最后一块$n-1$，与操作系统读取下一批块并行。当开始处理块$n$时，如果I/O尚未结束，`WaitReadBuffers()`等待一次完成事件，并把这一批四个块全部标记为有效；随后$n+1$至$n+3$可以直接处理。队列再次清空后，下一批$n+4$至$n+7$以同样方式提交。
+
+##### 与传统同步顺序扫描的比较
+
+{{< fig num="8.22" src="/img/fig-8-22.png" caption="传统同步顺序扫描的处理序列" alt="图8.22 传统后端逐块分配缓冲区、同步读取并处理元组" />}}
+
+在传统模型中，后端对每个块串行重复三个阶段：分配缓冲区；调用同步`read()`并完全阻塞；I/O完成后解除缓冲区锁定并处理元组。AIO则把多个块的读取与当前页面的处理重叠起来。
+
+### 8.5.4 异步顺序扫描的实际实现
+
+真实缓冲区管理器在上述流水线基础上还会：处理预读期间的缓存命中；根据实时行为动态调整预读窗口；连续命中缓存时进入快速路径，绕过`stream_buffers`管理开销。
+
+#### 8.5.4.1 预读时的缓存命中
+
+当`read_ahead()`遇到缓存命中时，它会停止继续扫描，只使用此前累积的连续未命中块来准备读取请求。
+
+{{< fig num="8.23" src="/img/fig-8-23.png" caption="预读遇到缓存命中时的行为" alt="图8.23 预读在首个缓存命中处停止，并只提交此前连续未命中的块" />}}
+
+假设块$n+2$已经在缓冲池中：
+
+1. `read_ahead()`从块$n$开始入队，在遇到$n+2$命中时停止。
+2. `prepare_and_submit()`只为连续的$n$与$n+1$准备并提交一个向量读取请求。
+3. `WaitReadBuffers()`等待请求完成。
+4. 扫描依次处理$n$、$n+1$和已在缓存中的$n+2$。
+
+在第一次命中处停止预读，可以保证`stream_buffers`中累积的未命中块在关系文件中物理连续，从而合并为单个向量I/O请求。
+
+{{< fig num="8.24" src="/img/fig-8-24.png" caption="缓存命中后的后续预读" alt="图8.24 缓存命中后从下一个块恢复批量预读，或逐块处理连续命中" />}}
+
+处理完$n+2$后，如果后续块未命中，`read_ahead()`会从$n+3$开始重新填充队列并提交多块请求；如果后续仍连续命中，则已缓存描述符会逐个入队，扫描反复执行单块处理。
+
+#### 8.5.4.2 自适应预读
+
+`stream_buffers`的`combine_distance`会动态变化。顺序扫描开始时其值为1：
+
+* **增长：** 每轮翻倍，例如1、2、4、8，直到达到以下上限：
+
+  $$
+  \min(\text{io\_combine\_limit}/\text{BLCKSZ},\ \text{queue\_size}-1)
+  $$
+
+* **衰减：** 连续缓存命中超过`queue_size - 1`个块后，`combine_distance`每次减1，最低降至1；一旦再次发生缓存未命中，立即切回增长模式。
+
+{{< fig num="8.25" src="/img/fig-8-25.png" caption="顺序预读中combine_distance的增长" alt="图8.25 combine_distance从1开始逐轮翻倍直至上限" />}}
+
+这种策略让预读并行度快速达到上限，却只在缓存持续命中时缓慢下降。
+
+{{< fig num="8.26" src="/img/fig-8-26.png" caption="缓存命中与未命中时combine_distance的变化" alt="图8.26 连续命中使combine_distance缓慢衰减，未命中立即恢复增长" />}}
+
+#### 8.5.4.3 快速路径：绕过`stream_buffers`
+
+当`combine_distance`已经降为1且缓存继续命中时，缓冲区管理器会进入**快速路径（Fast Path）**，不再使用`stream_buffers`，而是直接读取缓冲池槽，以省去整套队列管理开销。快速路径中一旦出现缓存未命中，就立即回到正常预读模式。
+
+{{< fig num="8.27" src="/img/fig-8-27.png" caption="快速路径的行为与状态转换" alt="图8.27 连续缓存命中进入快速路径，缓存未命中恢复正常预读" />}}
+
+如果目标关系的所有块都已缓存在缓冲池中，缓冲区管理器只在处理第0号块时使用一次`stream_buffers`，之后的块都走快速路径。
 
 
 ## 8.6 脏页刷盘
