@@ -18,7 +18,7 @@
 
 PostgreSQL 是一个开源的关系型数据库，在世界各地被广泛用于各种目的。它是一个由多个子系统集成而来的巨大系统，每个子系统都包含着特殊的复杂功能，并与其它子系统相互协调工作。理解其内部原理对于管理和集成 PostgreSQL 而言至关重要，但其巨大性与复杂性让这一点变得相当困难。本书的目的正是解释这些子系统是如何工作的，并提供一幅关于 PostgreSQL 的全景图像。
 
-本书由 [Hironobu Suzuki（鈴木 啓修）](https://www.interdb.jp/)原著，中文版经正规出版流程引进，作者专门为中文版撰写了序言。本仓库收录冯若航、刘阳明、张文升于 2018 年完成的中文译稿，全书从数据库集簇、进程和查询处理出发，依次进入并发控制、VACUUM、缓冲区、WAL、备份、时间点恢复与流复制。
+本书由 [Hironobu Suzuki（鈴木 啓修）](https://www.interdb.jp/)原著，中文版经正规出版流程引进，作者专门为中文版撰写了序言。本仓库以冯若航、刘阳明、张文升于 2018 年完成的中文译稿为主体，并持续补译英文原著新增内容；全书从数据库集簇、进程和查询处理出发，依次进入并发控制、VACUUM、缓冲区、WAL、备份、物理流复制与逻辑复制。
 
 ## 目录
 
@@ -37,14 +37,16 @@ PostgreSQL 是一个开源的关系型数据库，在世界各地被广泛用于
 | 7 | [堆内元组与仅索引扫描](https://pgint.vonng.com/ch7/) | [ch7.md](content/ch7.md) |
 | 8 | [缓冲区管理器](https://pgint.vonng.com/ch8/) | [ch8.md](content/ch8.md) |
 | 9 | [预写式日志](https://pgint.vonng.com/ch9/) | [ch9.md](content/ch9.md) |
-| | **第三部 · 恢复与高可用** | |
+| | **第三部 · 恢复、复制与高可用** | |
 | 10 | [基础备份与时间点恢复](https://pgint.vonng.com/ch10/) | [ch10.md](content/ch10.md) |
 | 11 | [流复制](https://pgint.vonng.com/ch11/) | [ch11.md](content/ch11.md) |
+| 12 | [逻辑复制](https://pgint.vonng.com/ch12/) | [ch12.md](content/ch12.md) |
+| | [技术附录](https://pgint.vonng.com/appendix/) | [appendix.md](content/appendix.md) |
 | | [附录 · 许可与授权](https://pgint.vonng.com/license/) | [license.md](content/license.md) |
 
 ## 版本说明
 
-中文译稿主要反映 PostgreSQL 9.x 至 11 前后的实现，保留了翻译当时的历史语境。判断当前 PostgreSQL 版本的行为时，请同时参阅[持续更新的英文原著](https://www.interdb.jp/pg/)与 [PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)。
+中文译稿主体反映 PostgreSQL 9.x 至 11 前后的实现，保留了翻译当时的历史语境；本站另行补译英文原著后来加入的 TOAST、查询执行与基数估计、自动清理与并发 REPACK、AIO、WAL 汇总、增量备份、物理复制补充、第 12 章逻辑复制与技术附录，涉及 PostgreSQL 10 至 19。第 12 章在英文原著中仍标为 Beta/WIP，PostgreSQL 19相关内容也属于发布前描述。判断当前版本行为时，请同时参阅[持续更新的英文原著](https://www.interdb.jp/pg/)与 [PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)。
 
 ## 许可与授权
 

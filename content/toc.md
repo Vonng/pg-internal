@@ -1,7 +1,7 @@
 ---
 title: 目录
 linkTitle: 目录
-description: 《PostgreSQL 技术内幕》中文译稿完整目录：两篇序言与十一章 PostgreSQL 内部机制。
+description: 《PostgreSQL 技术内幕》中文译稿完整目录：两篇序言、十二章 PostgreSQL 内部机制与技术附录。
 book_kind: contents
 no_print: true
 weight: 5

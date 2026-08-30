@@ -1,7 +1,7 @@
 brand:
   name: PostgreSQL 技术内幕
   logo: postgresql.svg
-  tagline: 从数据库集簇到流复制的内部机制
+  tagline: 从数据库集簇到逻辑复制的内部机制
   slogan: Hironobu Suzuki 原著 · 2018 中文译稿
 columns:
   - title: 阅读
@@ -16,6 +16,7 @@ columns:
       - { label: 事务、存储与持久性, url: ch5/ }
       - { label: 恢复与高可用, url: ch10/ }
       - { label: 流复制, url: ch11/ }
+      - { label: 逻辑复制, url: ch12/ }
   - title: 权威来源
     links:
       - { label: 英文原著, url: 'https://www.interdb.jp/pg/', external: true }

@@ -17,17 +17,17 @@ cascade:
     breadcrumb: false
 ---
 
-《PostgreSQL 技术内幕》由 Hironobu Suzuki 原著，中文版经正规出版引进，本站收录冯若航、刘阳明和张文升完成的 2018 年中文译稿。
+《PostgreSQL 技术内幕》由 Hironobu Suzuki 原著，中文版经正规出版引进。本站以冯若航、刘阳明和张文升完成的 2018 年中文译稿为主体，并持续补译英文原著新增内容。
 
-全书从数据库集簇、进程和查询处理出发，依次进入并发控制、VACUUM、缓冲区、WAL、备份、时间点恢复与流复制。
+全书从数据库集簇、进程和查询处理出发，依次进入并发控制、VACUUM、缓冲区、WAL、备份、时间点恢复、物理流复制与逻辑复制。
 
 ## 阅读本书
 
-- 阅读[完整目录](/toc/)定位十一章内容。
+- 阅读[完整目录](/toc/)定位十二章与技术附录。
 - 从[作者序](/preface/)或[第一章](/ch1/)开始顺序阅读。
 - 打开[整书打印视图](/_print/)阅读或另存为 PDF。
 - 查阅[许可与授权](/license/)了解版权与使用条款。
 
 ## 版本说明
 
-这份中文译稿主要反映 PostgreSQL 9.x 至 11 前后的实现。涉及当前 PostgreSQL 行为时，请同时查阅[持续更新的英文原著](https://www.interdb.jp/pg/)、[PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)与源码。
+这份中文译稿主体反映 PostgreSQL 9.x 至 11 前后的实现；本站另补译了英文原著后来加入、涉及 PostgreSQL 10 至 19 的章节。第 12 章在英文原著中仍标为 Beta/WIP，PostgreSQL 19相关内容也属于发布前描述。涉及当前 PostgreSQL 行为时，请同时查阅[持续更新的英文原著](https://www.interdb.jp/pg/)、[PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)与源码。

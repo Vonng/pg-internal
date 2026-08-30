@@ -20,7 +20,7 @@ upstream_link: ""
 
 本书中文版由冯若航、刘阳明、张文升翻译，经正规出版流程引进出版，作者亦专门为中文版撰写了[序言](/preface/)。译者保留对本中文译本的所有权利（All Rights Reserved）。
 
-本站在线收录的是 2018 年完成的中文译稿，供学习、研究与技术传播使用。
+本站在线收录的主体是 2018 年完成的中文译稿，并包含对英文原著后续新增内容的补译，供学习、研究与技术传播使用。
 
 ## 使用条款
 
@@ -30,7 +30,7 @@ upstream_link: ""
 
 ## 版本边界
 
-中文译本主要反映 PostgreSQL 9.x 至 11 前后的实现，保留了翻译当时的历史语境。判断当前版本行为时，请以[持续更新的英文原著](https://www.interdb.jp/pg/)与 [PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)为准。
+中文译本主体反映 PostgreSQL 9.x 至 11 前后的实现，保留了翻译当时的历史语境；本站也收录了英文原著后来新增、涉及 PostgreSQL 10 至 19 的补译内容，其中第 12 章在原著中仍标为 Beta/WIP，PostgreSQL 19相关内容属于发布前描述。判断当前版本行为时，请以[持续更新的英文原著](https://www.interdb.jp/pg/)与 [PostgreSQL 官方文档](https://www.postgresql.org/docs/current/)为准。
 
 ## 联系
 
