@@ -27,7 +27,7 @@ build-check:
 
 check-book:
 	oink_dir="$$(go list -m -f '{{.Dir}}' $(OINK_MODULE))"; \
-		$(PYTHON) "$$oink_dir/bin/check-book.py" --site-public $(PUBLIC_DIR)
+		PYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$$oink_dir/bin/check-book.py" --site-public $(PUBLIC_DIR)
 
 check-local:
 	$(LOCAL_OINK) hugo --gc --minify --printPathWarnings --panicOnWarning --cleanDestinationDir
