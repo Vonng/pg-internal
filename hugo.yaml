@@ -119,6 +119,8 @@ params:
   reading_width: normal
 
   ui:
+    preset: paper
+    preset_menu: [paper, slate, ink, terminal]
     shell_types: [book]
     docs_section: ""
     quick_links: [contents, preface]
