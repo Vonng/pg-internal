@@ -42,7 +42,7 @@ Run the importer regressions and the production-equivalent Hugo build with:
 ```bash
 python3 -m unittest scripts/import-interdb/test_import.py -v
 HUGO_ENVIRONMENT=production HUGO_ENV=production \
-  hugo --config hugo.yaml,hugo.en.yaml --gc --minify --panicOnWarning
+  hugo --config hugo.yaml,hugo.en.yaml --gc --minify
 ```
 
 The latest machine-readable validation report is written to

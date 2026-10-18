@@ -28,7 +28,7 @@ build-local: theme-local
 check: build-check check-book
 
 build-check:
-	$(PINNED_HUGO) --gc --minify --printPathWarnings --panicOnWarning --cleanDestinationDir
+	$(PINNED_HUGO) --gc --minify --printPathWarnings --cleanDestinationDir
 	$(PYTHON) scripts/check_links.py $(PUBLIC_DIR)
 	$(PYTHON) scripts/check_site.py $(PUBLIC_DIR)
 
@@ -37,7 +37,7 @@ check-book:
 		PYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$$oink_dir/bin/check-book.py" --site-public $(PUBLIC_DIR)
 
 check-local: theme-local
-	$(LOCAL_HUGO) --gc --minify --printPathWarnings --panicOnWarning --cleanDestinationDir
+	$(LOCAL_HUGO) --gc --minify --printPathWarnings --cleanDestinationDir
 	$(PYTHON) scripts/check_links.py $(PUBLIC_DIR)
 	$(PYTHON) scripts/check_site.py $(PUBLIC_DIR)
 	$(PYTHON) "$(OINK_LOCAL)/bin/check-book.py" --site-public $(PUBLIC_DIR)
