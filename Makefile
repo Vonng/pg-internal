@@ -33,6 +33,7 @@ build-check:
 	$(PYTHON) scripts/check_site.py $(PUBLIC_DIR)
 
 check-book:
+	env -u HUGO_MODULE_REPLACEMENTS go mod download github.com/pgsty/oink
 	oink_dir="$$(env -u HUGO_MODULE_REPLACEMENTS go list -m -f '{{.Dir}}' github.com/pgsty/oink)"; \
 		PYTHONDONTWRITEBYTECODE=1 $(PYTHON) "$$oink_dir/bin/check-book.py" --site-public $(PUBLIC_DIR)
 
