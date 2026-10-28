@@ -54,7 +54,7 @@ PostgreSQL 是一个开源的关系型数据库，在世界各地被广泛用于
 
 ## 本地开发
 
-本站基于 [Hugo](https://gohugo.io/) 与 [OINK](https://github.com/pgsty/oink) 主题构建，生产构建使用 `go.mod` 中固定的 OINK v1.3.2，构建环境使用 Hugo Extended 0.168.0 与 Go 1.27.3。
+本站基于 [Hugo](https://gohugo.io/) 与 [OINK](https://github.com/pgsty/oink) 主题构建，生产构建使用 `go.mod` 中固定的 OINK v1.4.0，构建环境使用 Hugo Extended 0.168.0 与 Go 1.27.3。
 
 | 命令 | 说明 |
 |------|------|
