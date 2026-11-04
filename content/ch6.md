@@ -524,6 +524,7 @@ PostgreSQL 19开发版引入内置`REPACK`命令（不是`pg_repack`扩展），
 |:-----|:-------------------------------|:---------------|
 | PostgreSQL 18及以前 | `VACUUM FULL`、`CLUSTER` | 无 |
 | PostgreSQL 19及以后 | `REPACK`、`REPACK ... USING INDEX` | `REPACK (CONCURRENTLY) ...`、`REPACK (CONCURRENTLY) ... USING INDEX` |
+{.wide .expand}
 
 并发模式仍会创建新表并复制旧表中的活元组，但还会取得MVCC快照、使用WAL解码捕获复制期间的修改，并由`repack_decoding_worker`把目标表变更写入临时`BufFile`，再由REPACK后端应用到新表。
 

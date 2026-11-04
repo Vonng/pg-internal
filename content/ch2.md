@@ -110,6 +110,7 @@ PostgreSQL的内存架构可以分为两部分：
 | `work_mem`             | 执行器在执行`ORDER BY`和`DISTINCT`时使用该区域对元组做排序，以及存储归并连接和散列连接中的连接表。 | [第3章](/ch3/) |
 | `maintenance_work_mem` | 某些类型的维护操作使用该区域（例如`VACUUM`，`REINDEX`）。    | [6.1](/ch6/)   |
 | `temp_buffers`         | 执行器使用此区域存储临时表。                                 |                 |
+{.wide .expand}
 {{< /tbl >}}
 
 ### 2.2.2 共享内存区域

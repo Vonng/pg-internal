@@ -2584,6 +2584,7 @@ testdb=# SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.data < 400
 | `SeqScanPath(tbl_b)`      | `SeqScanPath(tbl_a)`                              |                              |
 | `SeqScanPath(tbl_b)`      | `Materialized -> SeqScanPath(tbl_a)`              | 物化嵌套循环连接             |
 | `SeqScanPath(tbl_b)`      | `ParametalizedIndexScanPath(tbl_a, id, tbl_b.id)` | 索引嵌套循环连接             |
+{.wide .expand}
 
 **归并连接**
 

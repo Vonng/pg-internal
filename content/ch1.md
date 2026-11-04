@@ -94,6 +94,7 @@ sampledb=# SELECT relname, oid FROM pg_class WHERE relname = 'sampletbl';
 | `pg_wal/` (10+)   | WAL（ Write Ahead Logging）段文件（10或更新版本），从`pg_xlog`重命名而来。            |
 | `pg_xact/` (10+)  | 事务提交状态数据，（10或更新版本），从`pg_clog`重命名而来。CLOG将在[5.4节](/ch5/)中描述。         |
 | `pg_xlog/` (9.6-) | **WAL（Write Ahead Logging）** 段文件（9.6及更老版本），它在版本10中被重命名为 `pg_wal`。 |
+{.wide .expand}
 {{< /tbl >}}
 
 ### 1.2.2 数据库布局
