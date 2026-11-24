@@ -1,5 +1,4 @@
-// PostgreSQL Internals publication layer ------------------------------------
-
+@charset "UTF-8";
 :root {
   --pgint-blue: #336791;
   --pgint-deep: #173e5b;
@@ -7,14 +6,12 @@
   --pgint-surface: color-mix(in srgb, var(--bs-body-bg) 94%, var(--pgint-blue));
 }
 
-[data-bs-theme='dark'] {
+[data-bs-theme=dark] {
   --pgint-blue: #83b8dc;
   --pgint-deep: #a7d0eb;
   --pgint-sky: #a4cee9;
   --pgint-surface: color-mix(in srgb, var(--bs-body-bg) 89%, white);
 }
-
-// Book shell ----------------------------------------------------------------
 
 .td-book .td-content {
   text-wrap: pretty;
@@ -25,7 +22,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.td-book .td-content > h2 {
+.td-book .td-content > h2, .td-book .td-content > .h2 {
   margin-block-start: 3.4rem;
   padding-block-end: 0.5rem;
   border-block-end: 1px solid var(--bs-border-color);
@@ -37,7 +34,7 @@
   color: var(--bs-secondary-color);
 }
 
-.td-book .td-content img[src='/cover.svg'] {
+.td-book .td-content img[src="/cover.svg"] {
   display: block;
   width: 18rem;
   max-width: 100%;
@@ -72,24 +69,20 @@
   margin-block: 0.38rem;
 }
 
-// Cover and homepage --------------------------------------------------------
-
 .td-landing-hero {
-  background:
-    radial-gradient(circle at 78% 36%, color-mix(in srgb, var(--pgint-sky) 15%, transparent), transparent 32%),
-    var(--bs-body-bg);
+  background: radial-gradient(circle at 78% 36%, color-mix(in srgb, var(--pgint-sky) 15%, transparent), transparent 32%), var(--bs-body-bg);
 }
 
 .td-landing-hero__media {
   max-width: 330px;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 3/4;
   border: 1px solid color-mix(in srgb, var(--bs-border-color) 68%, transparent);
   border-radius: 0.25rem 0.75rem 0.75rem 0.25rem;
   filter: drop-shadow(0 28px 36px rgba(17, 47, 70, 0.24));
   transform: none;
 }
 
-[data-bs-theme='dark'] .td-landing-hero__media {
+[data-bs-theme=dark] .td-landing-hero__media {
   filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.56));
 }
 
@@ -102,9 +95,7 @@
 }
 
 .pgint-people {
-  background:
-    radial-gradient(circle at 12% 9%, color-mix(in srgb, var(--pgint-blue) 9%, transparent), transparent 34%),
-    color-mix(in srgb, var(--bs-secondary-bg) 38%, transparent);
+  background: radial-gradient(circle at 12% 9%, color-mix(in srgb, var(--pgint-blue) 9%, transparent), transparent 34%), color-mix(in srgb, var(--bs-secondary-bg) 38%, transparent);
 }
 
 .pgint-people .td-landing-card {
@@ -117,7 +108,7 @@
 }
 
 .pgint-people .book-person__portrait {
-  grid-row: 1 / 5;
+  grid-row: 1/5;
   display: flex;
   width: 112px;
   flex-direction: column;
@@ -163,6 +154,7 @@
 
 .pgint-people .td-landing-card__meta,
 .pgint-people .td-landing-card h3,
+.pgint-people .td-landing-card .h3,
 .pgint-people .td-landing-card__description,
 .pgint-people .td-landing-card-link {
   grid-column: 2;
@@ -178,7 +170,7 @@
   text-transform: none;
 }
 
-.pgint-people .td-landing-card h3 {
+.pgint-people .td-landing-card h3, .pgint-people .td-landing-card .h3 {
   margin-bottom: 10px;
   font-size: clamp(1.2rem, 2vw, 1.52rem);
 }
@@ -193,9 +185,7 @@
 }
 
 .pgint-preface {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--pgint-blue) 7%, transparent), transparent 44%),
-    var(--bs-body-bg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--pgint-blue) 7%, transparent), transparent 44%), var(--bs-body-bg);
 }
 
 .pgint-preface .td-landing-section__head {
@@ -203,7 +193,7 @@
   max-width: none;
 }
 
-.pgint-preface .td-landing-section__head h2 {
+.pgint-preface .td-landing-section__head h2, .pgint-preface .td-landing-section__head .h2 {
   max-width: none;
   font-size: clamp(1.75rem, 4vw, 3.15rem);
   line-height: 1.12;
@@ -221,7 +211,7 @@
 }
 
 .pgint-preface .td-landing-markdown::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 12px;
   pointer-events: none;
@@ -241,7 +231,7 @@
 }
 
 .pgint-preface .td-landing-markdown blockquote::before {
-  content: '“';
+  content: "“";
   display: block;
   height: 0.72em;
   color: color-mix(in srgb, var(--pgint-blue) 58%, transparent);
@@ -300,18 +290,18 @@
   color: var(--pgint-blue);
 }
 
-.pgint-chapters .td-landing-card h3 {
+.pgint-chapters .td-landing-card h3, .pgint-chapters .td-landing-card .h3 {
   margin-bottom: 16px;
   font-size: 1.16rem;
   line-height: 1.35;
 }
 
-.pgint-chapters .td-landing-card h3 a {
+.pgint-chapters .td-landing-card h3 a, .pgint-chapters .td-landing-card .h3 a {
   color: var(--td-ink);
 }
 
-.pgint-chapters .td-landing-card h3 a::after {
-  content: ' →';
+.pgint-chapters .td-landing-card h3 a::after, .pgint-chapters .td-landing-card .h3 a::after {
+  content: " →";
   color: var(--pgint-blue);
 }
 
@@ -346,9 +336,7 @@
 }
 
 .pgint-legal {
-  background:
-    radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--pgint-blue) 10%, transparent), transparent 34%),
-    color-mix(in srgb, var(--bs-body-bg) 88%, var(--bs-secondary-bg));
+  background: radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--pgint-blue) 10%, transparent), transparent 34%), color-mix(in srgb, var(--bs-body-bg) 88%, var(--bs-secondary-bg));
 }
 
 .pgint-legal .td-landing-card {
@@ -386,36 +374,29 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
 @media (max-width: 760px) {
   .td-landing-hero__media {
     max-width: 220px;
     justify-self: center;
   }
-
   .pgint-people .td-landing-card {
     grid-template-columns: 84px minmax(0, 1fr);
     gap: 0 18px;
   }
-
   .pgint-people .book-person__portrait,
   .pgint-people .td-landing-card__media {
     width: 84px;
   }
-
   .pgint-people .td-landing-card__media {
     height: 84px;
   }
-
   .pgint-chapters .td-landing-card-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-
   .pgint-preface .td-landing-markdown {
     padding-inline: 24px;
   }
 }
-
 @media print {
   .td-book .td-content {
     font-size: 10.5pt;
